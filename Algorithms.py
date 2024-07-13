@@ -106,30 +106,48 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, high, low
     actionable_atts = [a for a in actionable_atts_org if not a in dropAtt]
     df_g = df_g.loc[:, ~df_g.columns.str.contains('^Unnamed')]
     logging.info(f'Starting group: {group}')
-    treatments = Utils.getLevel1treatments(actionable_atts, df_g, ordinal_atts)
-    logging.info(f'Number of treatments at level I: {len(treatments)}')
 
-    t_h = None
-    cate_h = 0
-    treatments_cate, t_h, cate_h = Utils.getCatesGreedy(DAG, t_h, cate_h, df_g, ordinal_atts, target, treatments)
+    def calculate_unfairness_score(treatment, df_g, DAG, ordinal_atts, target):
+        cate_all = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
+        protected_group = df_g[df_g['Gender'] != 'Male']  # Assuming 'Gender' is the protected attribute
+        cate_protected = Utils.getTreatmentCATE(protected_group, DAG, treatment, ordinal_atts, target)
+        return abs(cate_all - cate_protected)
 
-    logging.debug(f"Debug - treatments_cate before filtering: {treatments_cate}")
+    max_score = float('-inf')
+    best_treatment = None
+    best_cate = 0
 
-    treatments_cate = filter_above_median(treatments_cate)
+    # Level 1 treatments
+    treatments_level1 = Utils.getLevel1treatments(actionable_atts, df_g, ordinal_atts)
+    logging.info(f'Number of treatments at level 1: {len(treatments_level1)}')
 
-    treatments = Utils.getNextLeveltreatments(treatments_cate, df_g, ordinal_atts, high, False)
-    logging.info(f'Number of treatments at level II: {len(treatments)}')
-    treatments_cate, t_h2, cate_h2 = Utils.getCatesGreedy(DAG, t_h, cate_h, df_g, ordinal_atts, target, treatments)
-    
-    if t_h2 != t_h:
-        logging.info("High treatment found in level 2")
-        t_h = t_h2
-        cate_h = cate_h2
+    for treatment in treatments_level1:
+        score = calculate_unfairness_score(treatment, df_g, DAG, ordinal_atts, target)
+        cate = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
+        if score > max_score and cate > 0:
+            max_score = score
+            best_treatment = treatment
+            best_cate = cate
+
+    # Level 2 treatments
+    positive_treatments = [t for t in treatments_level1 if Utils.getTreatmentCATE(df_g, DAG, t, ordinal_atts, target) > 0]
+    treatments_level2 = Utils.getNextLeveltreatments(positive_treatments, df_g, ordinal_atts, high, False)
+    logging.info(f'Number of treatments at level 2: {len(treatments_level2)}')
+
+    for treatment in treatments_level2:
+        score = calculate_unfairness_score(treatment, df_g, DAG, ordinal_atts, target)
+        cate = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
+        if score > max_score and cate > 0:
+            max_score = score
+            best_treatment = treatment
+            best_cate = cate
+        else:
+            break  # Stop if we don't find a better treatment in level 2
 
     logging.info(f'Finished group: {group}')
-    logging.info(f't_h: {t_h}, cate_h: {cate_h}')
+    logging.info(f'Best treatment: {best_treatment}, CATE: {best_cate}')
     logging.info('#######################################')
-    return (t_h, cate_h)
+    return (best_treatment, best_cate)
 
 
 def filter_above_median(treatments_cate):
