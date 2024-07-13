@@ -1,2 +1,4 @@
 .aider*
 data/
+.venv/
+.idea/
