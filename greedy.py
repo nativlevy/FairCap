@@ -7,7 +7,7 @@ from dags import SO_DAG
 import logging
 
 # Set up logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 
 class Rule:
     def __init__(self, condition: Dict, treatment: Dict, covered_indices: Set[int],
@@ -72,8 +72,10 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
     total_utility = 0
     protected_utility = 0
 
+    unprotected_count = len(rules[0].covered_indices) - len(protected_group)
     logging.info(f"Starting greedy algorithm with {len(rules)} rules, "
                  f"{len(protected_group)} protected individuals, "
+                 f"{unprotected_count} unprotected individuals, "
                  f"coverage threshold {coverage_threshold}, and max {max_rules} rules")
 
     while len(solution) < max_rules:
