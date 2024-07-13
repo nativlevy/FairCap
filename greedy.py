@@ -1,11 +1,11 @@
 import pandas as pd
-from typing import List, Set
-from Algorithms import getAllGroups
+from typing import List, Set, Dict
+from Algorithms import getAllGroups, getGroupstreatmentsforGreeedy
 from ui.functional_deps import calculate_functional_dependencies
-
+import Utils
 
 class Rule:
-    def __init__(self, condition: str, treatment: str, covered_indices: Set[int],
+    def __init__(self, condition: Dict, treatment: Dict, covered_indices: Set[int],
                  covered_protected_indices: Set[int], utility: float, protected_utility: float):
         self.condition = condition
         self.treatment = treatment
@@ -14,16 +14,12 @@ class Rule:
         self.utility = utility
         self.protected_utility = protected_utility
 
-
 def load_data(file_path: str) -> pd.DataFrame:
     return pd.read_csv(file_path)
 
-
 def get_grouping_patterns(df: pd.DataFrame, fds: List[str], apriori: float) -> List[dict]:
-    # Use Apriori algorithm to get grouping patterns
     grouping_patterns = getAllGroups(df, fds, apriori)
     return grouping_patterns
-
 
 def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_protected: Set[int],
                total_utility: float, protected_utility: float, protected_group: Set[int],
@@ -33,8 +29,6 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
 
     if len(rule.covered_indices) == 0:
         return float('-inf')
-
-    overlap_factor = 1 - (len(new_covered) / len(rule.covered_indices))
 
     utility_increase = rule.utility
     protected_utility_increase = rule.protected_utility
@@ -46,11 +40,13 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
             (protected_utility + protected_utility_increase) / (len(covered_protected) + len(new_covered_protected)) -
             (total_utility + utility_increase) / (len(covered) + len(new_covered)))
 
-    coverage_factor = (len(new_covered_protected) / len(
-        protected_group)) / coverage_threshold if coverage_threshold > 0 else 1
+    coverage_factor = (len(new_covered_protected) / len(protected_group)) / coverage_threshold if coverage_threshold > 0 else 1
 
-    return (protected_utility_increase + utility_increase) * (1 - overlap_factor) * fairness_factor * coverage_factor
+    unfairness_score = rule.utility / abs(rule.utility - rule.protected_utility) if rule.utility != rule.protected_utility else rule.utility
 
+    score = (utility_increase + protected_utility_increase) * fairness_factor * coverage_factor * unfairness_score
+
+    return score
 
 def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int], coverage_threshold: float,
                                    max_rules: int) -> List[Rule]:
@@ -83,7 +79,6 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
 
     return solution
 
-
 def main():
     # Load data
     df = load_data('data/so_countries_col_new.csv')
@@ -110,6 +105,54 @@ def main():
         for attribute, value in pattern.items():
             print(f"  {attribute}: {value}")
         print()
+
+    # Get treatments for each grouping pattern
+    DAG = []  # Define your DAG here
+    ordinal_atts = {}  # Define your ordinal attributes here
+    targetClass = 'Salary'  # Define your target class
+    actionable_atts = []  # Define your actionable attributes here
+
+    groups_dic, _ = getGroupstreatmentsforGreeedy(DAG, df, grouping_attribute, grouping_patterns, ordinal_atts, targetClass, True, False, actionable_atts, True)
+
+    # Create Rule objects
+    rules = []
+    for group, data in groups_dic.items():
+        condition = eval(group)
+        treatment = data[2]
+        covered_indices = data[1]
+        covered_protected_indices = covered_indices.intersection(protected_group)
+        utility = data[3]
+        protected_utility = utility * len(covered_protected_indices) / len(covered_indices)
+        rules.append(Rule(condition, treatment, covered_indices, covered_protected_indices, utility, protected_utility))
+
+    # Run greedy algorithm
+    coverage_threshold = 0.8
+    max_rules = 10
+    selected_rules = greedy_fair_prescription_rules(rules, protected_group, coverage_threshold, max_rules)
+
+    # Print selected rules
+    for i, rule in enumerate(selected_rules, 1):
+        print(f"Rule {i}:")
+        print(f"  Condition: {rule.condition}")
+        print(f"  Treatment: {rule.treatment}")
+        print(f"  Utility: {rule.utility}")
+        print(f"  Protected Utility: {rule.protected_utility}")
+        print(f"  Coverage: {len(rule.covered_indices)}")
+        print(f"  Protected Coverage: {len(rule.covered_protected_indices)}")
+        print()
+
+    # Calculate final fairness measure
+    total_coverage = set().union(*[rule.covered_indices for rule in selected_rules])
+    total_protected_coverage = set().union(*[rule.covered_protected_indices for rule in selected_rules])
+    total_utility = sum(rule.utility for rule in selected_rules)
+    total_protected_utility = sum(rule.protected_utility for rule in selected_rules)
+
+    fairness_measure = abs(
+        (total_protected_utility / len(total_protected_coverage)) -
+        (total_utility / len(total_coverage))
+    )
+
+    print(f"Final Fairness Measure: {fairness_measure}")
 
 if __name__ == "__main__":
     main()
