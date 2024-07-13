@@ -67,6 +67,7 @@ def getAttsVals(atts,df):
     return ans
 
 def getNextLeveltreatments(treatments_cate, df_g, ordinal_atts, high, low):
+    logging.debug(f"getNextLeveltreatments input: treatments_cate={treatments_cate}, high={high}, low={low}")
     treatments = []
     if high:
         positives = getTreatmeants(treatments_cate, 'positive')
@@ -76,6 +77,7 @@ def getNextLeveltreatments(treatments_cate, df_g, ordinal_atts, high, low):
         treatments = getCombTreatments(df_g, positives, treatments, ordinal_atts)
     if low:
         treatments = getCombTreatments(df_g, negatives, treatments, ordinal_atts)
+    logging.debug(f"getNextLeveltreatments output: treatments={treatments}")
     return treatments
 
 def getCombTreatments(df_g, positives, treatments, ordinal_atts):
@@ -119,14 +121,25 @@ def getLevel1treatments(atts, df,ordinal_atts):
     return ans
 
 def getTreatmeants(treatments_cate, bound):
+    logging.debug(f"getTreatmeants input: treatments_cate={treatments_cate}, bound={bound}")
     ans = []
-    for k,v in treatments_cate.items():
-        if bound == 'positive':
-            if v > 0:
-                ans.append(ast.literal_eval(k))
-        if bound == 'negative':
-            if v < 0:
-                ans.append(ast.literal_eval(k))
+    if isinstance(treatments_cate, list):
+        for treatment in treatments_cate:
+            if bound == 'positive':
+                if Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target) > 0:
+                    ans.append(treatment)
+            if bound == 'negative':
+                if Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target) < 0:
+                    ans.append(treatment)
+    else:
+        for k,v in treatments_cate.items():
+            if bound == 'positive':
+                if v > 0:
+                    ans.append(ast.literal_eval(k))
+            if bound == 'negative':
+                if v < 0:
+                    ans.append(ast.literal_eval(k))
+    logging.debug(f"getTreatmeants output: ans={ans}")
     return ans
 
 def getCates(DAG, t_h,t_l,cate_h, cate_l, df_g, ordinal_atts, target, treatments):
