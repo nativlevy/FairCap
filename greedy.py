@@ -115,12 +115,12 @@ def main():
     # Load data
     df = load_data('data/so_countries_col_new.csv')
 
-    grouping_attribute = 'Country'
+    groupingAtt = 'Country'
 
-    fds = calculate_functional_dependencies(df, grouping_attribute)
+    fds = calculate_functional_dependencies(df, groupingAtt)
 
     # add the grouping attribute to the list of functional dependencies as the first element
-    fds = [grouping_attribute] + fds
+    fds = [groupingAtt] + fds
     logging.info(f"Functional Dependencies: {fds}")
 
     # Define protected group (non-male in this case)
@@ -142,14 +142,13 @@ def main():
     DAG = SO_DAG
     ordinal_atts = {}  # Define your ordinal attributes here
     targetClass = 'ConvertedSalary'
-    groupingAtt = 'Country'
     actionable_atts = [
         'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',
         'Age'
     ]
 
     logging.info("Getting treatments for each grouping pattern")
-    groups_dic, _ = getGroupstreatmentsforGreeedy(DAG, df, grouping_attribute, grouping_patterns, ordinal_atts, targetClass, True, False, actionable_atts, True)
+    groups_dic, _ = getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, grouping_patterns, ordinal_atts, targetClass, True, False, actionable_atts, True)
 
     # Create Rule objects
     rules = []
@@ -165,8 +164,8 @@ def main():
     logging.info(f"Created {len(rules)} Rule objects")
 
     # Run greedy algorithm
-    coverage_threshold = 0.3
-    max_rules = 3
+    coverage_threshold = 0.5
+    max_rules = 7
     total_individuals = len(df)  # Use the total number of rows in the dataframe
     logging.info(f"Running greedy algorithm with coverage threshold {coverage_threshold} and max {max_rules} rules")
     selected_rules = greedy_fair_prescription_rules(rules, protected_group, coverage_threshold, max_rules, total_individuals)
@@ -195,6 +194,7 @@ def main():
     logging.info(f"Final Fairness Measure: {fairness_measure}")
     logging.info(f"Total Coverage: {len(total_coverage)} out of {len(df)} ({len(total_coverage)/len(df)*100:.2f}%)")
     logging.info(f"Protected Coverage: {len(total_protected_coverage)} out of {len(protected_group)} ({len(total_protected_coverage)/len(protected_group)*100:.2f}%)")
+
 
 if __name__ == "__main__":
     main()
