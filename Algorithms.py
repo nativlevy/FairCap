@@ -131,7 +131,7 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, high, low
 
     # Level 2 treatments
     positive_treatments = [t for t in treatments_level1 if Utils.getTreatmentCATE(df_g, DAG, t, ordinal_atts, target) > 0]
-    treatments_level2 = Utils.getNextLeveltreatments(positive_treatments, df_g, ordinal_atts, high, False)
+    treatments_level2 = Utils.getNextLeveltreatments(positive_treatments, df_g, ordinal_atts, high, False, DAG, target)
     logging.info(f'Number of treatments at level 2: {len(treatments_level2)}')
 
     for treatment in treatments_level2:

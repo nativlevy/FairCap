@@ -66,13 +66,13 @@ def getAttsVals(atts,df):
         ans[a] = vals
     return ans
 
-def getNextLeveltreatments(treatments_cate, df_g, ordinal_atts, high, low):
+def getNextLeveltreatments(treatments_cate, df_g, ordinal_atts, high, low, dag, target):
     logging.debug(f"getNextLeveltreatments input: treatments_cate={treatments_cate}, high={high}, low={low}")
     treatments = []
     if high:
-        positives = getTreatmeants(treatments_cate, 'positive')
+        positives = getTreatmeants(treatments_cate, 'positive', df_g, dag, ordinal_atts, target)
     if low:
-        negatives = getTreatmeants(treatments_cate, 'negative')
+        negatives = getTreatmeants(treatments_cate, 'negative', df_g, dag, ordinal_atts, target)
     if high:
         treatments = getCombTreatments(df_g, positives, treatments, ordinal_atts)
     if low:
@@ -120,16 +120,16 @@ def getLevel1treatments(atts, df,ordinal_atts):
             ans.append(p)
     return ans
 
-def getTreatmeants(treatments_cate, bound):
+def getTreatmeants(treatments_cate, bound, df_g, DAG, ordinal_atts, target):
     logging.debug(f"getTreatmeants input: treatments_cate={treatments_cate}, bound={bound}")
     ans = []
     if isinstance(treatments_cate, list):
         for treatment in treatments_cate:
             if bound == 'positive':
-                if Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target) > 0:
+                if getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target) > 0:
                     ans.append(treatment)
             if bound == 'negative':
-                if Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target) < 0:
+                if getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target) < 0:
                     ans.append(treatment)
     else:
         for k,v in treatments_cate.items():

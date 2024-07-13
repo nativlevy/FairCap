@@ -139,6 +139,7 @@ def main():
         for attribute, value in pattern.items():
             logging.debug(f"  {attribute}: {value}")
 
+
     # Get treatments for each grouping pattern
     DAG = SO_DAG
     ordinal_atts = {}  # Define your ordinal attributes here
@@ -174,8 +175,8 @@ def main():
     logging.info(f"Created {len(rules)} Rule objects")
 
     # Run greedy algorithm
-    coverage_threshold = 0.5
-    max_rules = 7
+    coverage_threshold = 0.001
+    max_rules = 30
     total_individuals = len(df)  # Use the total number of rows in the dataframe
     logging.info(f"Running greedy algorithm with coverage threshold {coverage_threshold} and max {max_rules} rules")
     selected_rules = greedy_fair_prescription_rules(rules, protected_group, coverage_threshold, max_rules, total_individuals)
