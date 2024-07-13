@@ -140,7 +140,7 @@ def main():
     actionable_atts = [
         'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',
         'Age'
-    ]  # Define your actionable attributes here
+    ]
 
     logging.info("Getting treatments for each grouping pattern")
     groups_dic, _ = getGroupstreatmentsforGreeedy(DAG, df, grouping_attribute, grouping_patterns, ordinal_atts, targetClass, True, False, actionable_atts, True)
