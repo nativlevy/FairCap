@@ -65,14 +65,13 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     return score
 
 def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int], coverage_threshold: float,
-                                   max_rules: int) -> List[Rule]:
+                                   max_rules: int, total_individuals: int) -> List[Rule]:
     solution = []
     covered = set()
     covered_protected = set()
     total_utility = 0
     protected_utility = 0
 
-    total_individuals = len(rules[0].covered_indices)
     unprotected_count = total_individuals - len(protected_group)
     logging.info(f"Starting greedy algorithm with {len(rules)} rules, "
                  f"{len(protected_group)} protected individuals, "
@@ -162,8 +161,9 @@ def main():
     # Run greedy algorithm
     coverage_threshold = 0.8
     max_rules = 10
+    total_individuals = len(df)  # Use the total number of rows in the dataframe
     logging.info(f"Running greedy algorithm with coverage threshold {coverage_threshold} and max {max_rules} rules")
-    selected_rules = greedy_fair_prescription_rules(rules, protected_group, coverage_threshold, max_rules)
+    selected_rules = greedy_fair_prescription_rules(rules, protected_group, coverage_threshold, max_rules, total_individuals)
 
     # Print selected rules
     for i, rule in enumerate(selected_rules, 1):
