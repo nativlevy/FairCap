@@ -4,6 +4,10 @@ from Algorithms import getAllGroups, getGroupstreatmentsforGreeedy
 from functional_deps import calculate_functional_dependencies
 import Utils
 from dags import SO_DAG
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Rule:
     def __init__(self, condition: Dict, treatment: Dict, covered_indices: Set[int],
@@ -16,10 +20,15 @@ class Rule:
         self.protected_utility = protected_utility
 
 def load_data(file_path: str) -> pd.DataFrame:
-    return pd.read_csv(file_path)
+    logging.info(f"Loading data from {file_path}")
+    df = pd.read_csv(file_path)
+    logging.info(f"Loaded {len(df)} rows and {len(df.columns)} columns")
+    return df
 
 def get_grouping_patterns(df: pd.DataFrame, fds: List[str], apriori: float) -> List[dict]:
+    logging.info(f"Getting grouping patterns with apriori={apriori}")
     grouping_patterns = getAllGroups(df, fds, apriori)
+    logging.info(f"Found {len(grouping_patterns)} grouping patterns")
     return grouping_patterns
 
 def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_protected: Set[int],
@@ -29,6 +38,7 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     new_covered_protected = rule.covered_protected_indices - covered_protected
 
     if len(rule.covered_indices) == 0:
+        logging.warning("Rule covers no individuals, returning -inf score")
         return float('-inf')
 
     utility_increase = rule.utility
@@ -47,6 +57,11 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
 
     score = (utility_increase + protected_utility_increase) * fairness_factor * coverage_factor * unfairness_score
 
+    logging.debug(f"Rule score: {score:.4f} (utility_increase: {utility_increase:.4f}, "
+                  f"protected_utility_increase: {protected_utility_increase:.4f}, "
+                  f"fairness_factor: {fairness_factor:.4f}, coverage_factor: {coverage_factor:.4f}, "
+                  f"unfairness_score: {unfairness_score:.4f})")
+
     return score
 
 def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int], coverage_threshold: float,
@@ -56,6 +71,10 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
     covered_protected = set()
     total_utility = 0
     protected_utility = 0
+
+    logging.info(f"Starting greedy algorithm with {len(rules)} rules, "
+                 f"{len(protected_group)} protected individuals, "
+                 f"coverage threshold {coverage_threshold}, and max {max_rules} rules")
 
     while len(solution) < max_rules:
         best_rule = None
@@ -70,6 +89,7 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
                     best_rule = rule
 
         if best_rule is None:
+            logging.info("No more rules can improve the solution, stopping")
             break
 
         solution.append(best_rule)
@@ -77,6 +97,9 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
         covered_protected.update(best_rule.covered_protected_indices)
         total_utility += best_rule.utility
         protected_utility += best_rule.protected_utility
+
+        logging.info(f"Added rule {len(solution)}: score={best_score:.4f}, "
+                     f"total_covered={len(covered)}, protected_covered={len(covered_protected)}")
 
     return solution
 
@@ -90,10 +113,11 @@ def main():
 
     # add the grouping attribute to the list of functional dependencies as the first element
     fds = [grouping_attribute] + fds
-    print(f"Functional Dependencies: {fds}")
+    logging.info(f"Functional Dependencies: {fds}")
 
     # Define protected group (non-male in this case)
     protected_group = set(df[df['Gender'] != 'Male'].index)
+    logging.info(f"Protected group size: {len(protected_group)} out of {len(df)} total")
 
     APRIORI = 0.1
 
@@ -102,10 +126,9 @@ def main():
 
     # Print each grouping pattern
     for i, pattern in enumerate(grouping_patterns, 1):
-        print(f"Grouping Pattern {i}:")
+        logging.debug(f"Grouping Pattern {i}:")
         for attribute, value in pattern.items():
-            print(f"  {attribute}: {value}")
-        print()
+            logging.debug(f"  {attribute}: {value}")
 
     # Get treatments for each grouping pattern
     DAG = SO_DAG
@@ -117,6 +140,7 @@ def main():
         'Age'
     ]  # Define your actionable attributes here
 
+    logging.info("Getting treatments for each grouping pattern")
     groups_dic, _ = getGroupstreatmentsforGreeedy(DAG, df, grouping_attribute, grouping_patterns, ordinal_atts, targetClass, True, False, actionable_atts, True)
 
     # Create Rule objects
@@ -130,21 +154,23 @@ def main():
         protected_utility = utility * len(covered_protected_indices) / len(covered_indices)
         rules.append(Rule(condition, treatment, covered_indices, covered_protected_indices, utility, protected_utility))
 
+    logging.info(f"Created {len(rules)} Rule objects")
+
     # Run greedy algorithm
     coverage_threshold = 0.8
     max_rules = 10
+    logging.info(f"Running greedy algorithm with coverage threshold {coverage_threshold} and max {max_rules} rules")
     selected_rules = greedy_fair_prescription_rules(rules, protected_group, coverage_threshold, max_rules)
 
     # Print selected rules
     for i, rule in enumerate(selected_rules, 1):
-        print(f"Rule {i}:")
-        print(f"  Condition: {rule.condition}")
-        print(f"  Treatment: {rule.treatment}")
-        print(f"  Utility: {rule.utility}")
-        print(f"  Protected Utility: {rule.protected_utility}")
-        print(f"  Coverage: {len(rule.covered_indices)}")
-        print(f"  Protected Coverage: {len(rule.covered_protected_indices)}")
-        print()
+        logging.info(f"Rule {i}:")
+        logging.info(f"  Condition: {rule.condition}")
+        logging.info(f"  Treatment: {rule.treatment}")
+        logging.info(f"  Utility: {rule.utility}")
+        logging.info(f"  Protected Utility: {rule.protected_utility}")
+        logging.info(f"  Coverage: {len(rule.covered_indices)}")
+        logging.info(f"  Protected Coverage: {len(rule.covered_protected_indices)}")
 
     # Calculate final fairness measure
     total_coverage = set().union(*[rule.covered_indices for rule in selected_rules])
@@ -157,7 +183,9 @@ def main():
         (total_utility / len(total_coverage))
     )
 
-    print(f"Final Fairness Measure: {fairness_measure}")
+    logging.info(f"Final Fairness Measure: {fairness_measure}")
+    logging.info(f"Total Coverage: {len(total_coverage)} out of {len(df)} ({len(total_coverage)/len(df)*100:.2f}%)")
+    logging.info(f"Protected Coverage: {len(total_protected_coverage)} out of {len(protected_group)} ({len(total_protected_coverage)/len(protected_group)*100:.2f}%)")
 
 if __name__ == "__main__":
     main()
