@@ -7,6 +7,8 @@ from itertools import product
 import ast
 import copy
 from z3 import *
+import logging
+
 THRESHOLD = 0.1
 
 def getRandomTreatment(atts, df):
@@ -18,7 +20,7 @@ def getRandomTreatment(atts, df):
         val = random.choice(list(set(df[a].tolist())))
         ans[a] = val
     df['TempTreatment'] = df.apply(lambda row: addTempTreatment(row, ans), axis=1)
-    print(df['TempTreatment'].value_counts())
+    logging.info(f"TempTreatment value counts: {df['TempTreatment'].value_counts()}")
     valid = list(set(df['TempTreatment'].tolist()))
     # no tuples in treatment group
     if len(valid) < 2:
@@ -41,9 +43,8 @@ def getAllTreatments(atts, df):
             # no tuples in treatment group
             if len(valid) < 2:
                 continue
-            #print(p)
             ans.append(p)
-    print("number of patterns to consider: ", len(ans))
+    logging.info(f"Number of patterns to consider: {len(ans)}")
     return ans
 
 def countHighLow(df, bound, att):
@@ -142,7 +143,7 @@ def getCates(DAG, t_h,t_l,cate_h, cate_l, df_g, ordinal_atts, target, treatments
             cate_l = CATE
             t_l = treatment
 
-    print("Debug - treatments_cate in getCates:", treatments_cate)
+    logging.debug(f"treatments_cate in getCates: {treatments_cate}")
 
     return treatments_cate, t_h, cate_h, t_l,cate_l
 
@@ -157,7 +158,7 @@ def getCatesGreedy(DAG, t_h, cate_h, df_g, ordinal_atts, target, treatments):
             cate_h = CATE
             t_h = treatment
 
-    print("Debug - treatments_cate in getCatesGreedy:", treatments_cate)
+    logging.debug(f"treatments_cate in getCatesGreedy: {treatments_cate}")
 
     return treatments_cate, t_h, cate_h
 
@@ -174,12 +175,11 @@ def getTreatmentCATE(df_g, DAG,treatment,ordinal_atts,target):
         ATE, p_value = estimateATE(causal_graph, df_g, 'TempTreatment', target)
         if p_value > THRESHOLD:
             ATE = 0
-    # print(treatment, c, ATE, p_value)
     except:
         ATE = 0
         p_value = 0
 
-    print(f"Debug - Treatment: {treatment}, ATE: {ATE}, p_value: {p_value}")
+    logging.debug(f"Treatment: {treatment}, ATE: {ATE}, p_value: {p_value}")
 
     return ATE
 
@@ -239,8 +239,6 @@ def estimateATE(causal_graph, df, T, O):
     return causal_estimate_reg.value, causal_estimate_reg.test_stat_significance()['p_value']
 
 def LP_solver(sets, weights, tau, k, m):
-    # for s in sets:
-    #     print(sets[s], weights[s])
     solver = Optimize()
 
     # Create a boolean variable for each set
@@ -251,13 +249,9 @@ def LP_solver(sets, weights, tau, k, m):
 
     # Add the constraint that at least tau fraction of all elements must be covered
     elements = set.union(*[set(sets[name]) for name in sets])
-    # print(elements)
-    # print(tau, m, tau*m)
     element_covered = [Bool(f"Element_{element}") for element in elements]
     for i, element in enumerate(elements):
         solver.add(Implies(element_covered[i], Or([set_vars[name] for name in sets if element in sets[name]])))
-        # covered_sets = [set_vars[name] for name in sets if element in sets[name]]
-        # solver.add(element_covered[i] <= Sum(covered_sets))
 
     solver.add(Sum(element_covered) >= (tau * m))
 
@@ -270,5 +264,5 @@ def LP_solver(sets, weights, tau, k, m):
         selected_sets = [name for name in sets if is_true(model[set_vars[name]])]
         return selected_sets
     else:
-        print("no solution was found!")
+        logging.warning("No solution was found!")
         return []

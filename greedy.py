@@ -132,7 +132,7 @@ def main():
     # Get the Grouping Patterns
     grouping_patterns = get_grouping_patterns(df, fds, APRIORI)
 
-    # Print each grouping pattern
+    # Log each grouping pattern
     for i, pattern in enumerate(grouping_patterns, 1):
         logging.debug(f"Grouping Pattern {i}:")
         for attribute, value in pattern.items():
@@ -171,7 +171,7 @@ def main():
     logging.info(f"Running greedy algorithm with coverage threshold {coverage_threshold} and max {max_rules} rules")
     selected_rules = greedy_fair_prescription_rules(rules, protected_group, coverage_threshold, max_rules, total_individuals)
 
-    # Print selected rules
+    # Log selected rules
     for i, rule in enumerate(selected_rules, 1):
         logging.info(f"Rule {i}:")
         logging.info(f"  Condition: {rule.condition}")
