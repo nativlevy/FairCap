@@ -2,13 +2,16 @@ import pandas as pd
 from apyori import apriori
 from mlxtend.frequent_patterns import apriori
 from mlxtend.preprocessing import TransactionEncoder
+import logging
 
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 
 def addColName(row, col):
     val = row[col]
     return col +" = "+str(val)
 
 def removeHeader(df_org, name):
+    logging.info(f"Removing header and processing dataframe for {name}")
     df = df_org.copy(deep = True)
     columns = df.columns
     for col in columns:
@@ -25,19 +28,17 @@ def removeHeader(df_org, name):
     #             new_row = row.copy(deep = True)
     #             new_row[att] = implied_val
     #             rows_to_add.append(new_row)
-    # print('before implied rows: ', len(df))
+    # logging.debug(f'Before implied rows: {len(df)}')
     # for row in rows_to_add:
     #     df.loc[len(df)] = row
-    # print('after implied rows: ', len(df))
+    # logging.debug(f'After implied rows: {len(df)}')
     df.to_csv(name, header=None, index=False)
 
     df = pd.read_csv(name, header=None)
     rows = len(df)
     columns = len(df.columns)
-    print("size of df: ",rows, columns)
+    logging.info(f"Size of df: {rows} rows, {columns} columns")
     return df, rows, columns
-
-
 
 def all_equal_ivo(lst):
     return not lst or lst.count(lst[0]) == len(lst)
@@ -49,13 +50,13 @@ def aggregateColumn(att, g,k):
     else:
         return 'NotAllEqual'
 
-
-def getRules(df, rows, columns,min_support):
+def getRules(df, rows, columns, min_support):
+    logging.info(f"Getting rules with min_support={min_support}")
     records = []
     for i in range(0, rows):
         records.append([str(df.values[i, j]) for j in range(0, columns)])
 
-    print("num of records: ", len(records))
+    logging.info(f"Number of records: {len(records)}")
 
     te = TransactionEncoder()
 
@@ -66,7 +67,6 @@ def getRules(df, rows, columns,min_support):
     frequent_itemsets = apriori(df, min_support=min_support, use_colnames=True)
 
     rules = []
-    #print(frequent_itemsets)
     for index, row in frequent_itemsets.iterrows():
         parts = set(row["itemsets"])
         temp = {}
@@ -74,9 +74,6 @@ def getRules(df, rows, columns,min_support):
             part = part.split("=")
             temp[part[0].strip()] = part[1].strip()
         rules.append(temp)
+    
+    logging.info(f"Generated {len(rules)} rules")
     return rules
-
-
-
-
-
