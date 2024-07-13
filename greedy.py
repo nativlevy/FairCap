@@ -72,7 +72,8 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
     total_utility = 0
     protected_utility = 0
 
-    unprotected_count = len(rules[0].covered_indices) - len(protected_group)
+    total_individuals = len(rules[0].covered_indices)
+    unprotected_count = total_individuals - len(protected_group)
     logging.info(f"Starting greedy algorithm with {len(rules)} rules, "
                  f"{len(protected_group)} protected individuals, "
                  f"{unprotected_count} unprotected individuals, "
