@@ -5,10 +5,12 @@ import Utils
 import warnings
 import Data2Transactions
 import time
+import logging
 warnings.filterwarnings('ignore')
 PATH = "./data/"
 CPU_COUNT = 8
 
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 
 def filterPatterns(df, groupingAtt, groups):
     groups_dic = {}
@@ -58,7 +60,7 @@ def getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, groups, ordinal_atts, ta
     elapsed_time = time.time() - start_time
 
     if print_times:
-        print(f"Elapsed time step 2: {elapsed_time} seconds")
+        logging.info(f"Elapsed time step 2: {elapsed_time} seconds")
     return groups_dic, elapsed_time
 
 
@@ -103,30 +105,30 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, high, low
     df_g.drop(dropAtt, axis=1, inplace=True)
     actionable_atts = [a for a in actionable_atts_org if not a in dropAtt]
     df_g = df_g.loc[:, ~df_g.columns.str.contains('^Unnamed')]
-    print('starting group: ', group)
+    logging.info(f'Starting group: {group}')
     treatments = Utils.getLevel1treatments(actionable_atts, df_g, ordinal_atts)
-    print('num of treatments at level I: ', len(treatments))
+    logging.info(f'Number of treatments at level I: {len(treatments)}')
 
     t_h = None
     cate_h = 0
     treatments_cate, t_h, cate_h = Utils.getCatesGreedy(DAG, t_h, cate_h, df_g, ordinal_atts, target, treatments)
 
-    print("Debug - treatments_cate before filtering:", treatments_cate)
+    logging.debug(f"Debug - treatments_cate before filtering: {treatments_cate}")
 
     treatments_cate = filter_above_median(treatments_cate)
 
     treatments = Utils.getNextLeveltreatments(treatments_cate, df_g, ordinal_atts, high, False)
-    print('num of treatments at level II: ', len(treatments))
+    logging.info(f'Number of treatments at level II: {len(treatments)}')
     treatments_cate, t_h2, cate_h2 = Utils.getCatesGreedy(DAG, t_h, cate_h, df_g, ordinal_atts, target, treatments)
     
     if t_h2 != t_h:
-        print("high treatment found in level 2")
+        logging.info("High treatment found in level 2")
         t_h = t_h2
         cate_h = cate_h2
 
-    print('finished group: ', group)
-    print(t_h, cate_h)
-    print('#######################################')
+    logging.info(f'Finished group: {group}')
+    logging.info(f't_h: {t_h}, cate_h: {cate_h}')
+    logging.info('#######################################')
     return (t_h, cate_h)
 
 
@@ -141,6 +143,6 @@ def filter_above_median(treatments_cate):
     filtered = {treatment: value for treatment, value in treatments_cate.items()
                 if value > positive_median}
 
-    print(f"filtered treatments_cate: {filtered}")
+    logging.debug(f"Filtered treatments_cate: {filtered}")
 
     return filtered
