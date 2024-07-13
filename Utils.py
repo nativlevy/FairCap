@@ -215,6 +215,10 @@ def changeDAG(dag, randomTreatment):
     for a in toAdd:
         if not a in DAG:
             DAG.append(a)
+    
+    # Ensure TempTreatment is connected to the outcome
+    DAG.append('TempTreatment -> ConvertedSalary;')
+    
     return list(set(DAG))
 
 def estimateATE(causal_graph, df, T, O):
