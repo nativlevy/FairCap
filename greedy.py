@@ -6,7 +6,6 @@ import Utils
 from dags import SO_DAG
 import logging
 
-# Set up logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 
 class Rule:
@@ -159,8 +158,8 @@ def main():
     logging.info(f"Created {len(rules)} Rule objects")
 
     # Run greedy algorithm
-    coverage_threshold = 0.8
-    max_rules = 10
+    coverage_threshold = 0.3
+    max_rules = 3
     total_individuals = len(df)  # Use the total number of rows in the dataframe
     logging.info(f"Running greedy algorithm with coverage threshold {coverage_threshold} and max {max_rules} rules")
     selected_rules = greedy_fair_prescription_rules(rules, protected_group, coverage_threshold, max_rules, total_individuals)
