@@ -1,5 +1,0 @@
-unprotected_count = len(rules[0].covered_indices) - len(protected_group)
-logging.info(f"Starting greedy algorithm with {len(rules)} rules, "
-             f"{len(protected_group)} protected individuals, "
-             f"{unprotected_count} unprotected individuals, "
-             f"coverage threshold {coverage_threshold}, and max {max_rules} rules")
