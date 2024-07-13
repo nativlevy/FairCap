@@ -1,8 +1,9 @@
 import pandas as pd
 from typing import List, Set, Dict
 from Algorithms import getAllGroups, getGroupstreatmentsforGreeedy
-from ui.functional_deps import calculate_functional_dependencies
+from functional_deps import calculate_functional_dependencies
 import Utils
+from dags import SO_DAG
 
 class Rule:
     def __init__(self, condition: Dict, treatment: Dict, covered_indices: Set[int],
@@ -107,10 +108,14 @@ def main():
         print()
 
     # Get treatments for each grouping pattern
-    DAG = []  # Define your DAG here
+    DAG = SO_DAG
     ordinal_atts = {}  # Define your ordinal attributes here
-    targetClass = 'Salary'  # Define your target class
-    actionable_atts = []  # Define your actionable attributes here
+    targetClass = 'ConvertedSalary'
+    groupingAtt = 'Country'
+    actionable_atts = [
+        'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',
+        'Age'
+    ]  # Define your actionable attributes here
 
     groups_dic, _ = getGroupstreatmentsforGreeedy(DAG, df, grouping_attribute, grouping_patterns, ordinal_atts, targetClass, True, False, actionable_atts, True)
 
