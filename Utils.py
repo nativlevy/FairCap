@@ -46,8 +46,6 @@ def getAllTreatments(atts, df):
     print("number of patterns to consider: ", len(ans))
     return ans
 
-
-
 def countHighLow(df, bound, att):
     vals = df[att].tolist()
 
@@ -67,7 +65,6 @@ def getAttsVals(atts,df):
         ans[a] = vals
     return ans
 
-
 def getNextLeveltreatments(treatments_cate, df_g, ordinal_atts, high, low):
     treatments = []
     if high:
@@ -79,7 +76,6 @@ def getNextLeveltreatments(treatments_cate, df_g, ordinal_atts, high, low):
     if low:
         treatments = getCombTreatments(df_g, negatives, treatments, ordinal_atts)
     return treatments
-
 
 def getCombTreatments(df_g, positives, treatments, ordinal_atts):
     for comb in combinations(positives, 2):
@@ -150,8 +146,21 @@ def getCates(DAG, t_h,t_l,cate_h, cate_l, df_g, ordinal_atts, target, treatments
 
     return treatments_cate, t_h, cate_h, t_l,cate_l
 
-# I can remove the ordinal_atts parameter from this function
-# TODO: use this to calculate the CATE
+def getCatesGreedy(DAG, t_h, cate_h, df_g, ordinal_atts, target, treatments):
+    treatments_cate = {}
+    for treatment in treatments:
+        CATE = getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
+        if CATE == 0:
+            continue
+        treatments_cate[str(treatment)] = CATE
+        if CATE > cate_h:
+            cate_h = CATE
+            t_h = treatment
+
+    print("Debug - treatments_cate in getCatesGreedy:", treatments_cate)
+
+    return treatments_cate, t_h, cate_h
+
 def getTreatmentCATE(df_g, DAG,treatment,ordinal_atts,target):
     df_g['TempTreatment'] = df_g.apply(lambda row: addTempTreatment(row, treatment, ordinal_atts), axis=1)
     DAG_ = changeDAG(DAG, treatment)
@@ -173,7 +182,6 @@ def getTreatmentCATE(df_g, DAG,treatment,ordinal_atts,target):
     print(f"Debug - Treatment: {treatment}, ATE: {ATE}, p_value: {p_value}")
 
     return ATE
-
 
 def addTempTreatment(row, ans, ordinal_atts):
     for a in ans:
@@ -209,9 +217,6 @@ def changeDAG(dag, randomTreatment):
             DAG.append(a)
     return list(set(DAG))
 
-# TODO: use this function
-# we need to filter only for the records we need
-
 def estimateATE(causal_graph, df, T, O):
     model = CausalModel(
         data=df,
@@ -228,10 +233,6 @@ def estimateATE(causal_graph, df, T, O):
                                                 effect_modifiers = [],
                                                 test_significance=True)
     return causal_estimate_reg.value, causal_estimate_reg.test_stat_significance()['p_value']
-
-
-
-
 
 def LP_solver(sets, weights, tau, k, m):
     # for s in sets:
@@ -254,7 +255,6 @@ def LP_solver(sets, weights, tau, k, m):
         # covered_sets = [set_vars[name] for name in sets if element in sets[name]]
         # solver.add(element_covered[i] <= Sum(covered_sets))
 
-
     solver.add(Sum(element_covered) >= (tau * m))
 
     # Maximize the sum of weights
@@ -268,4 +268,3 @@ def LP_solver(sets, weights, tau, k, m):
     else:
         print("no solution was found!")
         return []
-
