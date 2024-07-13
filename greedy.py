@@ -107,7 +107,8 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
         protected_utility += best_rule.protected_utility
 
         logging.info(f"Added rule {len(solution)}: score={best_score:.4f}, "
-                     f"total_covered={len(covered)}, protected_covered={len(covered_protected)}")
+                     f"total_covered={len(covered)}, protected_covered={len(covered_protected)}, "
+                     f"total_utility={total_utility:.4f}, protected_utility={protected_utility:.4f}")
 
     return solution
 
@@ -158,7 +159,15 @@ def main():
         covered_indices = data[1]
         covered_protected_indices = covered_indices.intersection(protected_group)
         utility = data[3]
-        protected_utility = utility * len(covered_protected_indices) / len(covered_indices) if len(covered_indices) > 0 else 0
+        
+        # Calculate protected_utility based on the proportion of protected individuals covered
+        protected_proportion = len(covered_protected_indices) / len(covered_indices) if len(covered_indices) > 0 else 0
+        protected_utility = utility * protected_proportion
+        
+        logging.debug(f"Rule creation: covered={len(covered_indices)}, "
+                      f"protected_covered={len(covered_protected_indices)}, "
+                      f"utility={utility:.4f}, protected_utility={protected_utility:.4f}")
+        
         rules.append(Rule(condition, treatment, covered_indices, covered_protected_indices, utility, protected_utility))
 
     logging.info(f"Created {len(rules)} Rule objects")
@@ -175,8 +184,8 @@ def main():
         logging.info(f"Rule {i}:")
         logging.info(f"  Condition: {rule.condition}")
         logging.info(f"  Treatment: {rule.treatment}")
-        logging.info(f"  Utility: {rule.utility}")
-        logging.info(f"  Protected Utility: {rule.protected_utility}")
+        logging.info(f"  Utility: {rule.utility:.4f}")
+        logging.info(f"  Protected Utility: {rule.protected_utility:.4f}")
         logging.info(f"  Coverage: {len(rule.covered_indices)}")
         logging.info(f"  Protected Coverage: {len(rule.covered_protected_indices)}")
 
@@ -191,9 +200,11 @@ def main():
         (total_utility / len(total_coverage))
     ) if len(total_protected_coverage) > 0 and len(total_coverage) > 0 else float('inf')
 
-    logging.info(f"Final Fairness Measure: {fairness_measure}")
+    logging.info(f"Final Fairness Measure: {fairness_measure:.4f}")
     logging.info(f"Total Coverage: {len(total_coverage)} out of {len(df)} ({len(total_coverage)/len(df)*100:.2f}%)")
     logging.info(f"Protected Coverage: {len(total_protected_coverage)} out of {len(protected_group)} ({len(total_protected_coverage)/len(protected_group)*100:.2f}%)")
+    logging.info(f"Total Utility: {total_utility:.4f}")
+    logging.info(f"Total Protected Utility: {total_protected_utility:.4f}")
 
 
 if __name__ == "__main__":
