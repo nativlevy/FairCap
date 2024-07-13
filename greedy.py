@@ -17,6 +17,9 @@ class Rule:
         self.covered_protected_indices = covered_protected_indices
         self.utility = utility
         self.protected_utility = protected_utility
+        logging.debug(f"Rule created: condition={condition}, treatment={treatment}, "
+                      f"covered={len(covered_indices)}, protected_covered={len(covered_protected_indices)}, "
+                      f"utility={utility}, protected_utility={protected_utility}")
 
 def load_data(file_path: str) -> pd.DataFrame:
     logging.info(f"Loading data from {file_path}")
@@ -36,12 +39,16 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     new_covered = rule.covered_indices - covered
     new_covered_protected = rule.covered_protected_indices - covered_protected
 
+    logging.debug(f"Scoring rule: new_covered={len(new_covered)}, new_covered_protected={len(new_covered_protected)}")
+
     if len(rule.covered_indices) == 0:
         logging.warning("Rule covers no individuals, returning -inf score")
         return float('-inf')
 
     utility_increase = rule.utility
     protected_utility_increase = rule.protected_utility
+
+    logging.debug(f"Utility increase: {utility_increase}, Protected utility increase: {protected_utility_increase}")
 
     if len(covered_protected) + len(new_covered_protected) == 0:
         fairness_factor = 1
@@ -152,7 +159,7 @@ def main():
         covered_indices = data[1]
         covered_protected_indices = covered_indices.intersection(protected_group)
         utility = data[3]
-        protected_utility = utility * len(covered_protected_indices) / len(covered_indices)
+        protected_utility = utility * len(covered_protected_indices) / len(covered_indices) if len(covered_indices) > 0 else 0
         rules.append(Rule(condition, treatment, covered_indices, covered_protected_indices, utility, protected_utility))
 
     logging.info(f"Created {len(rules)} Rule objects")
@@ -183,7 +190,7 @@ def main():
     fairness_measure = abs(
         (total_protected_utility / len(total_protected_coverage)) -
         (total_utility / len(total_coverage))
-    )
+    ) if len(total_protected_coverage) > 0 and len(total_coverage) > 0 else float('inf')
 
     logging.info(f"Final Fairness Measure: {fairness_measure}")
     logging.info(f"Total Coverage: {len(total_coverage)} out of {len(df)} ({len(total_coverage)/len(df)*100:.2f}%)")
