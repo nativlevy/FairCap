@@ -166,7 +166,8 @@ def main():
         
         logging.debug(f"Rule creation: covered={len(covered_indices)}, "
                       f"protected_covered={len(covered_protected_indices)}, "
-                      f"utility={utility:.4f}, protected_utility={protected_utility:.4f}")
+                      f"utility={utility:.4f}, protected_utility={protected_utility:.4f}, "
+                      f"protected_proportion={protected_proportion:.4f}")
         
         rules.append(Rule(condition, treatment, covered_indices, covered_protected_indices, utility, protected_utility))
 
