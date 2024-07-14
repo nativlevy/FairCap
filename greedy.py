@@ -134,6 +134,10 @@ def main():
     protected_group = set(df[df['Gender'] != 'Male'].index)
     logging.info(f"Protected group size: {len(protected_group)} out of {len(df)} total")
 
+    # Debug: Check the distribution of Gender
+    gender_distribution = df['Gender'].value_counts()
+    logging.info(f"Gender distribution:\n{gender_distribution}")
+
     APRIORI = 0.1
 
     # Get the Grouping Patterns
@@ -170,8 +174,8 @@ def main():
         protected_proportion = len(covered_protected_indices) / len(covered_indices) if len(covered_indices) > 0 else 0
         protected_utility = utility * protected_proportion
         
-        logging.debug(f"Rule creation: covered={len(covered_indices)}, "
-                      f"protected_covered={len(covered_protected_indices)}, "
+        logging.debug(f"Rule creation: condition={condition}, treatment={treatment}, "
+                      f"covered={len(covered_indices)}, protected_covered={len(covered_protected_indices)}, "
                       f"utility={utility:.4f}, protected_utility={protected_utility:.4f}, "
                       f"protected_proportion={protected_proportion:.4f}")
         
