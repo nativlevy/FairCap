@@ -53,7 +53,7 @@ def getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, groups, ordinal_atts, ta
     arg_list = [(group, df, groups_dic, groupingAtt, targetClass, DAG, ordinal_atts, high, low,
                  actionable_atts) for group in groups]
     # Create a non-daemonic process pool
-    with multiprocessing.get_context('spawn').Pool() as pool:
+    with multiprocessing.get_context('spawn').Pool() as pool: # TODO: remove this - do not use multiprocessing
         # Apply the update_dictionary function to each argument in parallel
         pool.starmap(process_group_greedy, arg_list)
 
