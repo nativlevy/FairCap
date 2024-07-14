@@ -33,7 +33,6 @@ def get_grouping_patterns(df: pd.DataFrame, fds: List[str], apriori: float) -> L
     for i, pattern in enumerate(grouping_patterns):
         logging.debug(f"Initial pattern {i}: {pattern}")
     
-    # 1. apply the grouping patterns to the data. If you find 2 or more patterns that cover the same individuals, keep the one with the smallest number of filters.
     filtered_patterns = []
     covered_individuals = set()
     
@@ -55,7 +54,6 @@ def get_grouping_patterns(df: pd.DataFrame, fds: List[str], apriori: float) -> L
     for i, pattern in enumerate(filtered_patterns):
         logging.debug(f"Final filtered pattern {i}: {pattern}")
     
-    # Log the patterns that were removed
     removed_patterns = set(map(frozenset, grouping_patterns)) - set(map(frozenset, filtered_patterns))
     for i, pattern in enumerate(removed_patterns):
         logging.debug(f"Removed pattern {i}: {pattern}")
@@ -66,6 +64,29 @@ def calculate_fairness_score(rule: Rule) -> float:
     if rule.utility == rule.protected_utility:
         return rule.utility
     return rule.utility / abs(rule.utility - rule.protected_utility)
+
+def calculate_expected_utility(rules: List[Rule]) -> float:
+    """
+    Calculate the expected utility of a set of rules according to the formula:
+    ExpUtility(R) = (1 / |coverage(R)|) * sum(min(utility(r)) for t in coverage(R))
+    where R_t is the set of rules covering the tuple t.
+    """
+    coverage = set()
+    for rule in rules:
+        coverage.update(rule.covered_indices)
+    
+    if not coverage:
+        return 0.0
+    
+    total_utility = 0.0
+    for t in coverage:
+        rules_covering_t = [r for r in rules if t in r.covered_indices]
+        min_utility = min(r.utility for r in rules_covering_t)
+        total_utility += min_utility
+    
+    expected_utility = total_utility / len(coverage)
+    logging.debug(f"Expected Utility: {expected_utility:.4f}")
+    return expected_utility
 
 def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_protected: Set[int],
                total_utility: float, protected_utility: float, protected_group: Set[int],
@@ -79,18 +100,16 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
         logging.warning("Rule covers no individuals, returning -inf score")
         return float('-inf')
 
-    utility_increase = rule.utility
-    protected_utility_increase = rule.protected_utility
-
-    logging.debug(f"Utility increase: {utility_increase}, Protected utility increase: {protected_utility_increase}")
+    # Calculate expected utility with the new rule added to the solution
+    new_solution = solution + [rule]
+    expected_utility = calculate_expected_utility(new_solution)
 
     fairness_score = calculate_fairness_score(rule)
     coverage_factor = (len(new_covered_protected) / len(protected_group)) / coverage_threshold if coverage_threshold > 0 else 1
 
-    score = (utility_increase + protected_utility_increase) * fairness_score * coverage_factor
+    score = expected_utility * fairness_score * coverage_factor
 
-    logging.debug(f"Rule score: {score:.4f} (utility_increase: {utility_increase:.4f}, "
-                  f"protected_utility_increase: {protected_utility_increase:.4f}, "
+    logging.debug(f"Rule score: {score:.4f} (expected_utility: {expected_utility:.4f}, "
                   f"fairness_score: {fairness_score:.4f}, coverage_factor: {coverage_factor:.4f}")
 
     return score
@@ -168,19 +187,6 @@ def main():
     logging.info(f"Gender distribution:\n{gender_distribution}")
 
     APRIORI = 0.1
-
-    # Get the Grouping Patterns
-    # grouping_patterns = get_grouping_patterns(df, fds, APRIORI)
-    #
-    # # Log each grouping pattern
-    # for i, pattern in enumerate(grouping_patterns, 1):
-    #     logging.debug(f"Grouping Pattern {i}:")
-    #     for attribute, value in pattern.items():
-    #         logging.debug(f"  {attribute}: {value}")
-    #
-    # # save the grouping patterns to a file as json
-    # with open('grouping_patterns.json', 'w') as f:
-    #     json.dump(grouping_patterns, f)
 
     # load from file
     with open('grouping_patterns.json', 'r') as f:
