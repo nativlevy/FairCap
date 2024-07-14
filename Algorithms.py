@@ -36,6 +36,7 @@ def filterPatterns(df, groupingAtt, groups):
     return ans
 
 def getAllGroups(df_org, atts, t):
+    # TODO: if we have 2 grouping patterns that define the same records, prune and leave only one - the shorter one (less terms)
     df = df_org.copy(deep=True)
     df = df[atts]
     df, rows, columns = Data2Transactions.removeHeader(df, 'Temp.csv')
@@ -74,6 +75,7 @@ def getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, groups, ordinal_atts, ta
         which can significantly speed up the computation for large datasets or
         many groups.
     """
+    # TODO: filter treatment: only save the treatment with the best CATE, best CATE protected, best fairness score
     start_time = time.time()
 
     # Create a partial function with fixed arguments
