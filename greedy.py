@@ -27,6 +27,10 @@ def load_data(file_path: str) -> pd.DataFrame:
 def get_grouping_patterns(df: pd.DataFrame, fds: List[str], apriori: float) -> List[dict]:
     logging.info(f"Getting grouping patterns with apriori={apriori}")
     grouping_patterns = getAllGroups(df, fds, apriori)
+
+    # 1. apply the grouping patterns to the data. If you find 2 or more patterns that cover the same individuals, keep the one with the smallest number of filters.
+
+
     logging.info(f"Found {len(grouping_patterns)} grouping patterns")
     return grouping_patterns
 
@@ -140,13 +144,13 @@ def main():
     # Get the Grouping Patterns
     grouping_patterns = get_grouping_patterns(df, fds, APRIORI)
 
+    return
+
     # Log each grouping pattern
     for i, pattern in enumerate(grouping_patterns, 1):
         logging.debug(f"Grouping Pattern {i}:")
         for attribute, value in pattern.items():
             logging.debug(f"  {attribute}: {value}")
-
-    # TODO: check with Brit if the grouping patterns are correct
 
     # Get treatments for each grouping pattern
     DAG = SO_DAG
@@ -159,6 +163,7 @@ def main():
 
     logging.info("Getting treatments for each grouping pattern")
     group_treatments, _ = getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, grouping_patterns, ordinal_atts, targetClass, True, False, actionable_atts, True, protected_group)
+
 
     # Create Rule objects
     rules = []
