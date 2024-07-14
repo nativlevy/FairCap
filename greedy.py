@@ -121,6 +121,7 @@ def main():
     fds = calculate_functional_dependencies(df, groupingAtt)
 
     # add the grouping attribute to the list of functional dependencies as the first element
+    # TODO: should I add [groupingAtt] to the list of fds?
     fds = [groupingAtt] + fds
     logging.info(f"Functional Dependencies: {fds}")
 
@@ -142,7 +143,7 @@ def main():
 
     # Get treatments for each grouping pattern
     DAG = SO_DAG
-    ordinal_atts = {}  # Define your ordinal attributes here
+    ordinal_atts = {}  # TODO: should this be empty?
     targetClass = 'ConvertedSalary'
     actionable_atts = [
         'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',

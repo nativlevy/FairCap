@@ -113,9 +113,10 @@ def getLevel1treatments(atts, df,ordinal_atts):
             if len(valid) < 2:
                 continue
             size = len(df[df['TempTreatment'] == 1])
-            count=count+1
+            count = count+1
             # treatment group is too big or too small
             if size > 0.9*len(df) or size < 0.1*len(df):
+                logging.debug(f"Treatment group {p} is too big or too small: {size} out of total {len(df)}")
                 continue
             ans.append(p)
     return ans
