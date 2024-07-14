@@ -5,6 +5,9 @@ import warnings
 import Data2Transactions
 import time
 import logging
+import multiprocessing
+from functools import partial
+
 warnings.filterwarnings('ignore')
 PATH = "./data/"
 
@@ -41,12 +44,19 @@ def getAllGroups(df_org, atts, t):
 
 def getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, groups, ordinal_atts, targetClass,
                         high, low, actionable_atts, print_times, sample = False):
-    groups_dic = {}
-    elapsed_time = 0
-
     start_time = time.time()
-    for group in groups:
-        process_group_greedy(group, df, groups_dic, groupingAtt, targetClass, DAG, ordinal_atts, actionable_atts)
+
+    # Create a partial function with fixed arguments
+    process_group_partial = partial(process_group_greedy, df=df, groupingAtt=groupingAtt, 
+                                    targetClass=targetClass, DAG=DAG, ordinal_atts=ordinal_atts, 
+                                    actionable_atts=actionable_atts)
+
+    # Use multiprocessing to process groups in parallel
+    with multiprocessing.Pool() as pool:
+        results = pool.map(process_group_partial, groups)
+
+    # Combine results into groups_dic
+    groups_dic = {str(group): result for group, result in zip(groups, results)}
 
     elapsed_time = time.time() - start_time
 
@@ -54,9 +64,7 @@ def getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, groups, ordinal_atts, ta
         logging.info(f"Elapsed time step 2: {elapsed_time} seconds")
     return groups_dic, elapsed_time
 
-def process_group_greedy(group, df, groups_dic, groupingAtt, targetClass,
-                   DAG, ordinal_atts, actionable_atts):
-
+def process_group_greedy(group, df, groupingAtt, targetClass, DAG, ordinal_atts, actionable_atts):
     df['GROUP_MEMBER'] = df.apply(lambda row: isGroupMember(row, group), axis=1)
     df_g = df[df['GROUP_MEMBER'] == 1]
     drop_atts = list(group.keys())
@@ -69,7 +77,7 @@ def process_group_greedy(group, df, groups_dic, groupingAtt, targetClass,
                                       DAG, drop_atts,
                                       ordinal_atts, actionable_atts)
 
-    groups_dic[str(group)] = [len(df_g), covered, t_h, cate_h]
+    return [len(df_g), covered, t_h, cate_h]
 
 def isGroupMember(row, group):
     for att in group:
