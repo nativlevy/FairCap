@@ -17,9 +17,6 @@ class Rule:
         self.covered_protected_indices = covered_protected_indices
         self.utility = utility
         self.protected_utility = protected_utility
-        logging.debug(f"Rule created: condition={condition}, treatment={treatment}, "
-                      f"covered={len(covered_indices)}, protected_covered={len(covered_protected_indices)}, "
-                      f"utility={utility}, protected_utility={protected_utility}")
 
 def load_data(file_path: str) -> pd.DataFrame:
     logging.info(f"Loading data from {file_path}")
@@ -187,9 +184,9 @@ def main():
     logging.info(f"Created {len(rules)} Rule objects")
 
     # Run greedy algorithm
-    coverage_threshold = 0.001
-    max_rules = 10
-    fairness_threshold = 0.8
+    coverage_threshold = 0.1
+    max_rules = 5
+    fairness_threshold = 0.001
     total_individuals = len(df)
     logging.info(f"Running greedy algorithm with coverage threshold {coverage_threshold}, "
                  f"max {max_rules} rules, and fairness threshold {fairness_threshold}")
