@@ -90,7 +90,7 @@ def calculate_expected_utility(rules: List[Rule]) -> float:
 
 def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_protected: Set[int],
                total_utility: float, protected_utility: float, protected_group: Set[int],
-               coverage_threshold: float) -> float:
+               unprotected_coverage_threshold: float, protected_coverage_threshold: float) -> float:
     new_covered = rule.covered_indices - covered
     new_covered_protected = rule.covered_protected_indices - covered_protected
 
@@ -105,7 +105,13 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     expected_utility = calculate_expected_utility(new_solution)
 
     fairness_score = calculate_fairness_score(rule)
-    coverage_factor = (len(new_covered_protected) / len(protected_group)) / coverage_threshold if coverage_threshold > 0 else 1
+    
+    # Calculate coverage factors for both protected and unprotected groups
+    protected_coverage_factor = (len(new_covered_protected) / len(protected_group)) / protected_coverage_threshold if protected_coverage_threshold > 0 else 1
+    unprotected_coverage_factor = (len(new_covered - new_covered_protected) / (len(rule.covered_indices) - len(protected_group))) / unprotected_coverage_threshold if unprotected_coverage_threshold > 0 else 1
+
+    # Use the minimum of the two coverage factors
+    coverage_factor = min(protected_coverage_factor, unprotected_coverage_factor)
 
     score = expected_utility * fairness_score * coverage_factor
 
@@ -114,7 +120,8 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
 
     return score
 
-def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int], coverage_threshold: float,
+def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int], 
+                                   unprotected_coverage_threshold: float, protected_coverage_threshold: float,
                                    max_rules: int, total_individuals: int, fairness_threshold: float) -> List[Rule]:
     solution = []
     covered = set()
@@ -126,7 +133,9 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
     logging.info(f"Starting greedy algorithm with {len(rules)} rules, "
                  f"{len(protected_group)} protected individuals, "
                  f"{unprotected_count} unprotected individuals, "
-                 f"coverage threshold {coverage_threshold}, and max {max_rules} rules")
+                 f"protected coverage threshold {protected_coverage_threshold}, "
+                 f"unprotected coverage threshold {unprotected_coverage_threshold}, "
+                 f"and max {max_rules} rules")
 
     while len(solution) < max_rules:
         best_rule = None
@@ -135,7 +144,8 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
         for rule in rules:
             if rule not in solution:
                 score = score_rule(rule, solution, covered, covered_protected,
-                                   total_utility, protected_utility, protected_group, coverage_threshold)
+                                   total_utility, protected_utility, protected_group,
+                                   unprotected_coverage_threshold, protected_coverage_threshold)
                 if score > best_score:
                     best_score = score
                     best_rule = rule
@@ -232,11 +242,15 @@ def main():
     max_rules = 5
     fairness_threshold = 10000 # USD difference in utility between protected and unprotected groups
     total_individuals = len(df)
-    logging.info(f"Running greedy algorithm with coverage threshold {coverage_threshold}, "
+    logging.info(f"Running greedy algorithm with unprotected coverage threshold {unprotected_coverage_threshold}, "
+                 f"protected coverage threshold {protected_coverage_threshold}, "
                  f"max {max_rules} rules, and fairness threshold {fairness_threshold}")
-    logging.info(f"Coverage threshold {coverage_threshold} means at least {coverage_threshold * 100}% "
+    logging.info(f"Unprotected coverage threshold {unprotected_coverage_threshold} means at least {unprotected_coverage_threshold * 100}% "
+                 f"of the unprotected group should be covered by the selected rules")
+    logging.info(f"Protected coverage threshold {protected_coverage_threshold} means at least {protected_coverage_threshold * 100}% "
                  f"of the protected group should be covered by the selected rules")
-    selected_rules = greedy_fair_prescription_rules(rules, protected_group, coverage_threshold, max_rules, total_individuals, fairness_threshold)
+    selected_rules = greedy_fair_prescription_rules(rules, protected_group, unprotected_coverage_threshold, 
+                                                    protected_coverage_threshold, max_rules, total_individuals, fairness_threshold)
 
     # Log selected rules
     for i, rule in enumerate(selected_rules, 1):
