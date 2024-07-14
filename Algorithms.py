@@ -101,11 +101,11 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, high, low
     df_g = df_g.loc[:, ~df_g.columns.str.contains('^Unnamed')]
     logging.info(f'Starting group: {group}')
 
-    def calculate_unfairness_score(treatment, df_g, DAG, ordinal_atts, target):
+    def calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target):
         cate_all = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
         protected_group = df_g[df_g['Gender'] != 'Male']  # Assuming 'Gender' is the protected attribute
         cate_protected = Utils.getTreatmentCATE(protected_group, DAG, treatment, ordinal_atts, target)
-        return abs(cate_all - cate_protected)
+        return 1 - abs(cate_all - cate_protected)  # Fairness score: 1 - |difference|
 
     max_score = float('-inf')
     best_treatment = None
@@ -116,7 +116,7 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, high, low
     logging.info(f'Number of treatments at level 1: {len(treatments_level1)}')
 
     for treatment in treatments_level1:
-        score = calculate_unfairness_score(treatment, df_g, DAG, ordinal_atts, target)
+        score = calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target)
         cate = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
         if score > max_score and cate > 0:
             max_score = score
@@ -129,7 +129,7 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, high, low
     logging.info(f'Number of treatments at level 2: {len(treatments_level2)}')
 
     for treatment in treatments_level2:
-        score = calculate_unfairness_score(treatment, df_g, DAG, ordinal_atts, target)
+        score = calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target)
         cate = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
         if score > max_score and cate > 0:
             max_score = score
