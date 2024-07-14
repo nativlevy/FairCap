@@ -27,19 +27,38 @@ def load_data(file_path: str) -> pd.DataFrame:
 def get_grouping_patterns(df: pd.DataFrame, fds: List[str], apriori: float) -> List[dict]:
     logging.info(f"Getting grouping patterns with apriori={apriori}")
     grouping_patterns = getAllGroups(df, fds, apriori)
+    logging.info(f"Initial grouping patterns: {len(grouping_patterns)}")
+    
+    for i, pattern in enumerate(grouping_patterns):
+        logging.debug(f"Initial pattern {i}: {pattern}")
     
     # 1. apply the grouping patterns to the data. If you find 2 or more patterns that cover the same individuals, keep the one with the smallest number of filters.
     filtered_patterns = []
     covered_individuals = set()
     
-    for pattern in sorted(grouping_patterns, key=lambda x: len(x)):
+    for i, pattern in enumerate(sorted(grouping_patterns, key=lambda x: len(x))):
+        logging.debug(f"Processing pattern {i}: {pattern}")
         pattern_individuals = set(df.index[df.apply(lambda row: all(row[k] == v for k, v in pattern.items()), axis=1)])
+        logging.debug(f"Pattern {i} covers {len(pattern_individuals)} individuals")
         
         if not pattern_individuals.issubset(covered_individuals):
             filtered_patterns.append(pattern)
+            new_covered = pattern_individuals - covered_individuals
             covered_individuals.update(pattern_individuals)
+            logging.debug(f"Adding pattern {i} to filtered patterns. New individuals covered: {len(new_covered)}")
+        else:
+            logging.debug(f"Skipping pattern {i} as it doesn't cover any new individuals")
     
     logging.info(f"Found {len(filtered_patterns)} unique grouping patterns after filtering")
+    
+    for i, pattern in enumerate(filtered_patterns):
+        logging.debug(f"Final filtered pattern {i}: {pattern}")
+    
+    # Log the patterns that were removed
+    removed_patterns = set(map(frozenset, grouping_patterns)) - set(map(frozenset, filtered_patterns))
+    for i, pattern in enumerate(removed_patterns):
+        logging.debug(f"Removed pattern {i}: {dict(pattern)}")
+    
     return filtered_patterns
 
 def calculate_fairness_score(rule: Rule) -> float:
