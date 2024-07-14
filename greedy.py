@@ -223,7 +223,7 @@ def main():
     # Run greedy algorithm
     coverage_threshold = 0.1  # Minimum proportion of protected group that should be covered
     max_rules = 5
-    fairness_threshold = 0.001
+    fairness_threshold = 1000 # USD difference in utility between protected and unprotected groups
     total_individuals = len(df)
     logging.info(f"Running greedy algorithm with coverage threshold {coverage_threshold}, "
                  f"max {max_rules} rules, and fairness threshold {fairness_threshold}")
@@ -247,16 +247,19 @@ def main():
     total_utility = sum(rule.utility for rule in selected_rules)
     total_protected_utility = sum(rule.protected_utility for rule in selected_rules)
 
-    fairness_measure = abs(
-        (total_protected_utility / len(total_protected_coverage)) -
-        ((total_utility - total_protected_utility) / (len(total_coverage) - len(total_protected_coverage)))
-    ) if len(total_protected_coverage) > 0 and len(total_coverage) > len(total_protected_coverage) else float('inf')
-
-    logging.info(f"Final Fairness Measure: {fairness_measure:.4f}")
     logging.info(f"Total Coverage: {len(total_coverage)} out of {len(df)} ({len(total_coverage)/len(df)*100:.2f}%)")
     logging.info(f"Protected Coverage: {len(total_protected_coverage)} out of {len(protected_group)} ({len(total_protected_coverage)/len(protected_group)*100:.2f}%)")
     logging.info(f"Total Utility: {total_utility:.4f}")
     logging.info(f"Total Protected Utility: {total_protected_utility:.4f}")
+
+    # check if the fairness constraint is satisfied by subtracting the protected utility from the total utility
+    fairness_measure = abs(total_protected_utility - total_utility)
+
+    if fairness_measure <= fairness_threshold:
+        logging.info(f"Fairness constraint satisfied: {fairness_measure:.4f} <= {fairness_threshold}")
+    else:
+        logging.warning(f"Fairness constraint violated: {fairness_measure:.4f} > {fairness_threshold}")
+
 
 if __name__ == "__main__":
     main()
