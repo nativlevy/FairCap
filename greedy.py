@@ -161,11 +161,11 @@ def main():
     ]
 
     logging.info("Getting treatments for each grouping pattern")
-    groups_dic, _ = getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, grouping_patterns, ordinal_atts, targetClass, True, False, actionable_atts, True, protected_group)
+    group_treatments, _ = getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, grouping_patterns, ordinal_atts, targetClass, True, False, actionable_atts, True, protected_group)
 
     # Create Rule objects
     rules = []
-    for group, data in groups_dic.items():
+    for group, data in group_treatments.items():
         condition = eval(group)
         treatment = data[2]
         covered_indices = data[1]
