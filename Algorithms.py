@@ -135,6 +135,30 @@ def calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target, protect
     return cate_all / abs(cate_all - cate_protected)
 
 def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionable_atts_org, protected_group):
+    """
+    Find the best treatment for a given group that maximizes fairness and effectiveness.
+
+    This function iteratively explores treatments of increasing complexity (up to 5 levels)
+    to find the one that yields the highest fairness score while ensuring a positive CATE
+    (Conditional Average Treatment Effect).
+
+    Args:
+        df_g (pd.DataFrame): The dataframe for the specific group.
+        group (dict): The group definition.
+        target (str): The target variable name.
+        DAG (networkx.DiGraph): The causal graph.
+        dropAtt (list): Attributes to be dropped from consideration.
+        ordinal_atts (list): List of ordinal attributes.
+        actionable_atts_org (list): Original list of actionable attributes.
+        protected_group (set): Set of indices representing the protected group.
+
+    Returns:
+        tuple: A tuple containing:
+            - best_treatment (dict): The treatment with the highest fairness score.
+            - best_cate (float): The CATE for the best treatment.
+
+    The function logs detailed information about its progress and decisions.
+    """
     logging.info(f'Starting getHighTreatments for group: {group}')
     logging.debug(f'Initial df_g shape: {df_g.shape}')
     
