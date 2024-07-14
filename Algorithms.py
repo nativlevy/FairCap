@@ -32,14 +32,12 @@ def filterPatterns(df, groupingAtt, groups):
             ans.append(ast.literal_eval(v[0]))
     return ans
 
-
 def getAllGroups(df_org, atts, t):
     df = df_org.copy(deep=True)
     df = df[atts]
     df, rows, columns = Data2Transactions.removeHeader(df, 'Temp.csv')
     rules = Data2Transactions.getRules(df, rows, columns, min_support=t)
     return rules
-
 
 def getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, groups, ordinal_atts, targetClass,
                         high, low, actionable_atts, print_times, sample = False):
@@ -48,8 +46,7 @@ def getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, groups, ordinal_atts, ta
 
     start_time = time.time()
     for group in groups:
-        process_group_greedy(group, df, groups_dic, groupingAtt, targetClass, DAG, ordinal_atts, high, low,
-                             actionable_atts)
+        process_group_greedy(group, df, groups_dic, groupingAtt, targetClass, DAG, ordinal_atts, actionable_atts)
 
     elapsed_time = time.time() - start_time
 
@@ -57,10 +54,8 @@ def getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, groups, ordinal_atts, ta
         logging.info(f"Elapsed time step 2: {elapsed_time} seconds")
     return groups_dic, elapsed_time
 
-
 def process_group_greedy(group, df, groups_dic, groupingAtt, targetClass,
-                   DAG, ordinal_atts, high, low,
-    actionable_atts):
+                   DAG, ordinal_atts, actionable_atts):
 
     df['GROUP_MEMBER'] = df.apply(lambda row: isGroupMember(row, group), axis=1)
     df_g = df[df['GROUP_MEMBER'] == 1]
@@ -72,10 +67,9 @@ def process_group_greedy(group, df, groups_dic, groupingAtt, targetClass,
 
     (t_h, cate_h) = getHighTreatments(df_g, group, targetClass,
                                       DAG, drop_atts,
-                                      ordinal_atts, high, low, actionable_atts)
+                                      ordinal_atts, actionable_atts)
 
     groups_dic[str(group)] = [len(df_g), covered, t_h, cate_h]
-
 
 def isGroupMember(row, group):
     for att in group:
@@ -94,18 +88,19 @@ def isGroupMember(row, group):
             return 0
     return 1
 
-
-def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, high, low, actionable_atts_org):
+def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionable_atts_org):
     df_g.drop(dropAtt, axis=1, inplace=True)
     actionable_atts = [a for a in actionable_atts_org if not a in dropAtt]
     df_g = df_g.loc[:, ~df_g.columns.str.contains('^Unnamed')]
     logging.info(f'Starting group: {group}')
 
-    def calculate_unfairness_score(treatment, df_g, DAG, ordinal_atts, target):
-        cate_all = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
+    def calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target):
+        cate_all =  Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
         protected_group = df_g[df_g['Gender'] != 'Male']  # Assuming 'Gender' is the protected attribute
         cate_protected = Utils.getTreatmentCATE(protected_group, DAG, treatment, ordinal_atts, target)
-        return abs(cate_all - cate_protected)  # Unfairness score: |difference|
+        if cate_all == cate_protected:
+            return cate_all
+        return cate_all / abs(cate_all - cate_protected)
 
     max_score = float('-inf')
     best_treatment = None
@@ -118,37 +113,30 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, high, low
             treatments = Utils.getLevel1treatments(actionable_atts, df_g, ordinal_atts)
         else:
             positive_treatments = [t for t in treatments if Utils.getTreatmentCATE(df_g, DAG, t, ordinal_atts, target) > 0]
-            treatments = Utils.getNextLeveltreatments(positive_treatments, df_g, ordinal_atts, high, False, DAG, target)
+            treatments = Utils.getNextLeveltreatments(positive_treatments, df_g, ordinal_atts, True, False, DAG, target)
 
         logging.info(f'Number of treatments at level {level}: {len(treatments)}')
 
-        level_max_score = float('-inf')
-        level_best_treatment = None
-        level_best_cate = 0
-
         for treatment in treatments:
-            unfairness_score = calculate_unfairness_score(treatment, df_g, DAG, ordinal_atts, target)
+            fairness_score = calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target)
             cate = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
-            score = cate - unfairness_score  # Combine CATE and fairness
+            score = fairness_score
 
-            if score > level_max_score and cate > 0:
-                level_max_score = score
-                level_best_treatment = treatment
-                level_best_cate = cate
+            if score > max_score and cate > 0:
+                max_score = score
+                best_treatment = treatment
+                best_cate = cate
 
-        if level_max_score > max_score:
-            max_score = level_max_score
-            best_treatment = level_best_treatment
-            best_cate = level_best_cate
-        else:
+        if level > 1 and max_score <= prev_max_score:
             logging.info(f'Stopping at level {level} as no better treatment found')
             break
 
+        prev_max_score = max_score
+
     logging.info(f'Finished group: {group}')
-    logging.info(f'Best treatment: {best_treatment}, CATE: {best_cate}, Score: {max_score}')
+    logging.info(f'Best treatment: {best_treatment}, CATE: {best_cate}, Fairness Score: {max_score}')
     logging.info('#######################################')
     return (best_treatment, best_cate)
-
 
 def filter_above_median(treatments_cate):
     positive_values = [value for value in treatments_cate.values() if value > 0]

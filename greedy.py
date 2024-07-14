@@ -33,6 +33,11 @@ def get_grouping_patterns(df: pd.DataFrame, fds: List[str], apriori: float) -> L
     logging.info(f"Found {len(grouping_patterns)} grouping patterns")
     return grouping_patterns
 
+def calculate_fairness_score(rule: Rule) -> float:
+    if rule.utility == rule.protected_utility:
+        return rule.utility
+    return rule.utility / abs(rule.utility - rule.protected_utility)
+
 def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_protected: Set[int],
                total_utility: float, protected_utility: float, protected_group: Set[int],
                coverage_threshold: float) -> float:
@@ -50,28 +55,19 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
 
     logging.debug(f"Utility increase: {utility_increase}, Protected utility increase: {protected_utility_increase}")
 
-    if len(covered_protected) + len(new_covered_protected) == 0:
-        fairness_factor = 1
-    else:
-        fairness_factor = 1 - abs(
-            (protected_utility + protected_utility_increase) / (len(covered_protected) + len(new_covered_protected)) -
-            (total_utility + utility_increase) / (len(covered) + len(new_covered)))
-
+    fairness_score = calculate_fairness_score(rule)
     coverage_factor = (len(new_covered_protected) / len(protected_group)) / coverage_threshold if coverage_threshold > 0 else 1
 
-    unfairness_score = rule.utility / abs(rule.utility - rule.protected_utility) if rule.utility != rule.protected_utility else rule.utility
-
-    score = (utility_increase + protected_utility_increase) * fairness_factor * coverage_factor * unfairness_score
+    score = (utility_increase + protected_utility_increase) * fairness_score * coverage_factor
 
     logging.debug(f"Rule score: {score:.4f} (utility_increase: {utility_increase:.4f}, "
                   f"protected_utility_increase: {protected_utility_increase:.4f}, "
-                  f"fairness_factor: {fairness_factor:.4f}, coverage_factor: {coverage_factor:.4f}, "
-                  f"unfairness_score: {unfairness_score:.4f})")
+                  f"fairness_score: {fairness_score:.4f}, coverage_factor: {coverage_factor:.4f}")
 
     return score
 
 def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int], coverage_threshold: float,
-                                   max_rules: int, total_individuals: int) -> List[Rule]:
+                                   max_rules: int, total_individuals: int, fairness_threshold: float) -> List[Rule]:
     solution = []
     covered = set()
     covered_protected = set()
@@ -110,6 +106,16 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
                      f"total_covered={len(covered)}, protected_covered={len(covered_protected)}, "
                      f"total_utility={total_utility:.4f}, protected_utility={protected_utility:.4f}")
 
+        # Check statistical parity fairness constraint
+        if len(covered_protected) > 0 and len(covered) - len(covered_protected) > 0:
+            fairness_measure = abs(
+                (protected_utility / len(covered_protected)) -
+                ((total_utility - protected_utility) / (len(covered) - len(covered_protected)))
+            )
+            if fairness_measure > fairness_threshold:
+                logging.warning(f"Fairness constraint violated: {fairness_measure:.4f} > {fairness_threshold}")
+                break
+
     return solution
 
 def main():
@@ -121,7 +127,6 @@ def main():
     fds = calculate_functional_dependencies(df, groupingAtt)
 
     # add the grouping attribute to the list of functional dependencies as the first element
-    # TODO: should I add [groupingAtt] to the list of fds?
     fds = [groupingAtt] + fds
     logging.info(f"Functional Dependencies: {fds}")
 
@@ -139,7 +144,6 @@ def main():
         logging.debug(f"Grouping Pattern {i}:")
         for attribute, value in pattern.items():
             logging.debug(f"  {attribute}: {value}")
-
 
     # Get treatments for each grouping pattern
     DAG = SO_DAG
@@ -178,9 +182,11 @@ def main():
     # Run greedy algorithm
     coverage_threshold = 0.001
     max_rules = 30
-    total_individuals = len(df)  # Use the total number of rows in the dataframe
-    logging.info(f"Running greedy algorithm with coverage threshold {coverage_threshold} and max {max_rules} rules")
-    selected_rules = greedy_fair_prescription_rules(rules, protected_group, coverage_threshold, max_rules, total_individuals)
+    fairness_threshold = 0.1
+    total_individuals = len(df)
+    logging.info(f"Running greedy algorithm with coverage threshold {coverage_threshold}, "
+                 f"max {max_rules} rules, and fairness threshold {fairness_threshold}")
+    selected_rules = greedy_fair_prescription_rules(rules, protected_group, coverage_threshold, max_rules, total_individuals, fairness_threshold)
 
     # Log selected rules
     for i, rule in enumerate(selected_rules, 1):
@@ -200,15 +206,14 @@ def main():
 
     fairness_measure = abs(
         (total_protected_utility / len(total_protected_coverage)) -
-        (total_utility / len(total_coverage))
-    ) if len(total_protected_coverage) > 0 and len(total_coverage) > 0 else float('inf')
+        ((total_utility - total_protected_utility) / (len(total_coverage) - len(total_protected_coverage)))
+    ) if len(total_protected_coverage) > 0 and len(total_coverage) > len(total_protected_coverage) else float('inf')
 
     logging.info(f"Final Fairness Measure: {fairness_measure:.4f}")
     logging.info(f"Total Coverage: {len(total_coverage)} out of {len(df)} ({len(total_coverage)/len(df)*100:.2f}%)")
     logging.info(f"Protected Coverage: {len(total_protected_coverage)} out of {len(protected_group)} ({len(total_protected_coverage)/len(protected_group)*100:.2f}%)")
     logging.info(f"Total Utility: {total_utility:.4f}")
     logging.info(f"Total Protected Utility: {total_protected_utility:.4f}")
-
 
 if __name__ == "__main__":
     main()

@@ -176,7 +176,7 @@ def getCatesGreedy(DAG, t_h, cate_h, df_g, ordinal_atts, target, treatments):
 
     return treatments_cate, t_h, cate_h
 
-def getTreatmentCATE(df_g, DAG,treatment,ordinal_atts,target):
+def getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target):
     df_g['TempTreatment'] = df_g.apply(lambda row: addTempTreatment(row, treatment, ordinal_atts), axis=1)
     DAG_ = changeDAG(DAG, treatment)
     causal_graph = """
@@ -236,8 +236,11 @@ def changeDAG(dag, randomTreatment):
     return list(set(DAG))
 
 def estimateATE(causal_graph, df, T, O):
+    # Filter for required records
+    df_filtered = df[(df[T] == 0) | (df[T] == 1)]
+    
     model = CausalModel(
-        data=df,
+        data=df_filtered,
         graph=causal_graph.replace("\n", " "),
         treatment=T,
         outcome=O)
@@ -247,7 +250,6 @@ def estimateATE(causal_graph, df, T, O):
     causal_estimate_reg = model.estimate_effect(estimands,
                                                 method_name="backdoor.linear_regression",
                                                 target_units="ate",
-                                                #evaluate_effect_strength=True,
                                                 effect_modifiers = [],
                                                 test_significance=True)
     return causal_estimate_reg.value, causal_estimate_reg.test_stat_significance()['p_value']
