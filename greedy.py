@@ -27,12 +27,20 @@ def load_data(file_path: str) -> pd.DataFrame:
 def get_grouping_patterns(df: pd.DataFrame, fds: List[str], apriori: float) -> List[dict]:
     logging.info(f"Getting grouping patterns with apriori={apriori}")
     grouping_patterns = getAllGroups(df, fds, apriori)
-
+    
     # 1. apply the grouping patterns to the data. If you find 2 or more patterns that cover the same individuals, keep the one with the smallest number of filters.
-
-
-    logging.info(f"Found {len(grouping_patterns)} grouping patterns")
-    return grouping_patterns
+    filtered_patterns = []
+    covered_individuals = set()
+    
+    for pattern in sorted(grouping_patterns, key=lambda x: len(x)):
+        pattern_individuals = set(df.index[df.apply(lambda row: all(row[k] == v for k, v in pattern.items()), axis=1)])
+        
+        if not pattern_individuals.issubset(covered_individuals):
+            filtered_patterns.append(pattern)
+            covered_individuals.update(pattern_individuals)
+    
+    logging.info(f"Found {len(filtered_patterns)} unique grouping patterns after filtering")
+    return filtered_patterns
 
 def calculate_fairness_score(rule: Rule) -> float:
     if rule.utility == rule.protected_utility:
@@ -143,8 +151,6 @@ def main():
 
     # Get the Grouping Patterns
     grouping_patterns = get_grouping_patterns(df, fds, APRIORI)
-
-    return
 
     # Log each grouping pattern
     for i, pattern in enumerate(grouping_patterns, 1):
