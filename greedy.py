@@ -184,12 +184,14 @@ def main():
     logging.info(f"Created {len(rules)} Rule objects")
 
     # Run greedy algorithm
-    coverage_threshold = 0.1
+    coverage_threshold = 0.1  # Minimum proportion of protected group that should be covered
     max_rules = 5
     fairness_threshold = 0.001
     total_individuals = len(df)
     logging.info(f"Running greedy algorithm with coverage threshold {coverage_threshold}, "
                  f"max {max_rules} rules, and fairness threshold {fairness_threshold}")
+    logging.info(f"Coverage threshold {coverage_threshold} means at least {coverage_threshold * 100}% "
+                 f"of the protected group should be covered by the selected rules")
     selected_rules = greedy_fair_prescription_rules(rules, protected_group, coverage_threshold, max_rules, total_individuals, fairness_threshold)
 
     # Log selected rules
