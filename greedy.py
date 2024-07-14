@@ -168,7 +168,8 @@ def main():
     for group, data in group_treatments.items():
         condition = eval(group)
         treatment = data['treatment']
-        covered_indices = data['covered_indices']
+        covered_countries = data['covered_indices']
+        covered_indices = set(df[df[groupingAtt].isin(covered_countries)].index)
         covered_protected_indices = covered_indices.intersection(protected_group)
         utility = data['utility']
         
