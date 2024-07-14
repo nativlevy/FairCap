@@ -107,7 +107,12 @@ def process_group_greedy(group, df, groupingAtt, targetClass, DAG, ordinal_atts,
                                       DAG, drop_atts,
                                       ordinal_atts, actionable_atts, protected_group)
 
-    return [len(df_g), covered, t_h, cate_h]
+    return {
+        'group_size': len(df_g),
+        'covered_indices': covered,
+        'treatment': t_h,
+        'utility': cate_h
+    }
 
 def isGroupMember(row, group):
     for att in group:

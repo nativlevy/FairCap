@@ -167,10 +167,10 @@ def main():
     rules = []
     for group, data in group_treatments.items():
         condition = eval(group)
-        treatment = data[2]
-        covered_indices = data[1]
+        treatment = data['treatment']
+        covered_indices = data['covered_indices']
         covered_protected_indices = covered_indices.intersection(protected_group)
-        utility = data[3]
+        utility = data['utility']
         
         # Calculate protected_utility based on the proportion of protected individuals covered
         protected_proportion = len(covered_protected_indices) / len(covered_indices) if len(covered_indices) > 0 else 0
