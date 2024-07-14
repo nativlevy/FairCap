@@ -36,7 +36,6 @@ def filterPatterns(df, groupingAtt, groups):
     return ans
 
 def getAllGroups(df_org, atts, t):
-    # TODO: if we have 2 or more grouping patterns that define the same records, prune and leave only one - the shorter one (less terms)
     df = df_org.copy(deep=True)
     df = df[atts]
     df, rows, columns = Data2Transactions.removeHeader(df, 'Temp.csv')

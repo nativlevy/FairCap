@@ -5,6 +5,7 @@ from functional_deps import calculate_functional_dependencies
 import Utils
 from dags import SO_DAG
 import logging
+import json
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 
@@ -57,7 +58,7 @@ def get_grouping_patterns(df: pd.DataFrame, fds: List[str], apriori: float) -> L
     # Log the patterns that were removed
     removed_patterns = set(map(frozenset, grouping_patterns)) - set(map(frozenset, filtered_patterns))
     for i, pattern in enumerate(removed_patterns):
-        logging.debug(f"Removed pattern {i}: {dict(pattern)}")
+        logging.debug(f"Removed pattern {i}: {pattern}")
     
     return filtered_patterns
 
@@ -169,17 +170,24 @@ def main():
     APRIORI = 0.1
 
     # Get the Grouping Patterns
-    grouping_patterns = get_grouping_patterns(df, fds, APRIORI)
+    # grouping_patterns = get_grouping_patterns(df, fds, APRIORI)
+    #
+    # # Log each grouping pattern
+    # for i, pattern in enumerate(grouping_patterns, 1):
+    #     logging.debug(f"Grouping Pattern {i}:")
+    #     for attribute, value in pattern.items():
+    #         logging.debug(f"  {attribute}: {value}")
+    #
+    # # save the grouping patterns to a file as json
+    # with open('grouping_patterns.json', 'w') as f:
+    #     json.dump(grouping_patterns, f)
 
-    # Log each grouping pattern
-    for i, pattern in enumerate(grouping_patterns, 1):
-        logging.debug(f"Grouping Pattern {i}:")
-        for attribute, value in pattern.items():
-            logging.debug(f"  {attribute}: {value}")
+    # load from file
+    with open('grouping_patterns.json', 'r') as f:
+        grouping_patterns = json.load(f)
 
     # Get treatments for each grouping pattern
     DAG = SO_DAG
-    ordinal_atts = {}  # TODO: should this be empty?
     targetClass = 'ConvertedSalary'
     actionable_atts = [
         'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',
@@ -187,8 +195,7 @@ def main():
     ]
 
     logging.info("Getting treatments for each grouping pattern")
-    group_treatments, _ = getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, grouping_patterns, ordinal_atts, targetClass, True, False, actionable_atts, True, protected_group)
-
+    group_treatments, _ = getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, grouping_patterns, {}, targetClass, True, False, actionable_atts, True, protected_group)
 
     # Create Rule objects
     rules = []
