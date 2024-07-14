@@ -43,13 +43,13 @@ def getAllGroups(df_org, atts, t):
     return rules
 
 def getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, groups, ordinal_atts, targetClass,
-                        high, low, actionable_atts, print_times, sample = False):
+                        high, low, actionable_atts, print_times, protected_group, sample = False):
     start_time = time.time()
 
     # Create a partial function with fixed arguments
     process_group_partial = partial(process_group_greedy, df=df, groupingAtt=groupingAtt, 
                                     targetClass=targetClass, DAG=DAG, ordinal_atts=ordinal_atts, 
-                                    actionable_atts=actionable_atts)
+                                    actionable_atts=actionable_atts, protected_group=protected_group)
 
     # Use multiprocessing to process groups in parallel
     with multiprocessing.Pool() as pool:
@@ -64,7 +64,7 @@ def getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, groups, ordinal_atts, ta
         logging.info(f"Elapsed time step 2: {elapsed_time} seconds")
     return groups_dic, elapsed_time
 
-def process_group_greedy(group, df, groupingAtt, targetClass, DAG, ordinal_atts, actionable_atts):
+def process_group_greedy(group, df, groupingAtt, targetClass, DAG, ordinal_atts, actionable_atts, protected_group):
     df['GROUP_MEMBER'] = df.apply(lambda row: isGroupMember(row, group), axis=1)
     df_g = df[df['GROUP_MEMBER'] == 1]
     drop_atts = list(group.keys())
@@ -75,7 +75,7 @@ def process_group_greedy(group, df, groupingAtt, targetClass, DAG, ordinal_atts,
 
     (t_h, cate_h) = getHighTreatments(df_g, group, targetClass,
                                       DAG, drop_atts,
-                                      ordinal_atts, actionable_atts)
+                                      ordinal_atts, actionable_atts, protected_group)
 
     return [len(df_g), covered, t_h, cate_h]
 
@@ -96,15 +96,15 @@ def isGroupMember(row, group):
             return 0
     return 1
 
-def calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target):
+def calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target, protected_group):
     cate_all =  Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
-    protected_group = df_g[df_g['Gender'] != 'Male']  # Assuming 'Gender' is the protected attribute
-    cate_protected = Utils.getTreatmentCATE(protected_group, DAG, treatment, ordinal_atts, target)
+    protected_df = df_g[df_g.index.isin(protected_group)]
+    cate_protected = Utils.getTreatmentCATE(protected_df, DAG, treatment, ordinal_atts, target)
     if cate_all == cate_protected:
         return cate_all
     return cate_all / abs(cate_all - cate_protected)
 
-def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionable_atts_org):
+def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionable_atts_org, protected_group):
     df_g.drop(dropAtt, axis=1, inplace=True)
     actionable_atts = [a for a in actionable_atts_org if not a in dropAtt]
     df_g = df_g.loc[:, ~df_g.columns.str.contains('^Unnamed')]
@@ -126,7 +126,7 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionabl
         logging.info(f'Number of treatments at level {level}: {len(treatments)}')
 
         for treatment in treatments:
-            fairness_score = calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target)
+            fairness_score = calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target, protected_group)
             cate = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
             score = fairness_score
 
