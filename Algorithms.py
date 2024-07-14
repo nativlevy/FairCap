@@ -101,45 +101,51 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, high, low
     df_g = df_g.loc[:, ~df_g.columns.str.contains('^Unnamed')]
     logging.info(f'Starting group: {group}')
 
-    def calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target):
+    def calculate_unfairness_score(treatment, df_g, DAG, ordinal_atts, target):
         cate_all = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
         protected_group = df_g[df_g['Gender'] != 'Male']  # Assuming 'Gender' is the protected attribute
         cate_protected = Utils.getTreatmentCATE(protected_group, DAG, treatment, ordinal_atts, target)
-        return 1 - abs(cate_all - cate_protected)  # Fairness score: 1 - |difference|
+        return abs(cate_all - cate_protected)  # Unfairness score: |difference|
 
     max_score = float('-inf')
     best_treatment = None
     best_cate = 0
 
-    # Level 1 treatments
-    treatments_level1 = Utils.getLevel1treatments(actionable_atts, df_g, ordinal_atts)
-    logging.info(f'Number of treatments at level 1: {len(treatments_level1)}')
-
-    for treatment in treatments_level1:
-        score = calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target)
-        cate = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
-        if score > max_score and cate > 0:
-            max_score = score
-            best_treatment = treatment
-            best_cate = cate
-
-    # Level 2 treatments
-    positive_treatments = [t for t in treatments_level1 if Utils.getTreatmentCATE(df_g, DAG, t, ordinal_atts, target) > 0]
-    treatments_level2 = Utils.getNextLeveltreatments(positive_treatments, df_g, ordinal_atts, high, False, DAG, target)
-    logging.info(f'Number of treatments at level 2: {len(treatments_level2)}')
-
-    for treatment in treatments_level2:
-        score = calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target)
-        cate = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
-        if score > max_score and cate > 0:
-            max_score = score
-            best_treatment = treatment
-            best_cate = cate
+    for level in range(1, 6):  # Up to 5 treatment levels
+        logging.info(f'Processing treatment level {level}')
+        
+        if level == 1:
+            treatments = Utils.getLevel1treatments(actionable_atts, df_g, ordinal_atts)
         else:
-            break  # Stop if we don't find a better treatment in level 2
+            positive_treatments = [t for t in treatments if Utils.getTreatmentCATE(df_g, DAG, t, ordinal_atts, target) > 0]
+            treatments = Utils.getNextLeveltreatments(positive_treatments, df_g, ordinal_atts, high, False, DAG, target)
+
+        logging.info(f'Number of treatments at level {level}: {len(treatments)}')
+
+        level_max_score = float('-inf')
+        level_best_treatment = None
+        level_best_cate = 0
+
+        for treatment in treatments:
+            unfairness_score = calculate_unfairness_score(treatment, df_g, DAG, ordinal_atts, target)
+            cate = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
+            score = cate - unfairness_score  # Combine CATE and fairness
+
+            if score > level_max_score and cate > 0:
+                level_max_score = score
+                level_best_treatment = treatment
+                level_best_cate = cate
+
+        if level_max_score > max_score:
+            max_score = level_max_score
+            best_treatment = level_best_treatment
+            best_cate = level_best_cate
+        else:
+            logging.info(f'Stopping at level {level} as no better treatment found')
+            break
 
     logging.info(f'Finished group: {group}')
-    logging.info(f'Best treatment: {best_treatment}, CATE: {best_cate}')
+    logging.info(f'Best treatment: {best_treatment}, CATE: {best_cate}, Score: {max_score}')
     logging.info('#######################################')
     return (best_treatment, best_cate)
 
