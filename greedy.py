@@ -227,9 +227,10 @@ def main():
     logging.info(f"Created {len(rules)} Rule objects")
 
     # Run greedy algorithm
-    coverage_threshold = 0.1  # Minimum proportion of protected group that should be covered
+    unprotected_coverage_threshold = 0.7  # Minimum proportion of the unprotected group that should be covered
+    protected_coverage_threshold = 0.5  # Minimum proportion of protected group that should be covered
     max_rules = 5
-    fairness_threshold = 1000 # USD difference in utility between protected and unprotected groups
+    fairness_threshold = 10000 # USD difference in utility between protected and unprotected groups
     total_individuals = len(df)
     logging.info(f"Running greedy algorithm with coverage threshold {coverage_threshold}, "
                  f"max {max_rules} rules, and fairness threshold {fairness_threshold}")
