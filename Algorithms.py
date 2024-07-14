@@ -109,7 +109,8 @@ def process_group_greedy(group, df, groupingAtt, targetClass, DAG, ordinal_atts,
 
     return {
         'group_size': len(df_g),
-        'covered_indices': covered,
+        'covered': covered,
+        'covered_indices': # TODO: complete this
         'treatment': t_h,
         'utility': cate_h
     }
