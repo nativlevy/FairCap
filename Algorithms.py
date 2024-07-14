@@ -107,10 +107,11 @@ def process_group_greedy(group, df, groupingAtt, targetClass, DAG, ordinal_atts,
                                       DAG, drop_atts,
                                       ordinal_atts, actionable_atts, protected_group)
 
+    covered_indices = set(df_g.index)
     return {
         'group_size': len(df_g),
         'covered': covered,
-        'covered_indices': # TODO: complete this
+        'covered_indices': covered_indices,
         'treatment': t_h,
         'utility': cate_h
     }
