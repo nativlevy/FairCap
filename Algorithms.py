@@ -44,6 +44,36 @@ def getAllGroups(df_org, atts, t):
 
 def getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, groups, ordinal_atts, targetClass,
                         high, low, actionable_atts, print_times, protected_group, sample = False):
+    """
+    Process groups in parallel to get treatments for greedy algorithm.
+
+    This function processes each group in parallel to determine the best treatments
+    for the greedy algorithm. It uses multiprocessing to speed up the computation.
+
+    Args:
+        DAG (networkx.DiGraph): The Directed Acyclic Graph representing causal relationships.
+        df (pandas.DataFrame): The input dataframe.
+        groupingAtt (str): The attribute used for grouping.
+        groups (list): List of groups to process.
+        ordinal_atts (list): List of ordinal attributes.
+        targetClass (str): The target class attribute.
+        high (float): Upper bound for treatment effect (not used in this function).
+        low (float): Lower bound for treatment effect (not used in this function).
+        actionable_atts (list): List of actionable attributes.
+        print_times (bool): Whether to print execution times.
+        protected_group (set): Set of indices representing the protected group.
+        sample (bool): Whether to use sampling (not used in this function).
+
+    Returns:
+        tuple: A tuple containing:
+            - groups_dic (dict): A dictionary with group information and treatments.
+            - elapsed_time (float): The time taken to process all groups.
+
+    Note:
+        This function uses multiprocessing to parallelize the group processing,
+        which can significantly speed up the computation for large datasets or
+        many groups.
+    """
     start_time = time.time()
 
     # Create a partial function with fixed arguments
