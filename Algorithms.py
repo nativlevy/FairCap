@@ -96,19 +96,19 @@ def isGroupMember(row, group):
             return 0
     return 1
 
+def calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target):
+    cate_all =  Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
+    protected_group = df_g[df_g['Gender'] != 'Male']  # Assuming 'Gender' is the protected attribute
+    cate_protected = Utils.getTreatmentCATE(protected_group, DAG, treatment, ordinal_atts, target)
+    if cate_all == cate_protected:
+        return cate_all
+    return cate_all / abs(cate_all - cate_protected)
+
 def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionable_atts_org):
     df_g.drop(dropAtt, axis=1, inplace=True)
     actionable_atts = [a for a in actionable_atts_org if not a in dropAtt]
     df_g = df_g.loc[:, ~df_g.columns.str.contains('^Unnamed')]
     logging.info(f'Starting group: {group}')
-
-    def calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target):
-        cate_all =  Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
-        protected_group = df_g[df_g['Gender'] != 'Male']  # Assuming 'Gender' is the protected attribute
-        cate_protected = Utils.getTreatmentCATE(protected_group, DAG, treatment, ordinal_atts, target)
-        if cate_all == cate_protected:
-            return cate_all
-        return cate_all / abs(cate_all - cate_protected)
 
     max_score = float('-inf')
     best_treatment = None

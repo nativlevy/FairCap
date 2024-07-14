@@ -181,8 +181,8 @@ def main():
 
     # Run greedy algorithm
     coverage_threshold = 0.001
-    max_rules = 30
-    fairness_threshold = 0.1
+    max_rules = 10
+    fairness_threshold = 0.8
     total_individuals = len(df)
     logging.info(f"Running greedy algorithm with coverage threshold {coverage_threshold}, "
                  f"max {max_rules} rules, and fairness threshold {fairness_threshold}")
