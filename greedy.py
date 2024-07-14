@@ -149,6 +149,8 @@ def main():
         for attribute, value in pattern.items():
             logging.debug(f"  {attribute}: {value}")
 
+    # TODO: check with Brit if the grouping patterns are correct
+
     # Get treatments for each grouping pattern
     DAG = SO_DAG
     ordinal_atts = {}  # TODO: should this be empty?
