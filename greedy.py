@@ -182,6 +182,8 @@ def main():
         'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',
         'Age'
     ]
+
+    # TODO: remove this
     fds = [country] + fds
 
     APRIORI = 0.1
