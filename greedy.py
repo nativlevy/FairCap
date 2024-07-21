@@ -30,7 +30,9 @@ def get_grouping_patterns(df: pd.DataFrame, fds: List[str], apriori: float) -> L
     grouping_patterns = getAllGroups(df, fds, apriori)
     logging.info(f"Initial grouping patterns: {len(grouping_patterns)}")
 
-    # todo: fix this - different group considered a group that defines a set of individuals that is not a subset of another group
+    # todo: fix this - different grouping_patterns considered a grouping_patterns that defines a set of individuals (apply the grouping patterns to the dataframe to understand which records it covers. Remove grouping pattenrs that are a subset of another group.
+    #  Always prefer shorter grouping patterns.
+    #
 
     # Remove groups that are subsets of other groups
     # TODO: complete this function
