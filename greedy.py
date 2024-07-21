@@ -30,12 +30,25 @@ def get_grouping_patterns(df: pd.DataFrame, fds: List[str], apriori: float) -> L
     grouping_patterns = getAllGroups(df, fds, apriori)
     logging.info(f"Initial grouping patterns: {len(grouping_patterns)}")
 
-    # todo: fix this - different grouping_patterns considered a grouping_patterns that defines a set of individuals (apply the grouping patterns to the dataframe to understand which records it covers. Remove grouping pattenrs that are a subset of another group.
-    #  Always prefer shorter grouping patterns.
-    #
+    def is_subset(group1, group2):
+        return all(item in group2.items() for item in group1.items())
 
-    # Remove groups that are subsets of other groups
-    # TODO: complete this function
+    def apply_pattern(pattern):
+        return set(df.index[df[list(pattern.keys())].isin(pattern).all(axis=1)])
+
+    # Sort patterns by length (shorter first) and then by coverage (larger coverage first)
+    sorted_patterns = sorted(grouping_patterns, key=lambda x: (len(x), -len(apply_pattern(x))))
+
+    filtered_patterns = []
+    for pattern in sorted_patterns:
+        pattern_coverage = apply_pattern(pattern)
+        if not any(pattern_coverage.issubset(apply_pattern(existing_pattern)) 
+                   for existing_pattern in filtered_patterns 
+                   if len(existing_pattern) <= len(pattern)):
+            filtered_patterns.append(pattern)
+
+    logging.info(f"Filtered grouping patterns: {len(filtered_patterns)}")
+    return filtered_patterns
 
 def calculate_fairness_score(rule: Rule) -> float:
     if rule.utility == rule.protected_utility:
