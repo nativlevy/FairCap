@@ -34,7 +34,10 @@ def get_grouping_patterns(df: pd.DataFrame, fds: List[str], apriori: float) -> L
         return all(item in group2.items() for item in group1.items())
 
     def apply_pattern(pattern):
-        return set(df.index[df[list(pattern.keys())].isin(pattern).all(axis=1)])
+        mask = pd.Series(True, index=df.index)
+        for col, val in pattern.items():
+            mask &= df[col] == val
+        return set(df.index[mask])
 
     # Sort patterns by length (shorter first) and then by coverage (larger coverage first)
     sorted_patterns = sorted(grouping_patterns, key=lambda x: (len(x), -len(apply_pattern(x))))
