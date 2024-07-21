@@ -5,6 +5,8 @@ from functional_deps import calculate_functional_dependencies
 import Utils
 from dags import SO_DAG
 import logging
+import time
+
 import json
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
@@ -161,7 +163,6 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
     return solution
 
 def main():
-    import time
     start_time = time.time()
 
     # Load data
