@@ -199,13 +199,7 @@ def main():
     # Create Rule objects
     rules = []
     for group, data in group_treatments.items():
-        # calculate the score of the rule: coverage * utility
-        # START WITH the rule with the highest score
-        # in the next iteration - update the score for overyone
-        # if we chose continent - AS () we need to remove all the records that the rule that we chose already covered.
-        # and then recalculate the score for all the remaining rules
-        # and then again - pick the best rule
-        # TODO: Greedy here - utility + covergate
+
 
         condition = eval(group)
         treatment = data['treatment']
@@ -227,7 +221,6 @@ def main():
 
     logging.info(f"Created {len(rules)} Rule objects")
 
-
     # TODO: after choosing the rules, we now estimate the solution found.
     # expected utility
     # Run greedy algorithm
@@ -243,7 +236,8 @@ def main():
                  f"of the unprotected group should be covered by the selected rules")
     logging.info(f"Protected coverage threshold {protected_coverage_threshold} means at least {protected_coverage_threshold * 100}% "
                  f"of the protected group should be covered by the selected rules")
-    selected_rules = greedy_fair_prescription_rules(rules, protected_group, unprotected_coverage_threshold, 
+
+    selected_rules = greedy_fair_prescription_rules(rules, protected_group, unprotected_coverage_threshold,
                                                     protected_coverage_threshold, max_rules, total_individuals, fairness_threshold)
 
     # Log selected rules
