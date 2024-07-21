@@ -176,7 +176,11 @@ def main():
     logging.info(f"Gender distribution:\n{gender_distribution}")
 
     country = 'Country'
-    fds = ['Continent', 'HDI', 'GDP', 'GINI']
+    # fds = ['Continent', 'HDI', 'GDP', 'GINI']
+    fds = [
+        'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',
+        'Age'
+    ]
     fds = [country] + fds
 
     APRIORI = 0.1
@@ -186,8 +190,7 @@ def main():
     DAG = SO_DAG
     targetClass = 'ConvertedSalary'
     actionable_atts = [
-        'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',
-        'Age'
+        'HoursComputer', 'DevType', 'Country', 'FormalEducation', 'UndergradMajor', 'Continent'
     ]
 
     logging.info("Getting treatments for each grouping pattern")
