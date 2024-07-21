@@ -29,36 +29,11 @@ def get_grouping_patterns(df: pd.DataFrame, fds: List[str], apriori: float) -> L
     logging.info(f"Getting grouping patterns with apriori={apriori}")
     grouping_patterns = getAllGroups(df, fds, apriori)
     logging.info(f"Initial grouping patterns: {len(grouping_patterns)}")
-    
-    for i, pattern in enumerate(grouping_patterns):
-        logging.debug(f"Initial pattern {i}: {pattern}")
-    
-    filtered_patterns = []
-    covered_individuals = set()
-    
-    for i, pattern in enumerate(sorted(grouping_patterns, key=lambda x: len(x))):
-        logging.debug(f"Processing pattern {i}: {pattern}")
-        pattern_individuals = set(df.index[df.apply(lambda row: all(row[k] == v for k, v in pattern.items()), axis=1)])
-        logging.debug(f"Pattern {i} covers {len(pattern_individuals)} individuals")
-        
-        if not pattern_individuals.issubset(covered_individuals):
-            filtered_patterns.append(pattern)
-            new_covered = pattern_individuals - covered_individuals
-            covered_individuals.update(pattern_individuals)
-            logging.debug(f"Adding pattern {i} to filtered patterns. New individuals covered: {len(new_covered)}")
-        else:
-            logging.debug(f"Skipping pattern {i} as it doesn't cover any new individuals")
-    
-    logging.info(f"Found {len(filtered_patterns)} unique grouping patterns after filtering")
-    
-    for i, pattern in enumerate(filtered_patterns):
-        logging.debug(f"Final filtered pattern {i}: {pattern}")
-    
-    removed_patterns = set(map(frozenset, grouping_patterns)) - set(map(frozenset, filtered_patterns))
-    for i, pattern in enumerate(removed_patterns):
-        logging.debug(f"Removed pattern {i}: {pattern}")
-    
-    return filtered_patterns
+
+    # todo: fix this - different group considered a group that defines a set of individuals that is not a subset of another group
+
+    # Remove groups that are subsets of other groups
+    # TODO: complete this function
 
 def calculate_fairness_score(rule: Rule) -> float:
     if rule.utility == rule.protected_utility:
@@ -164,29 +139,12 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
                      f"total_covered={len(covered)}, protected_covered={len(covered_protected)}, "
                      f"total_utility={total_utility:.4f}, protected_utility={protected_utility:.4f}")
 
-        # Check statistical parity fairness constraint
-        if len(covered_protected) > 0 and len(covered) - len(covered_protected) > 0:
-            fairness_measure = abs(
-                (protected_utility / len(covered_protected)) -
-                ((total_utility - protected_utility) / (len(covered) - len(covered_protected)))
-            )
-            if fairness_measure > fairness_threshold:
-                logging.warning(f"Fairness constraint violated: {fairness_measure:.4f} > {fairness_threshold}")
-                break
 
     return solution
 
 def main():
     # Load data
     df = load_data('data/so_countries_col_new.csv')
-
-    groupingAtt = 'Country'
-
-    fds = calculate_functional_dependencies(df, groupingAtt)
-
-    # add the grouping attribute to the list of functional dependencies as the first element
-    fds = [groupingAtt] + fds
-    logging.info(f"Functional Dependencies: {fds}")
 
     # Define protected group (non-male in this case)
     protected_group = set(df[df['Gender'] != 'Male'].index)
@@ -196,11 +154,18 @@ def main():
     gender_distribution = df['Gender'].value_counts()
     logging.info(f"Gender distribution:\n{gender_distribution}")
 
+    country = 'Country'
+
+    fds = ['Country', 'Continent', 'HDI', 'GDP', 'GINI']
+
+    fds = [country] + fds
+
     APRIORI = 0.1
+    grouping_patterns = get_grouping_patterns(df, fds, APRIORI)
 
     # load from file
-    with open('grouping_patterns.json', 'r') as f:
-        grouping_patterns = json.load(f)
+    # with open('grouping_patterns.json', 'r') as f:
+    #     grouping_patterns = json.load(f)
 
     # Get treatments for each grouping pattern
     DAG = SO_DAG
@@ -211,11 +176,19 @@ def main():
     ]
 
     logging.info("Getting treatments for each grouping pattern")
-    group_treatments, _ = getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, grouping_patterns, {}, targetClass, True, False, actionable_atts, True, protected_group)
+    group_treatments, _ = getGroupstreatmentsforGreeedy(DAG, df, country, grouping_patterns, {}, targetClass, actionable_atts, True, protected_group)
 
     # Create Rule objects
     rules = []
     for group, data in group_treatments.items():
+        # calculate the score of the rule: coverage * utility
+        # START WITH the rule with the highest score
+        # in the next iteration - update the score for overyone
+        # if we chose continent - AS () we need to remove all the records that the rule that we chose already covered.
+        # and then recalculate the score for all the remaining rules
+        # and then again - pick the best rule
+        # TODO: Greedy here - utility + covergate
+
         condition = eval(group)
         treatment = data['treatment']
         covered_countries = data['covered']
@@ -236,10 +209,13 @@ def main():
 
     logging.info(f"Created {len(rules)} Rule objects")
 
+
+    # TODO: after choosing the rules, we now estimate the solution found.
+    # expected utility
     # Run greedy algorithm
     unprotected_coverage_threshold = 0.7  # Minimum proportion of the unprotected group that should be covered
     protected_coverage_threshold = 0.5  # Minimum proportion of protected group that should be covered
-    max_rules = 5
+    k = max_rules = 5
     fairness_threshold = 10000 # USD difference in utility between protected and unprotected groups
     total_individuals = len(df)
     logging.info(f"Running greedy algorithm with unprotected coverage threshold {unprotected_coverage_threshold}, "
@@ -263,15 +239,20 @@ def main():
         logging.info(f"  Protected Coverage: {len(rule.covered_protected_indices)}")
 
     # Calculate final fairness measure
-    total_coverage = set().union(*[rule.covered_indices for rule in selected_rules])
-    total_protected_coverage = set().union(*[rule.covered_protected_indices for rule in selected_rules])
-    total_utility = sum(rule.utility for rule in selected_rules)
-    total_protected_utility = sum(rule.protected_utility for rule in selected_rules)
+    # TODO Change this not to sum utility but to expected utility - use calculate_expected_utility
+
+    # total_coverage = set().union(*[rule.covered_indices for rule in selected_rules])
+    # total_protected_coverage = set().union(*[rule.covered_protected_indices for rule in selected_rules])
+    # total_utility = sum(rule.utility for rule in selected_rules)
+    # total_protected_utility = sum(rule.protected_utility for rule in selected_rules)
+
 
     logging.info(f"Total Coverage: {len(total_coverage)} out of {len(df)} ({len(total_coverage)/len(df)*100:.2f}%)")
     logging.info(f"Protected Coverage: {len(total_protected_coverage)} out of {len(protected_group)} ({len(total_protected_coverage)/len(protected_group)*100:.2f}%)")
-    logging.info(f"Total Utility: {total_utility:.4f}")
-    logging.info(f"Total Protected Utility: {total_protected_utility:.4f}")
+    logging.info(f"Expected Utility: {total_utility:.4f}")
+    logging.info(f"Expected Protected Utility: {total_protected_utility:.4f}")
+
+    # TODO: Print the total time of this whole program (main)
 
     # check if the fairness constraint is satisfied by subtracting the protected utility from the total utility
     fairness_measure = abs(total_protected_utility - total_utility)

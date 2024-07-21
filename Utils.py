@@ -69,14 +69,14 @@ def getAttsVals(atts,df):
 def getNextLeveltreatments(treatments_cate, df_g, ordinal_atts, high, low, dag, target):
     logging.debug(f"getNextLeveltreatments input: treatments_cate={treatments_cate}, high={high}, low={low}")
     treatments = []
-    if high:
-        positives = getTreatmeants(treatments_cate, 'positive', df_g, dag, ordinal_atts, target)
-    if low:
-        negatives = getTreatmeants(treatments_cate, 'negative', df_g, dag, ordinal_atts, target)
-    if high:
-        treatments = getCombTreatments(df_g, positives, treatments, ordinal_atts)
-    if low:
-        treatments = getCombTreatments(df_g, negatives, treatments, ordinal_atts)
+
+    # TODO: why 2 ifs here?
+    positives = getTreatmeants(treatments_cate, 'positive', df_g, dag, ordinal_atts, target)
+    # if low:
+    #     negatives = getTreatmeants(treatments_cate, 'negative', df_g, dag, ordinal_atts, target)
+    treatments = getCombTreatments(df_g, positives, treatments, ordinal_atts)
+    # if low:
+    #     treatments = getCombTreatments(df_g, negatives, treatments, ordinal_atts)
     logging.debug(f"getNextLeveltreatments output: treatments={treatments}")
     return treatments
 
@@ -85,7 +85,6 @@ def getCombTreatments(df_g, positives, treatments, ordinal_atts):
         t = copy.deepcopy(comb[1])
         t.update(comb[0])
         if len(t.keys()) == 2:
-
             df_g['TempTreatment'] = df_g.apply(lambda row: addTempTreatment(row, t, ordinal_atts), axis=1)
             valid = list(set(df_g['TempTreatment'].tolist()))
             # no tuples in treatment group
@@ -129,17 +128,17 @@ def getTreatmeants(treatments_cate, bound, df_g, DAG, ordinal_atts, target):
             if bound == 'positive':
                 if getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target) > 0:
                     ans.append(treatment)
-            if bound == 'negative':
-                if getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target) < 0:
-                    ans.append(treatment)
+            # if bound == 'negative':
+            #     if getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target) < 0:
+            #         ans.append(treatment)
     else:
         for k,v in treatments_cate.items():
             if bound == 'positive':
                 if v > 0:
                     ans.append(ast.literal_eval(k))
-            if bound == 'negative':
-                if v < 0:
-                    ans.append(ast.literal_eval(k))
+            # if bound == 'negative':
+            #     if v < 0:
+            #         ans.append(ast.literal_eval(k))
     logging.debug(f"getTreatmeants output: ans={ans}")
     return ans
 
