@@ -161,6 +161,9 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
     return solution
 
 def main():
+    import time
+    start_time = time.time()
+
     # Load data
     df = load_data('data/so_countries_col_new.csv')
 
@@ -173,17 +176,11 @@ def main():
     logging.info(f"Gender distribution:\n{gender_distribution}")
 
     country = 'Country'
-
     fds = ['Continent', 'HDI', 'GDP', 'GINI']
-
     fds = [country] + fds
 
     APRIORI = 0.1
     grouping_patterns = get_grouping_patterns(df, fds, APRIORI)
-
-    # load from file
-    # with open('grouping_patterns.json', 'r') as f:
-    #     grouping_patterns = json.load(f)
 
     # Get treatments for each grouping pattern
     DAG = SO_DAG
@@ -199,11 +196,8 @@ def main():
     # Create Rule objects
     rules = []
     for group, data in group_treatments.items():
-
-
         condition = eval(group)
         treatment = data['treatment']
-        covered_countries = data['covered']
         covered_indices = data['covered_indices']
         covered_protected_indices = covered_indices.intersection(protected_group)
         utility = data['utility']
@@ -221,21 +215,15 @@ def main():
 
     logging.info(f"Created {len(rules)} Rule objects")
 
-    # TODO: after choosing the rules, we now estimate the solution found.
-    # expected utility
     # Run greedy algorithm
-    unprotected_coverage_threshold = 0.7  # Minimum proportion of the unprotected group that should be covered
-    protected_coverage_threshold = 0.5  # Minimum proportion of protected group that should be covered
-    k = max_rules = 5
-    fairness_threshold = 10000 # USD difference in utility between protected and unprotected groups
+    unprotected_coverage_threshold = 0.7
+    protected_coverage_threshold = 0.5
+    max_rules = 5
+    fairness_threshold = 10000  # USD difference in utility between protected and unprotected groups
     total_individuals = len(df)
     logging.info(f"Running greedy algorithm with unprotected coverage threshold {unprotected_coverage_threshold}, "
                  f"protected coverage threshold {protected_coverage_threshold}, "
                  f"max {max_rules} rules, and fairness threshold {fairness_threshold}")
-    logging.info(f"Unprotected coverage threshold {unprotected_coverage_threshold} means at least {unprotected_coverage_threshold * 100}% "
-                 f"of the unprotected group should be covered by the selected rules")
-    logging.info(f"Protected coverage threshold {protected_coverage_threshold} means at least {protected_coverage_threshold * 100}% "
-                 f"of the protected group should be covered by the selected rules")
 
     selected_rules = greedy_fair_prescription_rules(rules, protected_group, unprotected_coverage_threshold,
                                                     protected_coverage_threshold, max_rules, total_individuals, fairness_threshold)
@@ -250,30 +238,31 @@ def main():
         logging.info(f"  Coverage: {len(rule.covered_indices)}")
         logging.info(f"  Protected Coverage: {len(rule.covered_protected_indices)}")
 
-    # Calculate final fairness measure
-    # TODO Change this not to sum utility but to expected utility - use calculate_expected_utility
-
-    # total_coverage = set().union(*[rule.covered_indices for rule in selected_rules])
-    # total_protected_coverage = set().union(*[rule.covered_protected_indices for rule in selected_rules])
-    # total_utility = sum(rule.utility for rule in selected_rules)
-    # total_protected_utility = sum(rule.protected_utility for rule in selected_rules)
-
+    # Calculate final fairness measure using expected utility
+    expected_utility = calculate_expected_utility(selected_rules)
+    total_coverage = set().union(*[rule.covered_indices for rule in selected_rules])
+    total_protected_coverage = set().union(*[rule.covered_protected_indices for rule in selected_rules])
 
     logging.info(f"Total Coverage: {len(total_coverage)} out of {len(df)} ({len(total_coverage)/len(df)*100:.2f}%)")
     logging.info(f"Protected Coverage: {len(total_protected_coverage)} out of {len(protected_group)} ({len(total_protected_coverage)/len(protected_group)*100:.2f}%)")
-    logging.info(f"Expected Utility: {total_utility:.4f}")
-    logging.info(f"Expected Protected Utility: {total_protected_utility:.4f}")
+    logging.info(f"Expected Utility: {expected_utility:.4f}")
 
-    # TODO: Print the total time of this whole program (main)
+    # Calculate protected expected utility
+    protected_expected_utility = calculate_expected_utility([Rule(r.condition, r.treatment, r.covered_protected_indices, r.covered_protected_indices, r.protected_utility, r.protected_utility) for r in selected_rules])
+    logging.info(f"Expected Protected Utility: {protected_expected_utility:.4f}")
 
-    # check if the fairness constraint is satisfied by subtracting the protected utility from the total utility
-    fairness_measure = abs(total_protected_utility - total_utility)
+    # Check if the fairness constraint is satisfied
+    fairness_measure = abs(protected_expected_utility - expected_utility)
 
     if fairness_measure <= fairness_threshold:
         logging.info(f"Fairness constraint satisfied: {fairness_measure:.4f} <= {fairness_threshold}")
     else:
         logging.warning(f"Fairness constraint violated: {fairness_measure:.4f} > {fairness_threshold}")
 
+    # Print the total time of this whole program
+    end_time = time.time()
+    total_time = end_time - start_time
+    logging.info(f"Total execution time: {total_time:.2f} seconds")
 
 if __name__ == "__main__":
     main()
