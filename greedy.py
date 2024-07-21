@@ -171,7 +171,7 @@ def main():
 
     country = 'Country'
 
-    fds = ['Country', 'Continent', 'HDI', 'GDP', 'GINI']
+    fds = ['Continent', 'HDI', 'GDP', 'GINI']
 
     fds = [country] + fds
 
