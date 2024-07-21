@@ -191,7 +191,7 @@ def main():
     DAG = SO_DAG
     targetClass = 'ConvertedSalary'
     actionable_atts = [
-        'HoursComputer', 'DevType', 'Country', 'FormalEducation', 'UndergradMajor', 'Continent'
+        'HoursComputer', 'DevType', 'FormalEducation', 'UndergradMajor', 'Continent'
     ]
 
     logging.info("Getting treatments for each grouping pattern")
@@ -266,6 +266,8 @@ def main():
     # Print the total time of this whole program
     end_time = time.time()
     total_time = end_time - start_time
+    logging.info(f"Starting time: {start_time}")
+    logging.info(f"Ending time: {end_time}")
     logging.info(f"Total execution time: {total_time:.2f} seconds")
 
 if __name__ == "__main__":
