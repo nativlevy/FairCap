@@ -85,7 +85,7 @@ def get_grouping_patterns(df: pd.DataFrame, attributes: List[str], apriori: floa
     for i, pattern in enumerate(filtered_patterns):
         covered_indices = apply_pattern(pattern)
         logging.info(f"Pattern {i}: {pattern}")
-        logging.info(f"  Length: {len(pattern)}")
+        logging.info(f"  Length (key-value pairs): {len(pattern)}")
         logging.info(f"  Coverage: {len(covered_indices)}")
 
     return filtered_patterns
