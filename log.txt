@@ -1,0 +1,223 @@
+14:34:37 - INFO - Running greedy algorithm with unprotected coverage threshold 0.7, protected coverage threshold 0.5, max 10 rules, and fairness threshold 0.05
+14:34:37 - INFO - Starting greedy algorithm with 66 rules, 2890 protected individuals, 35200 unprotected individuals, protected coverage threshold 0.5, unprotected coverage threshold 0.7, and max 10 rules
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=35200, new_covered_protected=0
+14:34:37 - DEBUG - Rule score: 0.9091 (expected_utility: 8560.9673, fairness_score: 1.0000, coverage_factor: 0.0000
+14:34:37 - DEBUG - Scoring rule: new_covered=29558, new_covered_protected=2144
+14:34:37 - DEBUG - Rule score: 1.1137 (expected_utility: 53798.2038, fairness_score: 1.0782, coverage_factor: 1.4685
+14:34:37 - DEBUG - Scoring rule: new_covered=19848, new_covered_protected=1631
+14:34:37 - DEBUG - Rule score: 1.0931 (expected_utility: 56792.2019, fairness_score: 1.0895, coverage_factor: 1.1287
+14:34:37 - DEBUG - Scoring rule: new_covered=11181, new_covered_protected=847
+14:34:37 - DEBUG - Rule score: 1.0369 (expected_utility: 78141.5390, fairness_score: 1.0820, coverage_factor: 0.5862
+14:34:37 - DEBUG - Scoring rule: new_covered=8557, new_covered_protected=706
+14:34:37 - DEBUG - Rule score: 1.0353 (expected_utility: 65501.0578, fairness_score: 1.0899, coverage_factor: 0.4886
+14:34:37 - DEBUG - Scoring rule: new_covered=7638, new_covered_protected=636
+14:34:37 - DEBUG - Rule score: 1.0317 (expected_utility: 78974.4471, fairness_score: 1.0908, coverage_factor: 0.4401
+14:34:37 - DEBUG - Scoring rule: new_covered=7496, new_covered_protected=446
+14:34:37 - DEBUG - Rule score: 0.9947 (expected_utility: 42510.0684, fairness_score: 1.0633, coverage_factor: 0.3087
+14:34:37 - DEBUG - Scoring rule: new_covered=6557, new_covered_protected=412
+14:34:37 - DEBUG - Rule score: 0.9960 (expected_utility: 73700.1492, fairness_score: 1.0670, coverage_factor: 0.2851
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=29558, new_covered_protected=2144
+14:34:37 - DEBUG - Rule score: 1.1137 (expected_utility: 53798.2038, fairness_score: 1.0782, coverage_factor: 1.4685
+14:34:37 - DEBUG - Scoring rule: new_covered=29558, new_covered_protected=2144
+14:34:37 - DEBUG - Rule score: 1.1137 (expected_utility: 53798.2038, fairness_score: 1.0782, coverage_factor: 1.4685
+14:34:37 - DEBUG - Scoring rule: new_covered=19848, new_covered_protected=1631
+14:34:37 - DEBUG - Rule score: 1.0931 (expected_utility: 56792.2019, fairness_score: 1.0895, coverage_factor: 1.1287
+14:34:37 - DEBUG - Scoring rule: new_covered=19848, new_covered_protected=1631
+14:34:37 - DEBUG - Rule score: 1.0931 (expected_utility: 56792.2019, fairness_score: 1.0895, coverage_factor: 1.1287
+14:34:37 - DEBUG - Scoring rule: new_covered=19848, new_covered_protected=1631
+14:34:37 - DEBUG - Rule score: 1.0931 (expected_utility: 56792.2019, fairness_score: 1.0895, coverage_factor: 1.1287
+14:34:37 - DEBUG - Scoring rule: new_covered=11181, new_covered_protected=847
+14:34:37 - DEBUG - Rule score: 1.0369 (expected_utility: 78141.5390, fairness_score: 1.0820, coverage_factor: 0.5862
+14:34:37 - DEBUG - Scoring rule: new_covered=11181, new_covered_protected=847
+14:34:37 - DEBUG - Rule score: 1.0369 (expected_utility: 78141.5390, fairness_score: 1.0820, coverage_factor: 0.5862
+14:34:37 - DEBUG - Scoring rule: new_covered=29558, new_covered_protected=2144
+14:34:37 - DEBUG - Rule score: 1.1137 (expected_utility: 53798.2038, fairness_score: 1.0782, coverage_factor: 1.4685
+14:34:37 - DEBUG - Scoring rule: new_covered=8557, new_covered_protected=706
+14:34:37 - DEBUG - Rule score: 1.0353 (expected_utility: 65501.0578, fairness_score: 1.0899, coverage_factor: 0.4886
+14:34:37 - DEBUG - Scoring rule: new_covered=8557, new_covered_protected=706
+14:34:37 - DEBUG - Rule score: 1.0353 (expected_utility: 65501.0578, fairness_score: 1.0899, coverage_factor: 0.4886
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=35200, new_covered_protected=0
+14:34:37 - DEBUG - Rule score: 0.9091 (expected_utility: 8560.9673, fairness_score: 1.0000, coverage_factor: 0.0000
+14:34:37 - DEBUG - Scoring rule: new_covered=7638, new_covered_protected=636
+14:34:37 - DEBUG - Rule score: 1.0317 (expected_utility: 78974.4471, fairness_score: 1.0908, coverage_factor: 0.4401
+14:34:37 - DEBUG - Scoring rule: new_covered=7638, new_covered_protected=636
+14:34:37 - DEBUG - Rule score: 1.0317 (expected_utility: 78974.4471, fairness_score: 1.0908, coverage_factor: 0.4401
+14:34:37 - DEBUG - Scoring rule: new_covered=29558, new_covered_protected=2144
+14:34:37 - DEBUG - Rule score: 1.1137 (expected_utility: 53798.2038, fairness_score: 1.0782, coverage_factor: 1.4685
+14:34:37 - DEBUG - Scoring rule: new_covered=29558, new_covered_protected=2144
+14:34:37 - DEBUG - Rule score: 1.1137 (expected_utility: 53798.2038, fairness_score: 1.0782, coverage_factor: 1.4685
+14:34:37 - DEBUG - Scoring rule: new_covered=6557, new_covered_protected=412
+14:34:37 - DEBUG - Rule score: 0.9960 (expected_utility: 73700.1492, fairness_score: 1.0670, coverage_factor: 0.2851
+14:34:37 - DEBUG - Scoring rule: new_covered=6557, new_covered_protected=412
+14:34:37 - DEBUG - Rule score: 0.9960 (expected_utility: 73700.1492, fairness_score: 1.0670, coverage_factor: 0.2851
+14:34:37 - DEBUG - Scoring rule: new_covered=19848, new_covered_protected=1631
+14:34:37 - DEBUG - Rule score: 1.0931 (expected_utility: 56792.2019, fairness_score: 1.0895, coverage_factor: 1.1287
+14:34:37 - DEBUG - Scoring rule: new_covered=7638, new_covered_protected=636
+14:34:37 - DEBUG - Rule score: 1.0317 (expected_utility: 78974.4471, fairness_score: 1.0908, coverage_factor: 0.4401
+14:34:37 - DEBUG - Scoring rule: new_covered=6557, new_covered_protected=412
+14:34:37 - DEBUG - Rule score: 0.9960 (expected_utility: 73700.1492, fairness_score: 1.0670, coverage_factor: 0.2851
+14:34:37 - DEBUG - Scoring rule: new_covered=19848, new_covered_protected=1631
+14:34:37 - DEBUG - Rule score: 1.0931 (expected_utility: 56792.2019, fairness_score: 1.0895, coverage_factor: 1.1287
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=19848, new_covered_protected=1631
+14:34:37 - DEBUG - Rule score: 1.0931 (expected_utility: 56792.2019, fairness_score: 1.0895, coverage_factor: 1.1287
+14:34:37 - DEBUG - Scoring rule: new_covered=19848, new_covered_protected=1631
+14:34:37 - DEBUG - Rule score: 1.0931 (expected_utility: 56792.2019, fairness_score: 1.0895, coverage_factor: 1.1287
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=29558, new_covered_protected=2144
+14:34:37 - DEBUG - Rule score: 1.1137 (expected_utility: 53798.2038, fairness_score: 1.0782, coverage_factor: 1.4685
+14:34:37 - DEBUG - Scoring rule: new_covered=29558, new_covered_protected=2144
+14:34:37 - DEBUG - Rule score: 1.1137 (expected_utility: 53798.2038, fairness_score: 1.0782, coverage_factor: 1.4685
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=29558, new_covered_protected=2144
+14:34:37 - DEBUG - Rule score: 1.1137 (expected_utility: 53798.2038, fairness_score: 1.0782, coverage_factor: 1.4685
+14:34:37 - DEBUG - Scoring rule: new_covered=29558, new_covered_protected=2144
+14:34:37 - DEBUG - Rule score: 1.1137 (expected_utility: 53798.2038, fairness_score: 1.0782, coverage_factor: 1.4685
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=29558, new_covered_protected=2144
+14:34:37 - DEBUG - Rule score: 1.1137 (expected_utility: 53798.2038, fairness_score: 1.0782, coverage_factor: 1.4685
+14:34:37 - DEBUG - Scoring rule: new_covered=6557, new_covered_protected=412
+14:34:37 - DEBUG - Rule score: 0.9960 (expected_utility: 73700.1492, fairness_score: 1.0670, coverage_factor: 0.2851
+14:34:37 - DEBUG - Scoring rule: new_covered=19848, new_covered_protected=1631
+14:34:37 - DEBUG - Rule score: 1.0931 (expected_utility: 56792.2019, fairness_score: 1.0895, coverage_factor: 1.1287
+14:34:37 - DEBUG - Scoring rule: new_covered=19848, new_covered_protected=1631
+14:34:37 - DEBUG - Rule score: 1.0931 (expected_utility: 56792.2019, fairness_score: 1.0895, coverage_factor: 1.1287
+14:34:37 - DEBUG - Scoring rule: new_covered=7638, new_covered_protected=636
+14:34:37 - DEBUG - Rule score: 1.0317 (expected_utility: 78974.4471, fairness_score: 1.0908, coverage_factor: 0.4401
+14:34:37 - DEBUG - Scoring rule: new_covered=6557, new_covered_protected=412
+14:34:37 - DEBUG - Rule score: 0.9960 (expected_utility: 73700.1492, fairness_score: 1.0670, coverage_factor: 0.2851
+14:34:37 - DEBUG - Scoring rule: new_covered=7638, new_covered_protected=636
+14:34:37 - DEBUG - Rule score: 1.0317 (expected_utility: 78974.4471, fairness_score: 1.0908, coverage_factor: 0.4401
+14:34:37 - DEBUG - Scoring rule: new_covered=6557, new_covered_protected=412
+14:34:37 - DEBUG - Rule score: 0.9960 (expected_utility: 73700.1492, fairness_score: 1.0670, coverage_factor: 0.2851
+14:34:37 - DEBUG - Scoring rule: new_covered=19848, new_covered_protected=1631
+14:34:37 - DEBUG - Rule score: 1.0931 (expected_utility: 56792.2019, fairness_score: 1.0895, coverage_factor: 1.1287
+14:34:37 - DEBUG - Scoring rule: new_covered=19848, new_covered_protected=1631
+14:34:37 - DEBUG - Rule score: 1.0931 (expected_utility: 56792.2019, fairness_score: 1.0895, coverage_factor: 1.1287
+14:34:37 - DEBUG - Scoring rule: new_covered=19848, new_covered_protected=1631
+14:34:37 - DEBUG - Rule score: 1.0931 (expected_utility: 56792.2019, fairness_score: 1.0895, coverage_factor: 1.1287
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=6557, new_covered_protected=412
+14:34:37 - DEBUG - Rule score: 0.9960 (expected_utility: 73700.1492, fairness_score: 1.0670, coverage_factor: 0.2851
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=35377, new_covered_protected=2047
+14:34:37 - DEBUG - Rule score: 1.0937 (expected_utility: 63271.0381, fairness_score: 1.0614, coverage_factor: 1.4166
+14:34:37 - DEBUG - Scoring rule: new_covered=19848, new_covered_protected=1631
+14:34:37 - DEBUG - Rule score: 1.0931 (expected_utility: 56792.2019, fairness_score: 1.0895, coverage_factor: 1.1287
+14:34:37 - DEBUG - Scoring rule: new_covered=19848, new_covered_protected=1631
+14:34:37 - DEBUG - Rule score: 1.0931 (expected_utility: 56792.2019, fairness_score: 1.0895, coverage_factor: 1.1287
+14:34:37 - INFO - Added rule 1: score=1.1137, total_covered=29558, protected_covered=2144, total_utility=53798.2038, protected_utility=3902.2718
+14:34:37 - INFO - Coverage thresholds met, focusing on fairness
+14:34:37 - INFO - Added fairness-improving rule 2: fairness_score=1.0908, total_covered=31657, protected_covered=2332, total_utility=132772.6509, protected_utility=10478.3059
+14:34:37 - INFO - Added fairness-improving rule 3: fairness_score=1.0908, total_covered=31657, protected_covered=2332, total_utility=211747.0980, protected_utility=17054.3399
+14:34:37 - INFO - Added fairness-improving rule 4: fairness_score=1.0908, total_covered=31657, protected_covered=2332, total_utility=290721.5451, protected_utility=23630.3740
+14:34:37 - INFO - Added fairness-improving rule 5: fairness_score=1.0908, total_covered=31657, protected_covered=2332, total_utility=369695.9922, protected_utility=30206.4081
+14:34:37 - INFO - Added fairness-improving rule 6: fairness_score=1.0908, total_covered=31657, protected_covered=2332, total_utility=448670.4392, protected_utility=36782.4422
+14:34:37 - INFO - Added fairness-improving rule 7: fairness_score=1.0908, total_covered=31657, protected_covered=2332, total_utility=527644.8863, protected_utility=43358.4763
+14:34:37 - INFO - Added fairness-improving rule 8: fairness_score=1.0899, total_covered=32897, protected_covered=2444, total_utility=593145.9442, protected_utility=48762.6772
+14:34:37 - INFO - Added fairness-improving rule 9: fairness_score=1.0899, total_covered=32897, protected_covered=2444, total_utility=658647.0020, protected_utility=54166.8780
+14:34:37 - INFO - Added fairness-improving rule 10: fairness_score=1.0899, total_covered=32897, protected_covered=2444, total_utility=724148.0599, protected_utility=59571.0789
+14:34:37 - INFO - Rule 1:
+14:34:37 - INFO -   Condition: {'RaceEthnicity': 'White or of European descent'}
+14:34:37 - INFO -   Treatment: {'Country': 'United States', 'HoursComputer': '5 - 8 hours'}
+14:34:37 - INFO -   Utility: 53798.2038
+14:34:37 - INFO -   Protected Utility: 3902.2718
+14:34:37 - INFO -   Coverage: 29558
+14:34:37 - INFO -   Protected Coverage: 2144
+14:34:37 - INFO - Rule 2:
+14:34:37 - INFO -   Condition: {'Age': '18 - 24 years old'}
+14:34:37 - INFO -   Treatment: {'Continent': 'North America'}
+14:34:37 - INFO -   Utility: 78974.4471
+14:34:37 - INFO -   Protected Utility: 6576.0341
+14:34:37 - INFO -   Coverage: 7638
+14:34:37 - INFO -   Protected Coverage: 636
+14:34:37 - INFO - Rule 3:
+14:34:37 - INFO -   Condition: {'Age': '18 - 24 years old', 'Gender': 'Male'}
+14:34:37 - INFO -   Treatment: {'Continent': 'North America'}
+14:34:37 - INFO -   Utility: 78974.4471
+14:34:37 - INFO -   Protected Utility: 6576.0341
+14:34:37 - INFO -   Coverage: 7638
+14:34:37 - INFO -   Protected Coverage: 636
+14:34:37 - INFO - Rule 4:
+14:34:37 - INFO -   Condition: {'Age': '18 - 24 years old', 'SexualOrientation': 'Straight or heterosexual'}
+14:34:37 - INFO -   Treatment: {'Continent': 'North America'}
+14:34:37 - INFO -   Utility: 78974.4471
+14:34:37 - INFO -   Protected Utility: 6576.0341
+14:34:37 - INFO -   Coverage: 7638
+14:34:37 - INFO -   Protected Coverage: 636
+14:34:37 - INFO - Rule 5:
+14:34:37 - INFO -   Condition: {'Age': '18 - 24 years old', 'RaceEthnicity': 'White or of European descent'}
+14:34:37 - INFO -   Treatment: {'Continent': 'North America'}
+14:34:37 - INFO -   Utility: 78974.4471
+14:34:37 - INFO -   Protected Utility: 6576.0341
+14:34:37 - INFO -   Coverage: 7638
+14:34:37 - INFO -   Protected Coverage: 636
+14:34:37 - INFO - Rule 6:
+14:34:37 - INFO -   Condition: {'Age': '18 - 24 years old', 'RaceEthnicity': 'White or of European descent', 'Gender': 'Male'}
+14:34:37 - INFO -   Treatment: {'Continent': 'North America'}
+14:34:37 - INFO -   Utility: 78974.4471
+14:34:37 - INFO -   Protected Utility: 6576.0341
+14:34:37 - INFO -   Coverage: 7638
+14:34:37 - INFO -   Protected Coverage: 636
+14:34:37 - INFO - Rule 7:
+14:34:37 - INFO -   Condition: {'Age': '18 - 24 years old', 'RaceEthnicity': 'White or of European descent', 'SexualOrientation': 'Straight or heterosexual'}
+14:34:37 - INFO -   Treatment: {'Continent': 'North America'}
+14:34:37 - INFO -   Utility: 78974.4471
+14:34:37 - INFO -   Protected Utility: 6576.0341
+14:34:37 - INFO -   Coverage: 7638
+14:34:37 - INFO -   Protected Coverage: 636
+14:34:37 - INFO - Rule 8:
+14:34:37 - INFO -   Condition: {'EducationParents': 'Master’s degree (MA, MS, M.Eng., MBA, etc.)'}
+14:34:37 - INFO -   Treatment: {'Continent': 'North America'}
+14:34:37 - INFO -   Utility: 65501.0578
+14:34:37 - INFO -   Protected Utility: 5404.2009
+14:34:37 - INFO -   Coverage: 8557
+14:34:37 - INFO -   Protected Coverage: 706
+14:34:37 - INFO - Rule 9:
+14:34:37 - INFO -   Condition: {'EducationParents': 'Master’s degree (MA, MS, M.Eng., MBA, etc.)', 'SexualOrientation': 'Straight or heterosexual'}
+14:34:37 - INFO -   Treatment: {'Continent': 'North America'}
+14:34:37 - INFO -   Utility: 65501.0578
+14:34:37 - INFO -   Protected Utility: 5404.2009
+14:34:37 - INFO -   Coverage: 8557
+14:34:37 - INFO -   Protected Coverage: 706
+14:34:37 - INFO - Rule 10:
+14:34:37 - INFO -   Condition: {'EducationParents': 'Master’s degree (MA, MS, M.Eng., MBA, etc.)', 'Gender': 'Male'}
+14:34:37 - INFO -   Treatment: {'Continent': 'North America'}
+14:34:37 - INFO -   Utility: 65501.0578
+14:34:37 - INFO -   Protected Utility: 5404.2009
+14:34:37 - INFO -   Coverage: 8557
+14:34:37 - INFO -   Protected Coverage: 706
+14:34:37 - INFO - Total Coverage: 32897 out of 38090 (86.37%)
+14:34:37 - INFO - Protected Coverage: 2444 out of 2890 (84.57%)
+14:34:37 - INFO - Expected Utility: 55670.8164
+14:34:37 - INFO - Expected Protected Utility: 4154.2387
+14:34:37 - WARNING - Fairness constraint violated: 0.9254 > 0.05
+14:34:37 - INFO - Starting time: 1722166363.146469
+14:34:37 - INFO - Ending time: 1722166477.671721
+14:34:37 - INFO - Total execution time: 114.53 seconds
