@@ -170,12 +170,15 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     # Use the minimum of the two coverage factors
     coverage_factor = min(protected_coverage_factor, unprotected_coverage_factor)
 
-    # TODO: we need to give larger weight to fairness_score
+    # Give larger weight to fairness_score
+    fairness_weight = 2.0
+    coverage_weight = 1.0
 
-    score = fairness_score * coverage_factor
+    score = (fairness_weight * fairness_score + coverage_weight * coverage_factor) / (fairness_weight + coverage_weight)
 
-    # TODO: If we have already covered all individuals, we can now focus on fairness
-    # score = fairness_score
+    # If we have already covered all individuals, focus on fairness
+    if len(covered) == len(rule.covered_indices):
+        score = fairness_score
 
     logging.debug(f"Rule score: {score:.4f} (expected_utility: {expected_utility:.4f}, "
                   f"fairness_score: {fairness_score:.4f}, coverage_factor: {coverage_factor:.4f}")
@@ -219,12 +222,6 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
         best_score = float('-inf')
 
         for rule in rules:
-            # TODO: if I've already covered all individuals, the protected coverage factor will be 0, we can now take rules that will help the protected.
-            # We need to focus on fulfilling the fairness constraint. We can have a solutions that will cover less people but will be more fair.
-
-            # TODO: check if  protected_coverage_threshold and unprotected_coverage_threshold is covered.
-            # If yes, the score rule functions should only take into account the fairness_score, not the coverage factors.
-
             if rule not in solution:
                 score = score_rule(rule, solution, covered, covered_protected,
                                    protected_group,
@@ -244,6 +241,38 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
         protected_utility += best_rule.protected_utility
 
         logging.info(f"Added rule {len(solution)}: score={best_score:.4f}, "
+                     f"total_covered={len(covered)}, protected_covered={len(covered_protected)}, "
+                     f"total_utility={total_utility:.4f}, protected_utility={protected_utility:.4f}")
+
+        # Check if coverage thresholds are met
+        if (len(covered) >= unprotected_coverage_threshold * total_individuals and
+            len(covered_protected) >= protected_coverage_threshold * len(protected_group)):
+            logging.info("Coverage thresholds met, focusing on fairness")
+            break
+
+    # After meeting coverage thresholds, focus on improving fairness
+    while len(solution) < max_rules:
+        best_rule = None
+        best_fairness_score = float('-inf')
+
+        for rule in rules:
+            if rule not in solution:
+                fairness_score = calculate_fairness_score(rule)
+                if fairness_score > best_fairness_score:
+                    best_fairness_score = fairness_score
+                    best_rule = rule
+
+        if best_rule is None or best_fairness_score <= fairness_threshold:
+            logging.info("No more rules can improve fairness, stopping")
+            break
+
+        solution.append(best_rule)
+        covered.update(best_rule.covered_indices)
+        covered_protected.update(best_rule.covered_protected_indices)
+        total_utility += best_rule.utility
+        protected_utility += best_rule.protected_utility
+
+        logging.info(f"Added fairness-improving rule {len(solution)}: fairness_score={best_fairness_score:.4f}, "
                      f"total_covered={len(covered)}, protected_covered={len(covered_protected)}, "
                      f"total_utility={total_utility:.4f}, protected_utility={protected_utility:.4f}")
 
@@ -307,7 +336,7 @@ def main():
     unprotected_coverage_threshold = 0.7
     protected_coverage_threshold = 0.5
     max_rules = 5
-    fairness_threshold = 10000  # USD difference in utility between protected and unprotected groups
+    fairness_threshold = 0.1  # Fairness score threshold (0.1 means 10% difference in utility is acceptable)
     total_individuals = len(df)
     logging.info(f"Running greedy algorithm with unprotected coverage threshold {unprotected_coverage_threshold}, "
                  f"protected coverage threshold {protected_coverage_threshold}, "
@@ -340,7 +369,7 @@ def main():
     logging.info(f"Expected Protected Utility: {protected_expected_utility:.4f}")
 
     # Check if the fairness constraint is satisfied
-    fairness_measure = abs(protected_expected_utility - expected_utility)
+    fairness_measure = abs(protected_expected_utility - expected_utility) / max(protected_expected_utility, expected_utility)
 
     if fairness_measure <= fairness_threshold:
         logging.info(f"Fairness constraint satisfied: {fairness_measure:.4f} <= {fairness_threshold}")
