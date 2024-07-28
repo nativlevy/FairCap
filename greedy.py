@@ -56,7 +56,7 @@ def get_grouping_patterns(df: pd.DataFrame, attributes: List[str], apriori: floa
         List[dict]: Filtered list of grouping patterns.
     """
 
-    # TODO: do not remove subsets, but only grouping patterns that define the same indices (choose the shortest one)
+    # TODO: The logic here is not correct. We do not remove subsets, but only grouping patterns that define the exactly same indices. In the case of multiple patterns that cover the same individuals, we should keep the shortest one.
 
     logging.info(f"Getting grouping patterns with apriori={apriori}")
     grouping_patterns = getAllGroups(df, attributes, apriori)
