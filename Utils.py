@@ -70,13 +70,8 @@ def getNextLeveltreatments(treatments_cate, df_g, ordinal_atts, high, low, dag, 
     logging.debug(f"getNextLeveltreatments input: treatments_cate={treatments_cate}, high={high}, low={low}")
     treatments = []
 
-    # TODO: why 2 ifs here?
     positives = getTreatmeants(treatments_cate, 'positive', df_g, dag, ordinal_atts, target)
-    # if low:
-    #     negatives = getTreatmeants(treatments_cate, 'negative', df_g, dag, ordinal_atts, target)
     treatments = getCombTreatments(df_g, positives, treatments, ordinal_atts)
-    # if low:
-    #     treatments = getCombTreatments(df_g, negatives, treatments, ordinal_atts)
     logging.debug(f"getNextLeveltreatments output: treatments={treatments}")
     return treatments
 

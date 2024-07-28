@@ -27,14 +27,12 @@ def load_data(file_path: str) -> pd.DataFrame:
     logging.info(f"Loaded {len(df)} rows and {len(df.columns)} columns")
     return df
 
-def get_grouping_patterns(df: pd.DataFrame, fds: List[str], apriori: float) -> List[dict]:
+def get_grouping_patterns(df: pd.DataFrame, attributes: List[str], apriori: float) -> List[dict]:
     logging.info(f"Getting grouping patterns with apriori={apriori}")
-    grouping_patterns = getAllGroups(df, fds, apriori)
+    grouping_patterns = getAllGroups(df, attributes, apriori)
     logging.info(f"Initial grouping patterns: {len(grouping_patterns)}")
 
-    def is_subset(group1, group2):
-        return all(item in group2.items() for item in group1.items())
-
+    # TODO: which groups to remove? Keep ground that cover different individuals / indices?
     def apply_pattern(pattern):
         mask = pd.Series(True, index=df.index)
         for col, val in pattern.items():
@@ -172,22 +170,14 @@ def main():
     protected_group = set(df[df['Gender'] != 'Male'].index)
     logging.info(f"Protected group size: {len(protected_group)} out of {len(df)} total")
 
-    # Debug: Check the distribution of Gender
-    gender_distribution = df['Gender'].value_counts()
-    logging.info(f"Gender distribution:\n{gender_distribution}")
-
-    country = 'Country'
-    # fds = ['Continent', 'HDI', 'GDP', 'GINI']
-    fds = [
-        'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',
+    # attributes = ['Continent', 'HDI', 'GDP', 'GINI']
+    attributes = [
+        'Country', 'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',
         'Age'
     ]
 
-    # TODO: remove this
-    fds = [country] + fds
-
     APRIORI = 0.1
-    grouping_patterns = get_grouping_patterns(df, fds, APRIORI)
+    grouping_patterns = get_grouping_patterns(df, attributes, APRIORI)
 
     # Get treatments for each grouping pattern
     DAG = SO_DAG
@@ -197,7 +187,7 @@ def main():
     ]
 
     logging.info("Getting treatments for each grouping pattern")
-    group_treatments, _ = getGroupstreatmentsforGreeedy(DAG, df, country, grouping_patterns, {}, targetClass, actionable_atts, True, protected_group)
+    group_treatments, _ = getGroupstreatmentsforGreeedy(DAG, df, 'Country', grouping_patterns, {}, targetClass, actionable_atts, True, protected_group)
 
     # Create Rule objects
     rules = []
