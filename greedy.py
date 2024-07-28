@@ -55,6 +55,9 @@ def get_grouping_patterns(df: pd.DataFrame, attributes: List[str], apriori: floa
     Returns:
         List[dict]: Filtered list of grouping patterns.
     """
+
+    # TODO: do not remove subsets, but only grouping patterns that define the same indices (choose the shortest one)
+
     logging.info(f"Getting grouping patterns with apriori={apriori}")
     grouping_patterns = getAllGroups(df, attributes, apriori)
     logging.info(f"Initial grouping patterns: {len(grouping_patterns)}")
@@ -185,7 +188,12 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     # Use the minimum of the two coverage factors
     coverage_factor = min(protected_coverage_factor, unprotected_coverage_factor)
 
-    score = expected_utility * fairness_score * coverage_factor
+    # TODO: we need to give larger weight to fairness_score
+
+    score = fairness_score * coverage_factor
+
+    # TODO: If we have already covered all individuals, we can now focus on fairness
+    # score = fairness_score
 
     logging.debug(f"Rule score: {score:.4f} (expected_utility: {expected_utility:.4f}, "
                   f"fairness_score: {fairness_score:.4f}, coverage_factor: {coverage_factor:.4f}")
@@ -229,6 +237,12 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
         best_score = float('-inf')
 
         for rule in rules:
+            # TODO: if I've already covered all individuals, the protected coverage factor will be 0, we can now take rules that will help the protected.
+            # We need to focus on fulfilling the fairness constraint. We can have a solutions that will cover less people but will be more fair.
+
+            # TODO: check if  protected_coverage_threshold and unprotected_coverage_threshold is covered.
+            # If yes, the score rule functions should only take into account the fairness_score, not the coverage factors.
+
             if rule not in solution:
                 score = score_rule(rule, solution, covered, covered_protected,
                                    protected_group,
@@ -268,7 +282,7 @@ def main():
 
     # Define attributes for grouping patterns
     attributes = [
-        'Country', 'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',
+        'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',
         'Age'
     ]
 
@@ -279,7 +293,7 @@ def main():
     DAG = SO_DAG
     targetClass = 'ConvertedSalary'
     actionable_atts = [
-        'HoursComputer', 'DevType', 'FormalEducation', 'UndergradMajor', 'Continent'
+        'HoursComputer', 'DevType', 'FormalEducation', 'UndergradMajor', 'Country', 'Continent'
     ]
 
     logging.info("Getting treatments for each grouping pattern")
