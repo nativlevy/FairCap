@@ -171,7 +171,7 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     coverage_factor = min(protected_coverage_factor, unprotected_coverage_factor)
 
     # Give larger weight to fairness_score
-    fairness_weight = 2.0
+    fairness_weight = 5.0
     coverage_weight = 1.0
 
     score = (fairness_weight * fairness_score + coverage_weight * coverage_factor) / (fairness_weight + coverage_weight)
@@ -335,7 +335,7 @@ def main():
     # Run greedy algorithm
     unprotected_coverage_threshold = 0.7
     protected_coverage_threshold = 0.5
-    max_rules = 5
+    max_rules = 10
     fairness_threshold = 0.1  # Fairness score threshold (0.1 means 10% difference in utility is acceptable)
     total_individuals = len(df)
     logging.info(f"Running greedy algorithm with unprotected coverage threshold {unprotected_coverage_threshold}, "
