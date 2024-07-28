@@ -32,25 +32,59 @@ def get_grouping_patterns(df: pd.DataFrame, attributes: List[str], apriori: floa
     grouping_patterns = getAllGroups(df, attributes, apriori)
     logging.info(f"Initial grouping patterns: {len(grouping_patterns)}")
 
-    # TODO: which groups to remove? Keep ground that cover different individuals / indices?
     def apply_pattern(pattern):
         mask = pd.Series(True, index=df.index)
         for col, val in pattern.items():
             mask &= df[col] == val
         return set(df.index[mask])
 
+    # Log details for each initial pattern
+    for i, pattern in enumerate(grouping_patterns):
+        covered_indices = apply_pattern(pattern)
+        logging.debug(f"Pattern {i}: {pattern}")
+        logging.debug(f"  Covered indices: {covered_indices}")
+        logging.debug(f"  Number of covered indices: {len(covered_indices)}")
+
     # Sort patterns by length (shorter first) and then by coverage (larger coverage first)
     sorted_patterns = sorted(grouping_patterns, key=lambda x: (len(x), -len(apply_pattern(x))))
+
+    logging.info("Sorted patterns (shortest first, then largest coverage):")
+    for i, pattern in enumerate(sorted_patterns):
+        covered_indices = apply_pattern(pattern)
+        logging.info(f"Pattern {i}: {pattern}")
+        logging.info(f"  Length: {len(pattern)}")
+        logging.info(f"  Coverage: {len(covered_indices)}")
+        logging.info(f"  Covered indices: {covered_indices}")
 
     filtered_patterns = []
     for pattern in sorted_patterns:
         pattern_coverage = apply_pattern(pattern)
-        if not any(pattern_coverage.issubset(apply_pattern(existing_pattern)) 
-                   for existing_pattern in filtered_patterns 
-                   if len(existing_pattern) <= len(pattern)):
+        is_subset = False
+        for existing_pattern in filtered_patterns:
+            if len(existing_pattern) <= len(pattern):
+                existing_coverage = apply_pattern(existing_pattern)
+                if pattern_coverage.issubset(existing_coverage):
+                    is_subset = True
+                    logging.debug(f"Pattern {pattern} is a subset of existing pattern {existing_pattern}")
+                    logging.debug(f"  Subset coverage: {pattern_coverage}")
+                    logging.debug(f"  Existing coverage: {existing_coverage}")
+                    break
+        
+        if not is_subset:
             filtered_patterns.append(pattern)
+            logging.info(f"Added pattern to filtered list: {pattern}")
+            logging.info(f"  Coverage: {len(pattern_coverage)}")
+            logging.info(f"  Covered indices: {pattern_coverage}")
 
     logging.info(f"Filtered grouping patterns: {len(filtered_patterns)}")
+    logging.info("Final filtered patterns:")
+    for i, pattern in enumerate(filtered_patterns):
+        covered_indices = apply_pattern(pattern)
+        logging.info(f"Pattern {i}: {pattern}")
+        logging.info(f"  Length: {len(pattern)}")
+        logging.info(f"  Coverage: {len(covered_indices)}")
+        logging.info(f"  Covered indices: {covered_indices}")
+
     return filtered_patterns
 
 def calculate_fairness_score(rule: Rule) -> float:
