@@ -1,5 +1,3 @@
-Think about how to implement the following algorithm:
-
 Files:
 
 greedy.py - The main algorithm file

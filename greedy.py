@@ -1,12 +1,9 @@
 import pandas as pd
 from typing import List, Set, Dict
 from Algorithms import getAllGroups, getGroupstreatmentsforGreeedy
-from functional_deps import calculate_functional_dependencies
-import Utils
 from dags import SO_DAG
 import logging
 import time
-import json
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 
