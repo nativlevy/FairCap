@@ -6,12 +6,22 @@ import Utils
 from dags import SO_DAG
 import logging
 import time
-
 import json
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 
 class Rule:
+    """
+    Represents a prescription rule with associated metrics.
+
+    Attributes:
+        condition (Dict): The condition part of the rule.
+        treatment (Dict): The treatment part of the rule.
+        covered_indices (Set[int]): Indices of individuals covered by this rule.
+        covered_protected_indices (Set[int]): Indices of protected individuals covered by this rule.
+        utility (float): The utility of this rule.
+        protected_utility (float): The utility of this rule for the protected group.
+    """
     def __init__(self, condition: Dict, treatment: Dict, covered_indices: Set[int],
                  covered_protected_indices: Set[int], utility: float, protected_utility: float):
         self.condition = condition
@@ -22,12 +32,32 @@ class Rule:
         self.protected_utility = protected_utility
 
 def load_data(file_path: str) -> pd.DataFrame:
+    """
+    Load data from a CSV file into a pandas DataFrame.
+
+    Args:
+        file_path (str): Path to the CSV file.
+
+    Returns:
+        pd.DataFrame: Loaded data.
+    """
     logging.info(f"Loading data from {file_path}")
     df = pd.read_csv(file_path)
     logging.info(f"Loaded {len(df)} rows and {len(df.columns)} columns")
     return df
 
 def get_grouping_patterns(df: pd.DataFrame, attributes: List[str], apriori: float) -> List[dict]:
+    """
+    Generate and filter grouping patterns from the data.
+
+    Args:
+        df (pd.DataFrame): Input data.
+        attributes (List[str]): Attributes to consider for grouping.
+        apriori (float): Apriori threshold for pattern generation.
+
+    Returns:
+        List[dict]: Filtered list of grouping patterns.
+    """
     logging.info(f"Getting grouping patterns with apriori={apriori}")
     grouping_patterns = getAllGroups(df, attributes, apriori)
     logging.info(f"Initial grouping patterns: {len(grouping_patterns)}")
@@ -79,15 +109,28 @@ def get_grouping_patterns(df: pd.DataFrame, attributes: List[str], apriori: floa
     return filtered_patterns
 
 def calculate_fairness_score(rule: Rule) -> float:
+    """
+    Calculate the fairness score for a given rule.
+
+    Args:
+        rule (Rule): The rule to calculate the fairness score for.
+
+    Returns:
+        float: The calculated fairness score.
+    """
     if rule.utility == rule.protected_utility:
         return rule.utility
     return rule.utility / abs(rule.utility - rule.protected_utility)
 
 def calculate_expected_utility(rules: List[Rule]) -> float:
     """
-    Calculate the expected utility of a set of rules according to the formula:
-    ExpUtility(R) = (1 / |coverage(R)|) * sum(min(utility(r)) for t in coverage(R))
-    where R_t is the set of rules covering the tuple t.
+    Calculate the expected utility of a set of rules.
+
+    Args:
+        rules (List[Rule]): List of rules to calculate the expected utility for.
+
+    Returns:
+        float: The calculated expected utility.
     """
     coverage = set()
     for rule in rules:
@@ -108,6 +151,21 @@ def calculate_expected_utility(rules: List[Rule]) -> float:
 def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_protected: Set[int],
                protected_group: Set[int],
                unprotected_coverage_threshold: float, protected_coverage_threshold: float) -> float:
+    """
+    Calculate the score for a given rule based on various factors.
+
+    Args:
+        rule (Rule): The rule to score.
+        solution (List[Rule]): Current set of selected rules.
+        covered (Set[int]): Set of indices covered by current solution.
+        covered_protected (Set[int]): Set of protected indices covered by current solution.
+        protected_group (Set[int]): Set of indices in the protected group.
+        unprotected_coverage_threshold (float): Threshold for unprotected group coverage.
+        protected_coverage_threshold (float): Threshold for protected group coverage.
+
+    Returns:
+        float: The calculated score for the rule.
+    """
     new_covered = rule.covered_indices - covered
     new_covered_protected = rule.covered_protected_indices - covered_protected
 
@@ -140,6 +198,21 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
 def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int], 
                                    unprotected_coverage_threshold: float, protected_coverage_threshold: float,
                                    max_rules: int, total_individuals: int, fairness_threshold: float) -> List[Rule]:
+    """
+    Greedy algorithm to select fair prescription rules.
+
+    Args:
+        rules (List[Rule]): List of all possible rules.
+        protected_group (Set[int]): Set of indices in the protected group.
+        unprotected_coverage_threshold (float): Threshold for unprotected group coverage.
+        protected_coverage_threshold (float): Threshold for protected group coverage.
+        max_rules (int): Maximum number of rules to select.
+        total_individuals (int): Total number of individuals in the dataset.
+        fairness_threshold (float): Threshold for fairness constraint.
+
+    Returns:
+        List[Rule]: Selected rules that maximize utility while satisfying fairness constraints.
+    """
     solution = []
     covered = set()
     covered_protected = set()
@@ -181,10 +254,12 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
                      f"total_covered={len(covered)}, protected_covered={len(covered_protected)}, "
                      f"total_utility={total_utility:.4f}, protected_utility={protected_utility:.4f}")
 
-
     return solution
 
 def main():
+    """
+    Main function to run the greedy fair prescription rules algorithm.
+    """
     start_time = time.time()
 
     # Load data
@@ -194,8 +269,7 @@ def main():
     protected_group = set(df[df['Gender'] != 'Male'].index)
     logging.info(f"Protected group size: {len(protected_group)} out of {len(df)} total")
 
-    # attributes = ['Continent', 'HDI', 'GDP', 'GINI']
-    # TODO: These are the attributes that will be part of the grouping patterns
+    # Define attributes for grouping patterns
     attributes = [
         'Country', 'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',
         'Age'
