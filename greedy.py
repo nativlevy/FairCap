@@ -55,9 +55,6 @@ def get_grouping_patterns(df: pd.DataFrame, attributes: List[str], apriori: floa
     Returns:
         List[dict]: Filtered list of grouping patterns.
     """
-
-    # TODO: The logic here is not correct. We do not remove subsets, but only grouping patterns that define the exactly same indices. In the case of multiple patterns that cover the same individuals, we should keep the shortest one.
-
     logging.info(f"Getting grouping patterns with apriori={apriori}")
     grouping_patterns = getAllGroups(df, attributes, apriori)
     logging.info(f"Initial grouping patterns: {len(grouping_patterns)}")
@@ -66,38 +63,22 @@ def get_grouping_patterns(df: pd.DataFrame, attributes: List[str], apriori: floa
         mask = pd.Series(True, index=df.index)
         for col, val in pattern.items():
             mask &= df[col] == val
-        return set(df.index[mask])
+        return frozenset(df.index[mask])
 
-    # Log details for each initial pattern
-    for i, pattern in enumerate(grouping_patterns):
-        covered_indices = apply_pattern(pattern)
-        logging.debug(f"Pattern {i}: {pattern}")
-        logging.debug(f"  Number of covered indices: {len(covered_indices)}")
+    # Create a dictionary to store patterns by their coverage
+    coverage_dict = {}
+    for pattern in grouping_patterns:
+        coverage = apply_pattern(pattern)
+        if coverage in coverage_dict:
+            if len(pattern) < len(coverage_dict[coverage]):
+                coverage_dict[coverage] = pattern
+        else:
+            coverage_dict[coverage] = pattern
 
-    # Sort patterns by length (shorter first) and then by coverage (larger coverage first)
-    sorted_patterns = sorted(grouping_patterns, key=lambda x: (len(x), -len(apply_pattern(x))))
+    filtered_patterns = list(coverage_dict.values())
 
-    logging.info("Sorted patterns (shortest first, then largest coverage):")
-    for i, pattern in enumerate(sorted_patterns):
-        covered_indices = apply_pattern(pattern)
-        logging.info(f"Pattern {i}: {pattern}")
-        logging.info(f"  Length: {len(pattern)}")
-
-    filtered_patterns = []
-    for pattern in sorted_patterns:
-        pattern_coverage = apply_pattern(pattern)
-        is_subset = False
-        for existing_pattern in filtered_patterns:
-            if len(existing_pattern) <= len(pattern):
-                existing_coverage = apply_pattern(existing_pattern)
-                if pattern_coverage.issubset(existing_coverage):
-                    is_subset = True
-                    logging.debug(f"Pattern {pattern} is a subset of existing pattern {existing_pattern}")
-                    break
-        
-        if not is_subset:
-            filtered_patterns.append(pattern)
-            logging.info(f"Added pattern to filtered list: {pattern}")
+    # Sort filtered patterns by length (shorter first) and then by coverage size (larger first)
+    filtered_patterns.sort(key=lambda x: (len(x), -len(apply_pattern(x))))
 
     logging.info(f"Filtered grouping patterns: {len(filtered_patterns)}")
     logging.info("Final filtered patterns:")
@@ -105,6 +86,7 @@ def get_grouping_patterns(df: pd.DataFrame, attributes: List[str], apriori: floa
         covered_indices = apply_pattern(pattern)
         logging.info(f"Pattern {i}: {pattern}")
         logging.info(f"  Length: {len(pattern)}")
+        logging.info(f"  Coverage: {len(covered_indices)}")
 
     return filtered_patterns
 
