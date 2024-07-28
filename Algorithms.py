@@ -14,6 +14,17 @@ PATH = "./data/"
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 
 def filterPatterns(df, groupingAtt, groups):
+    """
+    Filter and consolidate grouping patterns based on their coverage.
+
+    Args:
+        df (pd.DataFrame): The input dataframe.
+        groupingAtt (str): The attribute used for grouping.
+        groups (list): List of group patterns to filter.
+
+    Returns:
+        list: Filtered and consolidated list of group patterns.
+    """
     groups_dic = {}
     for group in groups:
         df['GROUP_MEMBER'] = df.apply(lambda row: isGroupMember(row, group), axis=1)
@@ -36,6 +47,17 @@ def filterPatterns(df, groupingAtt, groups):
     return ans
 
 def getAllGroups(df_org, atts, t):
+    """
+    Generate all possible grouping patterns using Apriori algorithm.
+
+    Args:
+        df_org (pd.DataFrame): The original dataframe.
+        atts (list): List of attributes to consider for grouping.
+        t (float): The minimum support threshold for Apriori algorithm.
+
+    Returns:
+        list: All generated grouping patterns.
+    """
     df = df_org.copy(deep=True)
     df = df[atts]
     df, rows, columns = Data2Transactions.removeHeader(df, 'Temp.csv')
@@ -43,6 +65,22 @@ def getAllGroups(df_org, atts, t):
     return rules
 
 def getGroupstreatmentsforGreeedy(DAG, df, groups, ordinal_atts, targetClass, actionable_atts, print_times, protected_group):
+    """
+    Get treatments for each group using a greedy approach.
+
+    Args:
+        DAG (list): The causal graph represented as a list of edges.
+        df (pd.DataFrame): The input dataframe.
+        groups (list): List of group patterns.
+        ordinal_atts (dict): Dictionary of ordinal attributes and their ordered values.
+        targetClass (str): The target variable name.
+        actionable_atts (list): List of actionable attributes.
+        print_times (bool): Whether to print execution times.
+        protected_group (set): Set of indices representing the protected group.
+
+    Returns:
+        tuple: A dictionary of group treatments and the elapsed time.
+    """
     start_time = time.time()
 
     # Create a partial function with fixed arguments
@@ -64,6 +102,21 @@ def getGroupstreatmentsforGreeedy(DAG, df, groups, ordinal_atts, targetClass, ac
     return groups_dic, elapsed_time
 
 def process_group_greedy(group, df, targetClass, DAG, ordinal_atts, actionable_atts, protected_group):
+    """
+    Process a single group to find the best treatment.
+
+    Args:
+        group (dict): The group pattern.
+        df (pd.DataFrame): The input dataframe.
+        targetClass (str): The target variable name.
+        DAG (list): The causal graph represented as a list of edges.
+        ordinal_atts (dict): Dictionary of ordinal attributes and their ordered values.
+        actionable_atts (list): List of actionable attributes.
+        protected_group (set): Set of indices representing the protected group.
+
+    Returns:
+        dict: Information about the best treatment for the group.
+    """
     df['GROUP_MEMBER'] = df.apply(lambda row: isGroupMember(row, group), axis=1)
     df_g = df[df['GROUP_MEMBER'] == 1]
     drop_atts = list(group.keys())
@@ -85,6 +138,16 @@ def process_group_greedy(group, df, targetClass, DAG, ordinal_atts, actionable_a
     }
 
 def isGroupMember(row, group):
+    """
+    Check if a row belongs to a specific group.
+
+    Args:
+        row (pd.Series): A row from the dataframe.
+        group (dict): The group pattern to check against.
+
+    Returns:
+        int: 1 if the row is a member of the group, 0 otherwise.
+    """
     for att in group:
         column_c_type = type(row[att])
         if type(row[att]) == int:
@@ -102,6 +165,20 @@ def isGroupMember(row, group):
     return 1
 
 def calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target, protected_group):
+    """
+    Calculate the fairness score for a given treatment.
+
+    Args:
+        treatment (dict): The treatment to evaluate.
+        df_g (pd.DataFrame): The group-specific dataframe.
+        DAG (list): The causal graph represented as a list of edges.
+        ordinal_atts (dict): Dictionary of ordinal attributes and their ordered values.
+        target (str): The target variable name.
+        protected_group (set): Set of indices representing the protected group.
+
+    Returns:
+        float: The calculated fairness score.
+    """
     cate_all =  Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
     protected_df = df_g[df_g.index.isin(protected_group)]
     cate_protected = Utils.getTreatmentCATE(protected_df, DAG, treatment, ordinal_atts, target)
@@ -121,9 +198,9 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionabl
         df_g (pd.DataFrame): The dataframe for the specific group.
         group (dict): The group definition.
         target (str): The target variable name.
-        DAG (networkx.DiGraph): The causal graph.
+        DAG (list): The causal graph represented as a list of edges.
         dropAtt (list): Attributes to be dropped from consideration.
-        ordinal_atts (list): List of ordinal attributes.
+        ordinal_atts (dict): Dictionary of ordinal attributes and their ordered values.
         actionable_atts_org (list): Original list of actionable attributes.
         protected_group (set): Set of indices representing the protected group.
 
@@ -186,6 +263,15 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionabl
     return (best_treatment, best_cate)
 
 def filter_above_median(treatments_cate):
+    """
+    Filter treatments to keep only those with above-median positive CATE values.
+
+    Args:
+        treatments_cate (dict): Dictionary of treatments and their CATE values.
+
+    Returns:
+        dict: Filtered dictionary of treatments with above-median positive CATE values.
+    """
     positive_values = [value for value in treatments_cate.values() if value > 0]
 
     if not positive_values:
