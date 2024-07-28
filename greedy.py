@@ -103,11 +103,10 @@ def calculate_expected_utility(rules: List[Rule]) -> float:
         total_utility += min_utility
     
     expected_utility = total_utility / len(coverage)
-    logging.debug(f"Expected Utility: {expected_utility:.4f}")
     return expected_utility
 
 def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_protected: Set[int],
-               total_utility: float, protected_utility: float, protected_group: Set[int],
+               protected_group: Set[int],
                unprotected_coverage_threshold: float, protected_coverage_threshold: float) -> float:
     new_covered = rule.covered_indices - covered
     new_covered_protected = rule.covered_protected_indices - covered_protected
@@ -162,7 +161,7 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
         for rule in rules:
             if rule not in solution:
                 score = score_rule(rule, solution, covered, covered_protected,
-                                   total_utility, protected_utility, protected_group,
+                                   protected_group,
                                    unprotected_coverage_threshold, protected_coverage_threshold)
                 if score > best_score:
                     best_score = score
@@ -213,7 +212,7 @@ def main():
     ]
 
     logging.info("Getting treatments for each grouping pattern")
-    group_treatments, _ = getGroupstreatmentsforGreeedy(DAG, df, 'Country', grouping_patterns, {}, targetClass, actionable_atts, True, protected_group)
+    group_treatments, _ = getGroupstreatmentsforGreeedy(DAG, df, grouping_patterns, {}, targetClass, actionable_atts, True, protected_group)
 
     # Create Rule objects
     rules = []

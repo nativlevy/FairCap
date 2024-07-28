@@ -42,11 +42,11 @@ def getAllGroups(df_org, atts, t):
     rules = Data2Transactions.getRules(df, rows, columns, min_support=t)
     return rules
 
-def getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, groups, ordinal_atts, targetClass, actionable_atts, print_times, protected_group):
+def getGroupstreatmentsforGreeedy(DAG, df, groups, ordinal_atts, targetClass, actionable_atts, print_times, protected_group):
     start_time = time.time()
 
     # Create a partial function with fixed arguments
-    process_group_partial = partial(process_group_greedy, df=df, groupingAtt=groupingAtt, 
+    process_group_partial = partial(process_group_greedy, df=df,
                                     targetClass=targetClass, DAG=DAG, ordinal_atts=ordinal_atts, 
                                     actionable_atts=actionable_atts, protected_group=protected_group)
 
@@ -63,14 +63,13 @@ def getGroupstreatmentsforGreeedy(DAG, df, groupingAtt, groups, ordinal_atts, ta
         logging.info(f"Elapsed time step 2: {elapsed_time} seconds")
     return groups_dic, elapsed_time
 
-def process_group_greedy(group, df, groupingAtt, targetClass, DAG, ordinal_atts, actionable_atts, protected_group):
+def process_group_greedy(group, df, targetClass, DAG, ordinal_atts, actionable_atts, protected_group):
     df['GROUP_MEMBER'] = df.apply(lambda row: isGroupMember(row, group), axis=1)
     df_g = df[df['GROUP_MEMBER'] == 1]
     drop_atts = list(group.keys())
     drop_atts.append('GROUP_MEMBER')
-    drop_atts.append(groupingAtt)
 
-    covered = set(df_g[groupingAtt].tolist())
+    covered = set(df_g['GROUP_MEMBER'].tolist())
 
     (t_h, cate_h) = getHighTreatments(df_g, group, targetClass,
                                       DAG, drop_atts,
