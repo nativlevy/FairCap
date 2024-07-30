@@ -5,6 +5,7 @@ from dags import SO_DAG
 import logging
 import time
 import csv
+import json
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 
@@ -389,18 +390,27 @@ def main():
 
     # Write results to CSV
     with open('experiment_results.csv', 'w', newline='') as csvfile:
-        fieldnames = ['k', 'execution_time', 'expected_utility', 'protected_expected_utility', 'coverage', 'protected_coverage']
+        fieldnames = ['k', 'execution_time', 'expected_utility', 'protected_expected_utility', 'coverage', 'protected_coverage', 'selected_rules']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         writer.writeheader()
         for result in results:
+            # Convert selected_rules to a JSON string
+            selected_rules_json = json.dumps([{
+                'condition': rule.condition,
+                'treatment': rule.treatment,
+                'utility': rule.utility,
+                'protected_utility': rule.protected_utility
+            } for rule in result['selected_rules']])
+
             writer.writerow({
                 'k': result['k'],
                 'execution_time': result['execution_time'],
                 'expected_utility': result['expected_utility'],
                 'protected_expected_utility': result['protected_expected_utility'],
                 'coverage': result['coverage'],
-                'protected_coverage': result['protected_coverage']
+                'protected_coverage': result['protected_coverage'],
+                'selected_rules': selected_rules_json
             })
 
     logging.info("Results written to experiment_results.csv")
