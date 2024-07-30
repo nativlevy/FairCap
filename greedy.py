@@ -4,6 +4,7 @@ from Algorithms import getAllGroups, getGroupstreatmentsforGreeedy
 from dags import SO_DAG
 import logging
 import time
+import csv
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 
@@ -247,23 +248,22 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
         # Check if coverage thresholds are met
         if (len(covered) >= unprotected_coverage_threshold * total_individuals and
             len(covered_protected) >= protected_coverage_threshold * len(protected_group)):
-            logging.info("Coverage thresholds met, focusing on fairness")
+            logging.info("Coverage thresholds met, focusing on protected group")
             break
 
-    # After meeting coverage thresholds, focus on improving fairness
+    # After meeting coverage thresholds, focus on improving utility for the protected group
     while len(solution) < max_rules:
         best_rule = None
-        best_fairness_score = float('-inf')
+        best_protected_utility = float('-inf')
 
         for rule in rules:
             if rule not in solution:
-                fairness_score = calculate_fairness_score(rule)
-                if fairness_score > best_fairness_score:
-                    best_fairness_score = fairness_score
+                if rule.protected_utility > best_protected_utility:
+                    best_protected_utility = rule.protected_utility
                     best_rule = rule
 
-        if best_rule is None or best_fairness_score <= fairness_threshold:
-            logging.info("No more rules can improve fairness, stopping")
+        if best_rule is None:
+            logging.info("No more rules can improve protected utility, stopping")
             break
 
         solution.append(best_rule)
@@ -272,30 +272,31 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
         total_utility += best_rule.utility
         protected_utility += best_rule.protected_utility
 
-        logging.info(f"Added fairness-improving rule {len(solution)}: fairness_score={best_fairness_score:.4f}, "
+        logging.info(f"Added protected-utility-improving rule {len(solution)}: protected_utility={best_protected_utility:.4f}, "
                      f"total_covered={len(covered)}, protected_covered={len(covered_protected)}, "
                      f"total_utility={total_utility:.4f}, protected_utility={protected_utility:.4f}")
 
     return solution
 
-def main():
+def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attributes: List[str], 
+                   unprotected_coverage_threshold: float, protected_coverage_threshold: float, 
+                   fairness_threshold: float) -> Dict:
     """
-    Main function to run the greedy fair prescription rules algorithm.
+    Run an experiment for a specific number of rules (k).
+
+    Args:
+        k (int): Number of rules to select.
+        df (pd.DataFrame): The input dataframe.
+        protected_group (Set[int]): Set of indices in the protected group.
+        attributes (List[str]): List of attributes for grouping patterns.
+        unprotected_coverage_threshold (float): Threshold for unprotected group coverage.
+        protected_coverage_threshold (float): Threshold for protected group coverage.
+        fairness_threshold (float): Threshold for fairness constraint.
+
+    Returns:
+        Dict: A dictionary containing the results of the experiment.
     """
     start_time = time.time()
-
-    # Load data
-    df = load_data('data/so_countries_col_new.csv')
-
-    # Define protected group (non-male in this case)
-    protected_group = set(df[df['Gender'] != 'Male'].index)
-    logging.info(f"Protected group size: {len(protected_group)} out of {len(df)} total")
-
-    # Define attributes for grouping patterns
-    attributes = [
-        'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',
-        'Age'
-    ]
 
     APRIORI = 0.1
     grouping_patterns = get_grouping_patterns(df, attributes, APRIORI)
@@ -323,65 +324,104 @@ def main():
         protected_proportion = len(covered_protected_indices) / len(covered_indices) if len(covered_indices) > 0 else 0
         protected_utility = utility * protected_proportion
         
-        logging.debug(f"Rule creation: condition={condition}, treatment={treatment}, "
-                      f"covered={len(covered_indices)}, protected_covered={len(covered_protected_indices)}, "
-                      f"utility={utility:.4f}, protected_utility={protected_utility:.4f}, "
-                      f"protected_proportion={protected_proportion:.4f}")
-        
         rules.append(Rule(condition, treatment, covered_indices, covered_protected_indices, utility, protected_utility))
 
     logging.info(f"Created {len(rules)} Rule objects")
 
     # Run greedy algorithm
-    unprotected_coverage_threshold = 0.7
-    protected_coverage_threshold = 0.5
-    max_rules = 10
-    fairness_threshold = 0.05  # Decreased from 0.1 to 0.05
     total_individuals = len(df)
     logging.info(f"Running greedy algorithm with unprotected coverage threshold {unprotected_coverage_threshold}, "
                  f"protected coverage threshold {protected_coverage_threshold}, "
-                 f"max {max_rules} rules, and fairness threshold {fairness_threshold}")
+                 f"{k} rules, and fairness threshold {fairness_threshold}")
 
     selected_rules = greedy_fair_prescription_rules(rules, protected_group, unprotected_coverage_threshold,
-                                                    protected_coverage_threshold, max_rules, total_individuals, fairness_threshold)
+                                                    protected_coverage_threshold, k, total_individuals, fairness_threshold)
 
-    # Log selected rules
-    for i, rule in enumerate(selected_rules, 1):
-        logging.info(f"Rule {i}:")
-        logging.info(f"  Condition: {rule.condition}")
-        logging.info(f"  Treatment: {rule.treatment}")
-        logging.info(f"  Utility: {rule.utility:.4f}")
-        logging.info(f"  Protected Utility: {rule.protected_utility:.4f}")
-        logging.info(f"  Coverage: {len(rule.covered_indices)}")
-        logging.info(f"  Protected Coverage: {len(rule.covered_protected_indices)}")
-
-    # Calculate final fairness measure using expected utility
+    # Calculate metrics
     expected_utility = calculate_expected_utility(selected_rules)
     total_coverage = set().union(*[rule.covered_indices for rule in selected_rules])
     total_protected_coverage = set().union(*[rule.covered_protected_indices for rule in selected_rules])
-
-    logging.info(f"Total Coverage: {len(total_coverage)} out of {len(df)} ({len(total_coverage)/len(df)*100:.2f}%)")
-    logging.info(f"Protected Coverage: {len(total_protected_coverage)} out of {len(protected_group)} ({len(total_protected_coverage)/len(protected_group)*100:.2f}%)")
-    logging.info(f"Expected Utility: {expected_utility:.4f}")
-
-    # Calculate protected expected utility
     protected_expected_utility = calculate_expected_utility([Rule(r.condition, r.treatment, r.covered_protected_indices, r.covered_protected_indices, r.protected_utility, r.protected_utility) for r in selected_rules])
-    logging.info(f"Expected Protected Utility: {protected_expected_utility:.4f}")
 
-    # Check if the fairness constraint is satisfied
-    fairness_measure = abs(protected_expected_utility - expected_utility) / max(protected_expected_utility, expected_utility)
-
-    if fairness_measure <= fairness_threshold:
-        logging.info(f"Fairness constraint satisfied: {fairness_measure:.4f} <= {fairness_threshold}")
-    else:
-        logging.warning(f"Fairness constraint violated: {fairness_measure:.4f} > {fairness_threshold}")
-
-    # Print the total time of this whole program
     end_time = time.time()
-    total_time = end_time - start_time
-    logging.info(f"Starting time: {start_time}")
-    logging.info(f"Ending time: {end_time}")
-    logging.info(f"Total execution time: {total_time:.2f} seconds")
+    execution_time = end_time - start_time
+
+    return {
+        'k': k,
+        'execution_time': execution_time,
+        'selected_rules': selected_rules,
+        'expected_utility': expected_utility,
+        'protected_expected_utility': protected_expected_utility,
+        'coverage': len(total_coverage) / len(df),
+        'protected_coverage': len(total_protected_coverage) / len(protected_group)
+    }
+
+def main():
+    """
+    Main function to run the greedy fair prescription rules algorithm for different values of k.
+    """
+    # Load data
+    df = load_data('data/so_countries_col_new.csv')
+
+    # Define protected group (non-male in this case)
+    protected_group = set(df[df['Gender'] != 'Male'].index)
+    logging.info(f"Protected group size: {len(protected_group)} out of {len(df)} total")
+
+    # Define attributes for grouping patterns
+    attributes = [
+        'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',
+        'Age'
+    ]
+
+    # Set parameters
+    unprotected_coverage_threshold = 0.7
+    protected_coverage_threshold = 0.5
+    fairness_threshold = 0.05
+
+    # Run experiments for different values of k
+    results = []
+    for k in range(3, 8):
+        result = run_experiment(k, df, protected_group, attributes, 
+                                unprotected_coverage_threshold, protected_coverage_threshold, 
+                                fairness_threshold)
+        results.append(result)
+        logging.info(f"Completed experiment for k={k}")
+
+    # Write results to CSV
+    with open('experiment_results.csv', 'w', newline='') as csvfile:
+        fieldnames = ['k', 'execution_time', 'expected_utility', 'protected_expected_utility', 'coverage', 'protected_coverage']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writeheader()
+        for result in results:
+            writer.writerow({
+                'k': result['k'],
+                'execution_time': result['execution_time'],
+                'expected_utility': result['expected_utility'],
+                'protected_expected_utility': result['protected_expected_utility'],
+                'coverage': result['coverage'],
+                'protected_coverage': result['protected_coverage']
+            })
+
+    logging.info("Results written to experiment_results.csv")
+
+    # Log detailed results for each k
+    for result in results:
+        logging.info(f"\nDetailed results for k={result['k']}:")
+        logging.info(f"Execution time: {result['execution_time']:.2f} seconds")
+        logging.info(f"Expected utility: {result['expected_utility']:.4f}")
+        logging.info(f"Protected expected utility: {result['protected_expected_utility']:.4f}")
+        logging.info(f"Coverage: {result['coverage']:.2%}")
+        logging.info(f"Protected coverage: {result['protected_coverage']:.2%}")
+        logging.info("Selected rules:")
+        for i, rule in enumerate(result['selected_rules'], 1):
+            logging.info(f"Rule {i}:")
+            logging.info(f"  Condition: {rule.condition}")
+            logging.info(f"  Treatment: {rule.treatment}")
+            logging.info(f"  Utility: {rule.utility:.4f}")
+            logging.info(f"  Protected Utility: {rule.protected_utility:.4f}")
+            logging.info(f"  Coverage: {len(rule.covered_indices)}")
+            logging.info(f"  Protected Coverage: {len(rule.covered_protected_indices)}")
 
 if __name__ == "__main__":
     main()
