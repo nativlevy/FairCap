@@ -306,7 +306,7 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attribut
     DAG = SO_DAG
     targetClass = 'ConvertedSalary'
     actionable_atts = [
-        'HoursComputer', 'DevType', 'FormalEducation', 'UndergradMajor', 'Country', 'Continent'
+        'Exercise', 'HoursComputer', 'DevType', 'FormalEducation', 'UndergradMajor', 'Country', 'Continent', 'Hobby', 'Student',
     ]
 
     logging.info("Getting treatments for each grouping pattern")
@@ -334,6 +334,17 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attribut
     logging.info(f"Running greedy algorithm with unprotected coverage threshold {unprotected_coverage_threshold}, "
                  f"protected coverage threshold {protected_coverage_threshold}, "
                  f"{k} rules, and fairness threshold {fairness_threshold}")
+
+    # save all rules to an output file
+    with open('rules.json', 'w') as f:
+        json.dump([{
+            'condition': rule.condition,
+            'treatment': rule.treatment,
+            'utility': rule.utility,
+            'protected_utility': rule.protected_utility,
+            'coverage': len(rule.covered_indices),
+            'protected_coverage': len(rule.covered_protected_indices)
+        } for rule in rules], f, indent=4)
 
     selected_rules = greedy_fair_prescription_rules(rules, protected_group, unprotected_coverage_threshold,
                                                     protected_coverage_threshold, k, total_individuals, fairness_threshold)
@@ -371,17 +382,17 @@ def main():
     # Define attributes for grouping patterns
     attributes = [
         'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',
-        'Age'
+        'Age', 'YearsCoding', 'Dependents',
     ]
 
     # Set parameters
-    unprotected_coverage_threshold = 0.7
+    unprotected_coverage_threshold = 0.5
     protected_coverage_threshold = 0.5
     fairness_threshold = 0.05
 
     # Run experiments for different values of k
     results = []
-    for k in range(3, 8):
+    for k in range(7, 8):
         result = run_experiment(k, df, protected_group, attributes, 
                                 unprotected_coverage_threshold, protected_coverage_threshold, 
                                 fairness_threshold)
@@ -400,7 +411,9 @@ def main():
                 'condition': rule.condition,
                 'treatment': rule.treatment,
                 'utility': rule.utility,
-                'protected_utility': rule.protected_utility
+                'protected_utility': rule.protected_utility,
+                'coverage': len(rule.covered_indices),
+                'protected_coverage': len(rule.covered_protected_indices)
             } for rule in result['selected_rules']])
 
             writer.writerow({

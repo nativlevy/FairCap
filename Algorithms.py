@@ -179,7 +179,7 @@ def calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target, protect
     Returns:
         float: The calculated fairness score.
     """
-    cate_all =  Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
+    cate_all = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
     protected_df = df_g[df_g.index.isin(protected_group)]
     cate_protected = Utils.getTreatmentCATE(protected_df, DAG, treatment, ordinal_atts, target)
     if cate_all == cate_protected:
