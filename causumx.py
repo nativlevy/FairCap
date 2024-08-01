@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import List, Set, Dict
-from Algorithms import getAllGroups, getGroupstreatmentsforGreeedy
+from Algorithms_causumx import getAllGroups, getGroupstreatmentsforGreeedy
 from dags import SO_DAG
 import logging
 import time
@@ -92,19 +92,20 @@ def get_grouping_patterns(df: pd.DataFrame, attributes: List[str], apriori: floa
 
     return filtered_patterns
 
+# slides: causumx and greedy (maybe in the causumx the utility is higher but not fair as compated to the greedy)
+# TODO: k 3 4 5 6 7
+# run times
+# results - much
+# rules that where selected
+# coverage
+# protected coverage
+# utility
+# protected utility
+# change git repo to FairPrescriptionRules
+# public repo to transter the code + README
+
 def calculate_fairness_score(rule: Rule) -> float:
-    """
-    Calculate the fairness score for a given rule.
-
-    Args:
-        rule (Rule): The rule to calculate the fairness score for.
-
-    Returns:
-        float: The calculated fairness score.
-    """
-    if rule.utility == rule.protected_utility:
-        return rule.utility
-    return rule.utility / abs(rule.utility - rule.protected_utility)
+    return rule.utility
 
 def calculate_expected_utility(rules: List[Rule]) -> float:
     """
@@ -164,7 +165,7 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     expected_utility = calculate_expected_utility(new_solution)
 
     fairness_score = calculate_fairness_score(rule)
-    
+
     # Calculate coverage factors for both protected and unprotected groups
     protected_coverage_factor = (len(new_covered_protected) / len(protected_group)) / protected_coverage_threshold if protected_coverage_threshold > 0 else 1
     unprotected_coverage_factor = (len(new_covered - new_covered_protected) / (len(rule.covered_indices) - len(protected_group))) / unprotected_coverage_threshold if unprotected_coverage_threshold > 0 else 1
@@ -336,7 +337,7 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attribut
                  f"{k} rules, and fairness threshold {fairness_threshold}")
 
     # save all rules to an output file
-    with open('rules.json', 'w') as f:
+    with open('rules_causumx.json', 'w') as f:
         json.dump([{
             'condition': rule.condition,
             'treatment': rule.treatment,
@@ -400,7 +401,7 @@ def main():
         logging.info(f"Completed experiment for k={k}")
 
     # Write results to CSV
-    with open('experiment_results.csv', 'w', newline='') as csvfile:
+    with open('experiment_results_causumx.csv', 'w', newline='') as csvfile:
         fieldnames = ['k', 'execution_time', 'expected_utility', 'protected_expected_utility', 'coverage', 'protected_coverage', 'selected_rules']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
