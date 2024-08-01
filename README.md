@@ -35,11 +35,33 @@ This project implements a greedy algorithm for generating fair prescription rule
 
 The main dataset used in this project is `so_countries_col_new.csv`, located in the `data/` directory. This dataset contains information about developers, including demographic data and salary information.
 
+## Running the Algorithms
+
+### Greedy Algorithm
+
+To run the greedy algorithm, execute the following command in your terminal:
+
+```
+python greedy.py
+```
+
+This will run the main experiment using the greedy approach for fair prescription rules.
+
+### Cosamix Algorithm
+
+To run the Cosamix algorithm, use the following command:
+
+```
+python causumx.py
+```
+
+This will execute the Cosamix algorithm for causal inference and treatment effect estimation.
+
 ## File Structure and Main Functions
 
 ### greedy.py
 
-This is the main algorithm file. Key functions include:
+This is the main algorithm file for the greedy approach. Key functions include:
 
 - `main()`: Entry point of the program. Runs experiments for different values of k (number of rules).
 - `run_experiment()`: Executes a single experiment for a specific k value.
@@ -47,9 +69,18 @@ This is the main algorithm file. Key functions include:
 - `calculate_fairness_score()`: Calculates the fairness score for a given rule.
 - `score_rule()`: Assigns a score to a rule based on various factors including fairness and coverage.
 
+### causumx.py
+
+This file contains the implementation of the Cosamix algorithm. Key functions include:
+
+- `main()`: Entry point for the Cosamix algorithm.
+- `run_experiment()`: Executes the Cosamix experiment.
+- `calculate_fairness_score()`: Calculates the fairness score for a given rule.
+- `greedy_fair_prescription_rules()`: Implements the Cosamix version of the greedy algorithm.
+
 ### Algorithms.py
 
-Contains helper functions for the main algorithm. Key functions include:
+Contains helper functions for the main algorithms. Key functions include:
 
 - `getAllGroups()`: Generates all possible grouping patterns using the Apriori algorithm.
 - `getGroupstreatmentsforGreeedy()`: Gets treatments for each group using a greedy approach.
@@ -87,7 +118,11 @@ Contains the definition of the causal graph (SO_DAG) used in the project.
 4. Iterate K times to get K rules.
 5. Calculate the final fairness constraint satisfaction.
 
-## Running the Project
+## Output
 
-To run the main experiment:
+Both algorithms will generate output files with their results:
 
+- The greedy algorithm outputs to `experiment_results.csv`
+- The Cosamix algorithm outputs to `experiment_results_not_male.csv`
+
+These files contain detailed information about the selected rules, their fairness scores, and other relevant metrics.
