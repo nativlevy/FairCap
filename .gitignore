@@ -3,3 +3,4 @@ data/
 .venv/
 .idea/
 Temp.csv
+__pycache__/
