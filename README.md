@@ -122,8 +122,8 @@ Contains the definition of the causal graph (SO_DAG) used in the project.
 
 Both algorithms will generate output files with their results:
 
-- The greedy algorithm outputs to `experiment_results.csv`
-- The CauSumX algorithm outputs to `experiment_results_CauSumX.csv`
+- The greedy algorithm outputs to `experiment_results_greedy.csv`
+- The CauSumX algorithm outputs to `experiment_results_causumx.csv`
 
 These files contain detailed information about the selected rules, their fairness scores, and other relevant metrics.
 
