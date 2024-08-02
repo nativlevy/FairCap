@@ -415,7 +415,7 @@ def main():
                 'selected_rules': selected_rules_json
             })
 
-    logging.info("Results written to experiment_results.csv")
+    logging.info("Results written to experiment_results_causumx.csv")
 
     # Log detailed results for each k
     for result in results:

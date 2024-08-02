@@ -336,7 +336,7 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attribut
                  f"{k} rules, and fairness threshold {fairness_threshold}")
 
     # save all rules to an output file
-    with open('rules.json', 'w') as f:
+    with open('rules_greedy.json', 'w') as f:
         json.dump([{
             'condition': rule.condition,
             'treatment': rule.treatment,
@@ -400,7 +400,7 @@ def main():
         logging.info(f"Completed experiment for k={k}")
 
     # Write results to CSV
-    with open('experiment_results.csv', 'w', newline='') as csvfile:
+    with open('experiment_results_greedy.csv', 'w', newline='') as csvfile:
         fieldnames = ['k', 'execution_time', 'expected_utility', 'protected_expected_utility', 'coverage', 'protected_coverage', 'selected_rules']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
