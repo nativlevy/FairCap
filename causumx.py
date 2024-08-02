@@ -93,16 +93,7 @@ def get_grouping_patterns(df: pd.DataFrame, attributes: List[str], apriori: floa
     return filtered_patterns
 
 # slides: causumx and greedy (maybe in the causumx the utility is higher but not fair as compated to the greedy)
-# TODO: k 3 4 5 6 7
-# run times
-# results - much
-# rules that where selected
-# coverage
-# protected coverage
-# utility
-# protected utility
-# change git repo to FairPrescriptionRules
-# public repo to transter the code + README
+
 
 def calculate_fairness_score(rule: Rule) -> float:
     return rule.utility

@@ -47,15 +47,15 @@ python greedy.py
 
 This will run the main experiment using the greedy approach for fair prescription rules.
 
-### Cosamix Algorithm
+### CauSumX Algorithm
 
-To run the Cosamix algorithm, use the following command:
+To run the CauSumX algorithm, use the following command:
 
 ```
-python causumx.py
+python CauSumX.py
 ```
 
-This will execute the Cosamix algorithm for causal inference and treatment effect estimation.
+This will execute the CauSumX algorithm for causal inference and treatment effect estimation.
 
 ## File Structure and Main Functions
 
@@ -69,14 +69,14 @@ This is the main algorithm file for the greedy approach. Key functions include:
 - `calculate_fairness_score()`: Calculates the fairness score for a given rule.
 - `score_rule()`: Assigns a score to a rule based on various factors including fairness and coverage.
 
-### causumx.py
+### CauSumX.py
 
-This file contains the implementation of the Cosamix algorithm. Key functions include:
+This file contains the implementation of the CauSumX algorithm. Key functions include:
 
-- `main()`: Entry point for the Cosamix algorithm.
-- `run_experiment()`: Executes the Cosamix experiment.
+- `main()`: Entry point for the CauSumX algorithm.
+- `run_experiment()`: Executes the CauSumX experiment.
 - `calculate_fairness_score()`: Calculates the fairness score for a given rule.
-- `greedy_fair_prescription_rules()`: Implements the Cosamix version of the greedy algorithm.
+- `greedy_fair_prescription_rules()`: Implements the CauSumX version of the greedy algorithm.
 
 ### Algorithms.py
 
@@ -123,6 +123,6 @@ Contains the definition of the causal graph (SO_DAG) used in the project.
 Both algorithms will generate output files with their results:
 
 - The greedy algorithm outputs to `experiment_results.csv`
-- The Cosamix algorithm outputs to `experiment_results_not_male.csv`
+- The CauSumX algorithm outputs to `experiment_results_CauSumX.csv`
 
 These files contain detailed information about the selected rules, their fairness scores, and other relevant metrics.
