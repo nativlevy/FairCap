@@ -126,3 +126,7 @@ Both algorithms will generate output files with their results:
 - The CauSumX algorithm outputs to `experiment_results_CauSumX.csv`
 
 These files contain detailed information about the selected rules, their fairness scores, and other relevant metrics.
+
+## Slides
+
+https://nativlevy.github.io/FairPrescriptionRules/slides.html

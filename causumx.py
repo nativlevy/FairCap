@@ -92,9 +92,6 @@ def get_grouping_patterns(df: pd.DataFrame, attributes: List[str], apriori: floa
 
     return filtered_patterns
 
-# slides: causumx and greedy (maybe in the causumx the utility is higher but not fair as compated to the greedy)
-
-
 def calculate_fairness_score(rule: Rule) -> float:
     return rule.utility
 
