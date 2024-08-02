@@ -6,20 +6,32 @@
     <title>CauSumX vs Greedy Algorithm Comparison</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/theme/white.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         .reveal {
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-family: 'Open Sans', sans-serif;
+            font-size: 28px;
         }
-        .reveal h1, .reveal h2, .reveal h3 {
+        .reveal h1 {
+            font-size: 2.2em;
+            color: #2c3e50;
+        }
+        .reveal h2 {
+            font-size: 1.8em;
+            color: #2c3e50;
+        }
+        .reveal h3 {
+            font-size: 1.4em;
             color: #2c3e50;
         }
         .reveal table {
             margin: 0 auto;
             border-collapse: collapse;
+            font-size: 0.8em;
         }
         .reveal th, .reveal td {
             border: 1px solid #ddd;
-            padding: 8px;
+            padding: 6px;
             text-align: left;
         }
         .reveal th {
@@ -27,10 +39,16 @@
         }
         .rule {
             background-color: #f9f9f9;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 5px;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
             text-align: left;
+            font-size: 0.8em;
+        }
+        .reveal ul, .reveal ol {
+            display: inline-block;
+            text-align: left;
+            margin-left: 1em;
         }
     </style>
 </head>
@@ -39,12 +57,12 @@
         <div class="slides">
             <section>
                 <h1>CauSumX vs Greedy Algorithm</h1>
-                <h3>A Comparative Analysis of Fair Prescription Rules</h3>
+                <h3>A comparative analysis of fair prescription rules</h3>
                 <p>August 2024</p>
             </section>
 
             <section>
-                <h2>Project Overview</h2>
+                <h2>Project overview</h2>
                 <ul>
                     <li>Goal: Generate fair prescription rules in ML models</li>
                     <li>Focus: Balance utility and fairness in decision-making</li>
@@ -84,29 +102,21 @@
             </section>
 
             <section>
-                <h2>CauSumX Selected Rules (K=4)</h2>
+                <h2>CauSumX selected rules (K=4)</h2>
                 <div class="rule">
-                    <strong>Rule 1:</strong><br>
-                    Condition: Age: "18 - 24 years old"<br>
+                    <strong>Rule 1:</strong> Condition: Age: "18 - 24 years old"<br>
                     Treatment: Student: "No", Country: "United States"
                 </div>
                 <div class="rule">
-                    <strong>Rule 2:</strong><br>
-                    Condition: Age: "18 - 24 years old", Dependents: "No"<br>
-                    Treatment: Student: "No", Country: "United States"
-                </div>
-            </section>
-
-            <section>
-                <h2>CauSumX Selected Rules (K=4) - Continued</h2>
-                <div class="rule">
-                    <strong>Rule 3:</strong><br>
-                    Condition: Age: "18 - 24 years old", Gender: "Male"<br>
+                    <strong>Rule 2:</strong> Condition: Age: "18 - 24 years old", Dependents: "No"<br>
                     Treatment: Student: "No", Country: "United States"
                 </div>
                 <div class="rule">
-                    <strong>Rule 4:</strong><br>
-                    Condition: Age: "18 - 24 years old", SexualOrientation: "Straight or heterosexual"<br>
+                    <strong>Rule 3:</strong> Condition: Age: "18 - 24 years old", Gender: "Male"<br>
+                    Treatment: Student: "No", Country: "United States"
+                </div>
+                <div class="rule">
+                    <strong>Rule 4:</strong> Condition: Age: "18 - 24 years old", SexualOrientation: "Straight or heterosexual"<br>
                     Treatment: Student: "No", Country: "United States"
                 </div>
             </section>
@@ -142,35 +152,27 @@
             </section>
 
             <section>
-                <h2>Greedy Selected Rules (K=4)</h2>
+                <h2>Greedy selected rules (K=4)</h2>
                 <div class="rule">
-                    <strong>Rule 1:</strong><br>
-                    Condition: SexualOrientation: "Straight or heterosexual"<br>
+                    <strong>Rule 1:</strong> Condition: SexualOrientation: "Straight or heterosexual"<br>
                     Treatment: Student: "No", Exercise: "3 - 4 times per week"
                 </div>
                 <div class="rule">
-                    <strong>Rule 2:</strong><br>
-                    Condition: YearsCoding: "6-8 years"<br>
+                    <strong>Rule 2:</strong> Condition: YearsCoding: "6-8 years"<br>
+                    Treatment: Continent: "North America", HoursComputer: "5 - 8 hours"
+                </div>
+                <div class="rule">
+                    <strong>Rule 3:</strong> Condition: YearsCoding: "6-8 years", Gender: "Male"<br>
+                    Treatment: Continent: "North America", HoursComputer: "5 - 8 hours"
+                </div>
+                <div class="rule">
+                    <strong>Rule 4:</strong> Condition: YearsCoding: "6-8 years", Dependents: "No"<br>
                     Treatment: Continent: "North America", HoursComputer: "5 - 8 hours"
                 </div>
             </section>
 
             <section>
-                <h2>Greedy Selected Rules (K=4) - Continued</h2>
-                <div class="rule">
-                    <strong>Rule 3:</strong><br>
-                    Condition: YearsCoding: "6-8 years", Gender: "Male"<br>
-                    Treatment: Continent: "North America", HoursComputer: "5 - 8 hours"
-                </div>
-                <div class="rule">
-                    <strong>Rule 4:</strong><br>
-                    Condition: YearsCoding: "6-8 years", Dependents: "No"<br>
-                    Treatment: Continent: "North America", HoursComputer: "5 - 8 hours"
-                </div>
-            </section>
-
-            <section>
-                <h2>Key Observations</h2>
+                <h2>Key observations</h2>
                 <ul>
                     <li>CauSumX achieves higher utility (92,404.77 vs 23,349.86)</li>
                     <li>Greedy provides significantly better coverage (94.53% vs 20.05%)</li>
@@ -181,7 +183,7 @@
             </section>
 
             <section>
-                <h2>Fairness Comparison</h2>
+                <h2>Fairness comparison</h2>
                 <ul>
                     <li>CauSumX: Higher utility but lower coverage, potentially less fair</li>
                     <li>Greedy: Lower utility but much higher and more balanced coverage</li>
@@ -202,7 +204,7 @@
             </section>
 
             <section>
-                <h2>Thank You</h2>
+                <h2>Thank you</h2>
                 <p>Questions?</p>
             </section>
         </div>
