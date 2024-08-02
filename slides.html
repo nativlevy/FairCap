@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CauSumX vs Greedy Algorithm Comparison</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/theme/white.min.css">
+    <style>
+        .reveal {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+        .reveal h1, .reveal h2, .reveal h3 {
+            color: #2c3e50;
+        }
+        .reveal table {
+            margin: 0 auto;
+            border-collapse: collapse;
+        }
+        .reveal th, .reveal td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .reveal th {
+            background-color: #f2f2f2;
+        }
+        .rule {
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+            <section>
+                <h1>CauSumX vs Greedy Algorithm</h1>
+                <h3>A Comparative Analysis of Fair Prescription Rules</h3>
+                <p>August 2024</p>
+            </section>
+
+            <section>
+                <h2>Project Overview</h2>
+                <ul>
+                    <li>Goal: Generate fair prescription rules in ML models</li>
+                    <li>Focus: Balance utility and fairness in decision-making</li>
+                    <li>Comparison: CauSumX vs Greedy algorithm approaches</li>
+                    <li>Dataset: Developer survey (so_countries_col_new.csv)</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Results: CauSumX (K=4)</h2>
+                <table>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                    </tr>
+                    <tr>
+                        <td>Execution Time</td>
+                        <td>391.09 seconds</td>
+                    </tr>
+                    <tr>
+                        <td>Expected Utility</td>
+                        <td>92,404.77</td>
+                    </tr>
+                    <tr>
+                        <td>Protected Expected Utility</td>
+                        <td>25,393.77</td>
+                    </tr>
+                    <tr>
+                        <td>Coverage</td>
+                        <td>20.05%</td>
+                    </tr>
+                    <tr>
+                        <td>Protected Coverage</td>
+                        <td>24.60%</td>
+                    </tr>
+                </table>
+            </section>
+
+            <section>
+                <h2>CauSumX Selected Rules (K=4)</h2>
+                <div class="rule">
+                    <strong>Rule 1:</strong><br>
+                    Condition: Age: "18 - 24 years old"<br>
+                    Treatment: Student: "No", Country: "United States"
+                </div>
+                <div class="rule">
+                    <strong>Rule 2:</strong><br>
+                    Condition: Age: "18 - 24 years old", Dependents: "No"<br>
+                    Treatment: Student: "No", Country: "United States"
+                </div>
+            </section>
+
+            <section>
+                <h2>CauSumX Selected Rules (K=4) - Continued</h2>
+                <div class="rule">
+                    <strong>Rule 3:</strong><br>
+                    Condition: Age: "18 - 24 years old", Gender: "Male"<br>
+                    Treatment: Student: "No", Country: "United States"
+                </div>
+                <div class="rule">
+                    <strong>Rule 4:</strong><br>
+                    Condition: Age: "18 - 24 years old", SexualOrientation: "Straight or heterosexual"<br>
+                    Treatment: Student: "No", Country: "United States"
+                </div>
+            </section>
+
+            <section>
+                <h2>Results: Greedy (K=4)</h2>
+                <table>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                    </tr>
+                    <tr>
+                        <td>Execution Time</td>
+                        <td>481.67 seconds</td>
+                    </tr>
+                    <tr>
+                        <td>Expected Utility</td>
+                        <td>23,349.86</td>
+                    </tr>
+                    <tr>
+                        <td>Protected Expected Utility</td>
+                        <td>5,285.31</td>
+                    </tr>
+                    <tr>
+                        <td>Coverage</td>
+                        <td>94.53%</td>
+                    </tr>
+                    <tr>
+                        <td>Protected Coverage</td>
+                        <td>94.85%</td>
+                    </tr>
+                </table>
+            </section>
+
+            <section>
+                <h2>Greedy Selected Rules (K=4)</h2>
+                <div class="rule">
+                    <strong>Rule 1:</strong><br>
+                    Condition: SexualOrientation: "Straight or heterosexual"<br>
+                    Treatment: Student: "No", Exercise: "3 - 4 times per week"
+                </div>
+                <div class="rule">
+                    <strong>Rule 2:</strong><br>
+                    Condition: YearsCoding: "6-8 years"<br>
+                    Treatment: Continent: "North America", HoursComputer: "5 - 8 hours"
+                </div>
+            </section>
+
+            <section>
+                <h2>Greedy Selected Rules (K=4) - Continued</h2>
+                <div class="rule">
+                    <strong>Rule 3:</strong><br>
+                    Condition: YearsCoding: "6-8 years", Gender: "Male"<br>
+                    Treatment: Continent: "North America", HoursComputer: "5 - 8 hours"
+                </div>
+                <div class="rule">
+                    <strong>Rule 4:</strong><br>
+                    Condition: YearsCoding: "6-8 years", Dependents: "No"<br>
+                    Treatment: Continent: "North America", HoursComputer: "5 - 8 hours"
+                </div>
+            </section>
+
+            <section>
+                <h2>Key Observations</h2>
+                <ul>
+                    <li>CauSumX achieves higher utility (92,404.77 vs 23,349.86)</li>
+                    <li>Greedy provides significantly better coverage (94.53% vs 20.05%)</li>
+                    <li>CauSumX focuses on a specific age group (18-24 years old)</li>
+                    <li>Greedy selects more diverse conditions and treatments</li>
+                    <li>Execution time is slightly lower for CauSumX (391.09s vs 481.67s)</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Fairness Comparison</h2>
+                <ul>
+                    <li>CauSumX: Higher utility but lower coverage, potentially less fair</li>
+                    <li>Greedy: Lower utility but much higher and more balanced coverage</li>
+                    <li>Protected coverage is higher for Greedy (94.85% vs 24.60%)</li>
+                    <li>Greedy's rules cover a wider range of demographics</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Conclusions</h2>
+                <ul>
+                    <li>CauSumX: High utility, but narrow focus and low coverage</li>
+                    <li>Greedy: Better coverage and diversity, more balanced approach</li>
+                    <li>Trade-off between maximizing utility and ensuring fairness</li>
+                    <li>Choice depends on specific use case priorities</li>
+                    <li>Further research needed to optimize fairness-utility balance</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Thank You</h2>
+                <p>Questions?</p>
+            </section>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.js"></script>
+    <script>
+        Reveal.initialize();
+    </script>
+</body>
+</html>
