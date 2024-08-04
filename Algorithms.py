@@ -191,8 +191,7 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionabl
     Find the best treatment for a given group that maximizes fairness and effectiveness.
 
     This function iteratively explores treatments of increasing complexity (up to 5 levels)
-    to find the one that yields the highest fairness score while ensuring a positive CATE
-    (Conditional Average Treatment Effect).
+    to find the one that yields the highest combined score of fairness and CATE.
 
     Args:
         df_g (pd.DataFrame): The dataframe for the specific group.
@@ -206,7 +205,7 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionabl
 
     Returns:
         tuple: A tuple containing:
-            - best_treatment (dict): The treatment with the highest fairness score.
+            - best_treatment (dict): The treatment with the highest combined score.
             - best_cate (float): The CATE for the best treatment.
 
     The function logs detailed information about its progress and decisions.
@@ -240,9 +239,11 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionabl
         for treatment in treatments:
             fairness_score = calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target, protected_group)
             cate = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
-            score = fairness_score
+            
+            # Combine fairness score and CATE
+            score = fairness_score * cate
 
-            logging.debug(f'Treatment: {treatment}, Fairness Score: {fairness_score}, CATE: {cate}')
+            logging.debug(f'Treatment: {treatment}, Fairness Score: {fairness_score}, CATE: {cate}, Combined Score: {score}')
 
             if score > max_score and cate > 0:
                 max_score = score
@@ -258,7 +259,7 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionabl
         prev_max_score = max_score
 
     logging.info(f'Finished processing group: {group}')
-    logging.info(f'Final best treatment: {best_treatment}, CATE: {best_cate}, Fairness Score: {max_score}')
+    logging.info(f'Final best treatment: {best_treatment}, CATE: {best_cate}, Combined Score: {max_score}')
     logging.info('#######################################')
     return (best_treatment, best_cate)
 
