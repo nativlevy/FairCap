@@ -1,7 +1,8 @@
 import pandas as pd
 from typing import List, Set, Dict
 from Algorithms_causumx import getAllGroups, getGroupstreatmentsforGreeedy
-from consts import APRIORI, MIX_K, MAX_K
+from consts import APRIORI, MIX_K, MAX_K, unprotected_coverage_threshold, protected_coverage_threshold, \
+    fairness_threshold
 from dags import SO_DAG
 import logging
 import time
@@ -153,8 +154,6 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     new_solution = solution + [rule]
     expected_utility = calculate_expected_utility(new_solution)
 
-    rule_utility = return_rule_utility(rule)
-
     # Calculate coverage factors for both protected and unprotected groups
     protected_coverage_factor = (len(new_covered_protected) / len(protected_group)) / protected_coverage_threshold if protected_coverage_threshold > 0 else 1
     unprotected_coverage_factor = (len(new_covered - new_covered_protected) / (len(rule.covered_indices) - len(protected_group))) / unprotected_coverage_threshold if unprotected_coverage_threshold > 0 else 1
@@ -162,10 +161,10 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     # Use the minimum of the two coverage factors
     coverage_factor = min(protected_coverage_factor, unprotected_coverage_factor)
 
-    score = rule_utility * coverage_factor
+    score = rule.utility * coverage_factor
 
     logging.debug(f"Rule score: {score:.4f} (expected_utility: {expected_utility:.4f}, "
-                  f"fairness_score: {rule_utility:.4f}, coverage_factor: {coverage_factor:.4f}")
+                  f"fairness_score: {rule.utility:.4f}, coverage_factor: {coverage_factor:.4f}")
 
     return score
 
@@ -366,16 +365,11 @@ def main():
         'Age', 'YearsCoding', 'Dependents',
     ]
 
-    # Set parameters
-    unprotected_coverage_threshold = 0.5
-    protected_coverage_threshold = 0.5
-    fairness_threshold = 0.05
-
     # Run experiments for different values of k
     results = []
     for k in range(MIX_K, MAX_K + 1):
         result = run_experiment(k, df, protected_group, attributes, 
-                                unprotected_coverage_threshold, protected_coverage_threshold, 
+                                unprotected_coverage_threshold, protected_coverage_threshold,
                                 fairness_threshold)
         results.append(result)
         logging.info(f"Completed experiment for k={k}")
@@ -417,15 +411,15 @@ def main():
         logging.info(f"Protected expected utility: {result['protected_expected_utility']:.4f}")
         logging.info(f"Coverage: {result['coverage']:.2%}")
         logging.info(f"Protected coverage: {result['protected_coverage']:.2%}")
-        logging.info("Selected rules:")
-        for i, rule in enumerate(result['selected_rules'], 1):
-            logging.info(f"Rule {i}:")
-            logging.info(f"  Condition: {rule.condition}")
-            logging.info(f"  Treatment: {rule.treatment}")
-            logging.info(f"  Utility: {rule.utility:.4f}")
-            logging.info(f"  Protected Utility: {rule.protected_utility:.4f}")
-            logging.info(f"  Coverage: {len(rule.covered_indices)}")
-            logging.info(f"  Protected Coverage: {len(rule.covered_protected_indices)}")
+        # logging.info("Selected rules:")
+        # for i, rule in enumerate(result['selected_rules'], 1):
+        #     logging.info(f"Rule {i}:")
+        #     logging.info(f"  Condition: {rule.condition}")
+        #     logging.info(f"  Treatment: {rule.treatment}")
+        #     logging.info(f"  Utility: {rule.utility:.4f}")
+        #     logging.info(f"  Protected Utility: {rule.protected_utility:.4f}")
+        #     logging.info(f"  Coverage: {len(rule.covered_indices)}")
+        #     logging.info(f"  Protected Coverage: {len(rule.covered_protected_indices)}")
 
 if __name__ == "__main__":
     main()

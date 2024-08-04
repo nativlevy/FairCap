@@ -166,7 +166,7 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     expected_utility = calculate_expected_utility(new_solution)
 
     fairness_score = calculate_fairness_score(rule)
-    
+
     # Calculate coverage factors for both protected and unprotected groups
     protected_coverage_factor = (len(new_covered_protected) / len(protected_group)) / protected_coverage_threshold if protected_coverage_threshold > 0 else 1
     unprotected_coverage_factor = (len(new_covered - new_covered_protected) / (len(rule.covered_indices) - len(protected_group))) / unprotected_coverage_threshold if unprotected_coverage_threshold > 0 else 1
@@ -174,13 +174,12 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     # Use the minimum of the two coverage factors
     coverage_factor = min(protected_coverage_factor, unprotected_coverage_factor)
 
-    # Increase the weight of protected utility in the score calculation
-    protected_utility_weight = 2.0
-    score = (fairness_score + protected_utility_weight * rule.protected_utility) * coverage_factor
+    # score = (fairness_score + protected_utility_weight * rule.protected_utility) * coverage_factor
+    score = fairness_score
 
     # If we have already covered all individuals, focus on fairness and protected utility
-    if len(covered) == len(rule.covered_indices):
-        score = fairness_score + protected_utility_weight * rule.protected_utility
+    # if len(covered) == len(rule.covered_indices):
+    #     score = fairness_score + protected_utility_weight * rule.protected_utility
 
     logging.debug(f"Rule score: {score:.4f} (expected_utility: {expected_utility:.4f}, "
                   f"fairness_score: {fairness_score:.4f}, protected_utility: {rule.protected_utility:.4f}, "
@@ -431,15 +430,15 @@ def main():
         logging.info(f"Protected expected utility: {result['protected_expected_utility']:.4f}")
         logging.info(f"Coverage: {result['coverage']:.2%}")
         logging.info(f"Protected coverage: {result['protected_coverage']:.2%}")
-        logging.info("Selected rules:")
-        for i, rule in enumerate(result['selected_rules'], 1):
-            logging.info(f"Rule {i}:")
-            logging.info(f"  Condition: {rule.condition}")
-            logging.info(f"  Treatment: {rule.treatment}")
-            logging.info(f"  Utility: {rule.utility:.4f}")
-            logging.info(f"  Protected Utility: {rule.protected_utility:.4f}")
-            logging.info(f"  Coverage: {len(rule.covered_indices)}")
-            logging.info(f"  Protected Coverage: {len(rule.covered_protected_indices)}")
+        # logging.info("Selected rules:")
+        # for i, rule in enumerate(result['selected_rules'], 1):
+        #     logging.info(f"Rule {i}:")
+        #     logging.info(f"  Condition: {rule.condition}")
+        #     logging.info(f"  Treatment: {rule.treatment}")
+        #     logging.info(f"  Utility: {rule.utility:.4f}")
+        #     logging.info(f"  Protected Utility: {rule.protected_utility:.4f}")
+        #     logging.info(f"  Coverage: {len(rule.covered_indices)}")
+        #     logging.info(f"  Protected Coverage: {len(rule.covered_protected_indices)}")
 
 if __name__ == "__main__":
     main()
