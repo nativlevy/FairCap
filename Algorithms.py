@@ -232,6 +232,7 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionabl
     max_score = float('-inf')
     best_treatment = None
     best_cate = 0
+    best_protected_cate = 0
 
     for level in range(1, 6):  # Up to 5 treatment levels
         logging.info(f'Processing treatment level {level}')
@@ -248,18 +249,21 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionabl
         for treatment in treatments:
             fairness_score = calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target, protected_group)
             cate = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
+            protected_df = df_g[df_g.index.isin(protected_group)]
+            protected_cate = Utils.getTreatmentCATE(protected_df, DAG, treatment, ordinal_atts, target)
             
-            # Combine fairness score and CATE
-            score = fairness_score * cate
+            # Combine fairness score, CATE, and protected CATE with more emphasis on protected CATE
+            score = fairness_score * cate * (protected_cate ** 2)
 
-            logging.debug(f'Treatment: {treatment}, Fairness Score: {fairness_score:.4f}, CATE: {cate:.4f}, Combined Score: {score:.4f}')
+            logging.debug(f'Treatment: {treatment}, Fairness Score: {fairness_score:.4f}, CATE: {cate:.4f}, Protected CATE: {protected_cate:.4f}, Combined Score: {score:.4f}')
 
-            if score > max_score and cate > 0:
+            if score > max_score and cate > 0 and protected_cate > 0:
                 max_score = score
                 best_treatment = treatment
                 best_cate = cate
+                best_protected_cate = protected_cate
                 logging.info(f'New best treatment found at level {level}: {best_treatment}')
-                logging.info(f'New best score: {max_score:.4f}, CATE: {best_cate:.4f}')
+                logging.info(f'New best score: {max_score:.4f}, CATE: {best_cate:.4f}, Protected CATE: {best_protected_cate:.4f}')
 
         if level > 1 and max_score <= prev_max_score:
             logging.info(f'Stopping at level {level} as no better treatment found')
@@ -268,9 +272,9 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionabl
         prev_max_score = max_score
 
     logging.info(f'Finished processing group: {group}')
-    logging.info(f'Final best treatment: {best_treatment}, CATE: {best_cate:.4f}, Combined Score: {max_score:.4f}')
+    logging.info(f'Final best treatment: {best_treatment}, CATE: {best_cate:.4f}, Protected CATE: {best_protected_cate:.4f}, Combined Score: {max_score:.4f}')
     logging.info('#######################################')
-    return (best_treatment, best_cate)
+    return (best_treatment, best_protected_cate)  # Return protected CATE instead of overall CATE
 
 def filter_above_median(treatments_cate):
     """
