@@ -8,6 +8,7 @@ import logging
 import time
 import csv
 import json
+import statistics
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 
@@ -94,19 +95,8 @@ def get_grouping_patterns(df: pd.DataFrame, attributes: List[str], apriori: floa
 
     return filtered_patterns
 
-def calculate_fairness_score(rule: Rule) -> float:
-    """
-    Calculate the fairness score for a given rule.
-
-    Args:
-        rule (Rule): The rule to calculate the fairness score for.
-
-    Returns:
-        float: The calculated fairness score.
-    """
-    if rule.utility == rule.protected_utility:
-        return rule.utility
-    return rule.utility / abs(rule.utility - rule.protected_utility)
+def return_rule_utility(rule: Rule) -> float:
+    return rule.utility
 
 def calculate_expected_utility(rules: List[Rule]) -> float:
     """
@@ -165,8 +155,6 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     new_solution = solution + [rule]
     expected_utility = calculate_expected_utility(new_solution)
 
-    fairness_score = calculate_fairness_score(rule)
-
     # Calculate coverage factors for both protected and unprotected groups
     protected_coverage_factor = (len(new_covered_protected) / len(protected_group)) / protected_coverage_threshold if protected_coverage_threshold > 0 else 1
     unprotected_coverage_factor = (len(new_covered - new_covered_protected) / (len(rule.covered_indices) - len(protected_group))) / unprotected_coverage_threshold if unprotected_coverage_threshold > 0 else 1
@@ -174,16 +162,10 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     # Use the minimum of the two coverage factors
     coverage_factor = min(protected_coverage_factor, unprotected_coverage_factor)
 
-    # score = (fairness_score + protected_utility_weight * rule.protected_utility) * coverage_factor
-    score = fairness_score
-
-    # If we have already covered all individuals, focus on fairness and protected utility
-    # if len(covered) == len(rule.covered_indices):
-    #     score = fairness_score + protected_utility_weight * rule.protected_utility
+    score = rule.utility * coverage_factor
 
     logging.debug(f"Rule score: {score:.4f} (expected_utility: {expected_utility:.4f}, "
-                  f"fairness_score: {fairness_score:.4f}, protected_utility: {rule.protected_utility:.4f}, "
-                  f"coverage_factor: {coverage_factor:.4f}")
+                  f"utility: {rule.utility:.4f}, coverage_factor: {coverage_factor:.4f}")
 
     return score
 
@@ -218,6 +200,12 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
                  f"protected coverage threshold {protected_coverage_threshold}, "
                  f"unprotected coverage threshold {unprotected_coverage_threshold}, "
                  f"and max {max_rules} rules")
+
+    # Log initial utility statistics
+    initial_utilities = [rule.utility for rule in rules]
+    logging.info(f"Initial utility statistics: min={min(initial_utilities):.4f}, "
+                 f"max={max(initial_utilities):.4f}, mean={statistics.mean(initial_utilities):.4f}, "
+                 f"median={statistics.median(initial_utilities):.4f}")
 
     while len(solution) < max_rules:
         best_rule = None
@@ -277,6 +265,12 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
                      f"total_covered={len(covered)}, protected_covered={len(covered_protected)}, "
                      f"total_utility={total_utility:.4f}, protected_utility={protected_utility:.4f}")
 
+    # Log final utility statistics for selected rules
+    final_utilities = [rule.utility for rule in solution]
+    logging.info(f"Final utility statistics: min={min(final_utilities):.4f}, "
+                 f"max={max(final_utilities):.4f}, mean={statistics.mean(final_utilities):.4f}, "
+                 f"median={statistics.median(final_utilities):.4f}")
+
     return solution
 
 def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attributes: List[str], 
@@ -328,6 +322,12 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attribut
 
     logging.info(f"Created {len(rules)} Rule objects")
 
+    # Log utility statistics for all rules
+    all_utilities = [rule.utility for rule in rules]
+    logging.info(f"All rules utility statistics: min={min(all_utilities):.4f}, "
+                 f"max={max(all_utilities):.4f}, mean={statistics.mean(all_utilities):.4f}, "
+                 f"median={statistics.median(all_utilities):.4f}")
+
     # Run greedy algorithm
     total_individuals = len(df)
     logging.info(f"Running greedy algorithm with unprotected coverage threshold {unprotected_coverage_threshold}, "
@@ -356,6 +356,12 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attribut
 
     end_time = time.time()
     execution_time = end_time - start_time
+
+    logging.info(f"Experiment results for k={k}:")
+    logging.info(f"Expected utility: {expected_utility:.4f}")
+    logging.info(f"Protected expected utility: {protected_expected_utility:.4f}")
+    logging.info(f"Coverage: {len(total_coverage) / len(df):.2%}")
+    logging.info(f"Protected coverage: {len(total_protected_coverage) / len(protected_group):.2%}")
 
     return {
         'k': k,
@@ -395,7 +401,8 @@ def main():
 
     # Write results to CSV
     with open('experiment_results_greedy.csv', 'w', newline='') as csvfile:
-        fieldnames = ['k', 'execution_time', 'expected_utility', 'protected_expected_utility', 'coverage', 'protected_coverage', 'selected_rules']
+        fieldnames = ['k', 'execution_time', 'expected_utility', 'protected_expected_utility', 'coverage',
+                      'protected_coverage', 'selected_rules']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         writer.writeheader()
@@ -430,15 +437,6 @@ def main():
         logging.info(f"Protected expected utility: {result['protected_expected_utility']:.4f}")
         logging.info(f"Coverage: {result['coverage']:.2%}")
         logging.info(f"Protected coverage: {result['protected_coverage']:.2%}")
-        # logging.info("Selected rules:")
-        # for i, rule in enumerate(result['selected_rules'], 1):
-        #     logging.info(f"Rule {i}:")
-        #     logging.info(f"  Condition: {rule.condition}")
-        #     logging.info(f"  Treatment: {rule.treatment}")
-        #     logging.info(f"  Utility: {rule.utility:.4f}")
-        #     logging.info(f"  Protected Utility: {rule.protected_utility:.4f}")
-        #     logging.info(f"  Coverage: {len(rule.covered_indices)}")
-        #     logging.info(f"  Protected Coverage: {len(rule.covered_protected_indices)}")
 
 if __name__ == "__main__":
     main()
