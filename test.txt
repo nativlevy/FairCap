@@ -1,14 +1,15 @@
 greedy
-12:12:58 - INFO - Execution time: 67.38 seconds
-12:12:58 - INFO - Expected utility: 22257.7905
-12:12:58 - INFO - Protected expected utility: 5127.6478 -> MUST be higher from causumx
-12:12:58 - INFO - Coverage: 99.03%
-12:12:58 - INFO - Protected coverage: 99.14%
-
+Detailed results for k=4:
+16:13:24 - INFO - Execution time: 932.03 seconds
+16:13:24 - INFO - Expected utility: 106282.1388
+16:13:24 - INFO - Protected expected utility: 23907.1112
+16:13:24 - INFO - Coverage: 94.49%
+16:13:24 - INFO - Protected coverage: 93.98%
 
 causumx
-12:03:19 - INFO - Execution time: 86.30 seconds
-12:03:19 - INFO - Expected utility: 75700.5398
-12:03:19 - INFO - Protected expected utility: 17026.8052
-12:03:19 - INFO - Coverage: 99.44%
-12:03:19 - INFO - Protected coverage: 99.39%
+Detailed results for k=4:
+16:11:16 - INFO - Execution time: 804.26 seconds
+16:11:16 - INFO - Expected utility: 75694.7451
+16:11:16 - INFO - Protected expected utility: 17138.7714
+16:11:16 - INFO - Coverage: 94.44%
+16:11:16 - INFO - Protected coverage: 95.08%
