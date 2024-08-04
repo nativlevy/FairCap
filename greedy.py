@@ -174,14 +174,17 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     # Use the minimum of the two coverage factors
     coverage_factor = min(protected_coverage_factor, unprotected_coverage_factor)
 
-    score = fairness_score * coverage_factor
+    # Increase the weight of protected utility in the score calculation
+    protected_utility_weight = 2.0
+    score = (fairness_score + protected_utility_weight * rule.protected_utility) * coverage_factor
 
-    # If we have already covered all individuals, focus on fairness
+    # If we have already covered all individuals, focus on fairness and protected utility
     if len(covered) == len(rule.covered_indices):
-        score = fairness_score
+        score = fairness_score + protected_utility_weight * rule.protected_utility
 
     logging.debug(f"Rule score: {score:.4f} (expected_utility: {expected_utility:.4f}, "
-                  f"fairness_score: {fairness_score:.4f}, coverage_factor: {coverage_factor:.4f}")
+                  f"fairness_score: {fairness_score:.4f}, protected_utility: {rule.protected_utility:.4f}, "
+                  f"coverage_factor: {coverage_factor:.4f}")
 
     return score
 
