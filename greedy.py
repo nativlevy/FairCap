@@ -1,6 +1,8 @@
 import pandas as pd
 from typing import List, Set, Dict
 from Algorithms import getAllGroups, getGroupstreatmentsforGreeedy
+from consts import APRIORI, MIX_K, MAX_K, unprotected_coverage_threshold, protected_coverage_threshold, \
+    fairness_threshold
 from dags import SO_DAG
 import logging
 import time
@@ -172,11 +174,7 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     # Use the minimum of the two coverage factors
     coverage_factor = min(protected_coverage_factor, unprotected_coverage_factor)
 
-    # Give larger weight to fairness_score
-    fairness_weight = 10.0  # Increased from 5.0 to 10.0
-    coverage_weight = 1.0
-
-    score = (fairness_weight * fairness_score + coverage_weight * coverage_factor) / (fairness_weight + coverage_weight)
+    score = fairness_score * coverage_factor
 
     # If we have already covered all individuals, focus on fairness
     if len(covered) == len(rule.covered_indices):
@@ -299,7 +297,6 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attribut
     """
     start_time = time.time()
 
-    APRIORI = 0.1
     grouping_patterns = get_grouping_patterns(df, attributes, APRIORI)
 
     # Get treatments for each grouping pattern
@@ -385,16 +382,11 @@ def main():
         'Age', 'YearsCoding', 'Dependents',
     ]
 
-    # Set parameters
-    unprotected_coverage_threshold = 0.5
-    protected_coverage_threshold = 0.5
-    fairness_threshold = 0.05
-
     # Run experiments for different values of k
     results = []
-    for k in range(3, 8):
+    for k in range(MIX_K, MAX_K + 1):
         result = run_experiment(k, df, protected_group, attributes, 
-                                unprotected_coverage_threshold, protected_coverage_threshold, 
+                                unprotected_coverage_threshold, protected_coverage_threshold,
                                 fairness_threshold)
         results.append(result)
         logging.info(f"Completed experiment for k={k}")
@@ -426,7 +418,7 @@ def main():
                 'selected_rules': selected_rules_json
             })
 
-    logging.info("Results written to experiment_results.csv")
+    logging.info("Results written to experiment_results_greedy.csv")
 
     # Log detailed results for each k
     for result in results:

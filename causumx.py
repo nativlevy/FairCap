@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import List, Set, Dict
 from Algorithms_causumx import getAllGroups, getGroupstreatmentsforGreeedy
+from consts import APRIORI, MIX_K, MAX_K
 from dags import SO_DAG
 import logging
 import time
@@ -92,7 +93,7 @@ def get_grouping_patterns(df: pd.DataFrame, attributes: List[str], apriori: floa
 
     return filtered_patterns
 
-def calculate_fairness_score(rule: Rule) -> float:
+def return_rule_utility(rule: Rule) -> float:
     return rule.utility
 
 def calculate_expected_utility(rules: List[Rule]) -> float:
@@ -152,7 +153,7 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     new_solution = solution + [rule]
     expected_utility = calculate_expected_utility(new_solution)
 
-    fairness_score = calculate_fairness_score(rule)
+    rule_utility = return_rule_utility(rule)
 
     # Calculate coverage factors for both protected and unprotected groups
     protected_coverage_factor = (len(new_covered_protected) / len(protected_group)) / protected_coverage_threshold if protected_coverage_threshold > 0 else 1
@@ -161,18 +162,10 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     # Use the minimum of the two coverage factors
     coverage_factor = min(protected_coverage_factor, unprotected_coverage_factor)
 
-    # Give larger weight to fairness_score
-    fairness_weight = 10.0  # Increased from 5.0 to 10.0
-    coverage_weight = 1.0
-
-    score = (fairness_weight * fairness_score + coverage_weight * coverage_factor) / (fairness_weight + coverage_weight)
-
-    # If we have already covered all individuals, focus on fairness
-    if len(covered) == len(rule.covered_indices):
-        score = fairness_score
+    score = rule_utility * coverage_factor
 
     logging.debug(f"Rule score: {score:.4f} (expected_utility: {expected_utility:.4f}, "
-                  f"fairness_score: {fairness_score:.4f}, coverage_factor: {coverage_factor:.4f}")
+                  f"fairness_score: {rule_utility:.4f}, coverage_factor: {coverage_factor:.4f}")
 
     return score
 
@@ -288,7 +281,6 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attribut
     """
     start_time = time.time()
 
-    APRIORI = 0.1
     grouping_patterns = get_grouping_patterns(df, attributes, APRIORI)
 
     # Get treatments for each grouping pattern
@@ -381,7 +373,7 @@ def main():
 
     # Run experiments for different values of k
     results = []
-    for k in range(3, 8):
+    for k in range(MIX_K, MAX_K + 1):
         result = run_experiment(k, df, protected_group, attributes, 
                                 unprotected_coverage_threshold, protected_coverage_threshold, 
                                 fairness_threshold)

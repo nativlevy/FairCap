@@ -1,0 +1,17 @@
+greedy
+12:12:58 - INFO - Execution time: 67.38 seconds
+12:12:58 - INFO - Expected utility: 22257.7905 -> lower than the causumx
+12:12:58 - INFO - Protected expected utility: 5127.6478 -> MUST be higher from causumx
+
+maybe apriori should be lower. 0.1
+
+12:12:58 - INFO - Coverage: 99.03%
+12:12:58 - INFO - Protected coverage: 99.14%
+
+
+causumx
+12:03:19 - INFO - Execution time: 86.30 seconds
+12:03:19 - INFO - Expected utility: 75700.5398 -> higher
+12:03:19 - INFO - Protected expected utility: 17026.8052 -> low
+12:03:19 - INFO - Coverage: 99.44%
+12:03:19 - INFO - Protected coverage: 99.39%
