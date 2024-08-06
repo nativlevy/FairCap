@@ -80,23 +80,23 @@
                     </tr>
                     <tr>
                         <td>Execution Time</td>
-                        <td>391.09 seconds</td>
+                        <td>328.85 seconds</td>
                     </tr>
                     <tr>
                         <td>Expected Utility</td>
-                        <td>92,404.77</td>
+                        <td>75,694.75</td>
                     </tr>
                     <tr>
                         <td>Protected Expected Utility</td>
-                        <td>25,393.77</td>
+                        <td>17,138.77</td>
                     </tr>
                     <tr>
                         <td>Coverage</td>
-                        <td>20.05%</td>
+                        <td>94.44%</td>
                     </tr>
                     <tr>
                         <td>Protected Coverage</td>
-                        <td>24.60%</td>
+                        <td>95.08%</td>
                     </tr>
                 </table>
             </section>
@@ -104,20 +104,20 @@
             <section>
                 <h2>CauSumX selected rules (K=4)</h2>
                 <div class="rule">
-                    <strong>Rule 1:</strong> Condition: Age: "18 - 24 years old"<br>
+                    <strong>Rule 1:</strong> Condition: SexualOrientation: "Straight or heterosexual"<br>
                     Treatment: Student: "No", Country: "United States"
                 </div>
                 <div class="rule">
-                    <strong>Rule 2:</strong> Condition: Age: "18 - 24 years old", Dependents: "No"<br>
-                    Treatment: Student: "No", Country: "United States"
+                    <strong>Rule 2:</strong> Condition: YearsCoding: "3-5 years"<br>
+                    Treatment: Country: "United States"
                 </div>
                 <div class="rule">
-                    <strong>Rule 3:</strong> Condition: Age: "18 - 24 years old", Gender: "Male"<br>
-                    Treatment: Student: "No", Country: "United States"
+                    <strong>Rule 3:</strong> Condition: YearsCoding: "3-5 years", SexualOrientation: "Straight or heterosexual"<br>
+                    Treatment: Country: "United States"
                 </div>
                 <div class="rule">
-                    <strong>Rule 4:</strong> Condition: Age: "18 - 24 years old", SexualOrientation: "Straight or heterosexual"<br>
-                    Treatment: Student: "No", Country: "United States"
+                    <strong>Rule 4:</strong> Condition: YearsCoding: "3-5 years", Gender: "Male"<br>
+                    Treatment: Country: "United States"
                 </div>
             </section>
 
@@ -130,23 +130,23 @@
                     </tr>
                     <tr>
                         <td>Execution Time</td>
-                        <td>481.67 seconds</td>
+                        <td>578.38 seconds</td>
                     </tr>
                     <tr>
                         <td>Expected Utility</td>
-                        <td>23,349.86</td>
+                        <td>106,282.14</td>
                     </tr>
                     <tr>
                         <td>Protected Expected Utility</td>
-                        <td>5,285.31</td>
+                        <td>23,907.11</td>
                     </tr>
                     <tr>
                         <td>Coverage</td>
-                        <td>94.53%</td>
+                        <td>94.49%</td>
                     </tr>
                     <tr>
                         <td>Protected Coverage</td>
-                        <td>94.85%</td>
+                        <td>93.98%</td>
                     </tr>
                 </table>
             </section>
@@ -154,51 +154,52 @@
             <section>
                 <h2>Greedy selected rules (K=4)</h2>
                 <div class="rule">
-                    <strong>Rule 1:</strong> Condition: SexualOrientation: "Straight or heterosexual"<br>
-                    Treatment: Student: "No", Exercise: "3 - 4 times per week"
+                    <strong>Rule 1:</strong> Condition: Gender: "Male"<br>
+                    Treatment: Student: "No", Country: "United States"
                 </div>
                 <div class="rule">
-                    <strong>Rule 2:</strong> Condition: YearsCoding: "6-8 years"<br>
-                    Treatment: Continent: "North America", HoursComputer: "5 - 8 hours"
+                    <strong>Rule 2:</strong> Condition: YearsCoding: "3-5 years"<br>
+                    Treatment: Country: "United States"
                 </div>
                 <div class="rule">
-                    <strong>Rule 3:</strong> Condition: YearsCoding: "6-8 years", Gender: "Male"<br>
-                    Treatment: Continent: "North America", HoursComputer: "5 - 8 hours"
+                    <strong>Rule 3:</strong> Condition: YearsCoding: "3-5 years", SexualOrientation: "Straight or heterosexual"<br>
+                    Treatment: Country: "United States"
                 </div>
                 <div class="rule">
-                    <strong>Rule 4:</strong> Condition: YearsCoding: "6-8 years", Dependents: "No"<br>
-                    Treatment: Continent: "North America", HoursComputer: "5 - 8 hours"
+                    <strong>Rule 4:</strong> Condition: YearsCoding: "3-5 years", Dependents: "No"<br>
+                    Treatment: Country: "United States"
                 </div>
             </section>
 
             <section>
                 <h2>Key observations</h2>
                 <ul>
-                    <li>CauSumX achieves higher utility (92,404.77 vs 23,349.86)</li>
-                    <li>Greedy provides significantly better coverage (94.53% vs 20.05%)</li>
-                    <li>CauSumX focuses on a specific age group (18-24 years old)</li>
-                    <li>Greedy selects more diverse conditions and treatments</li>
-                    <li>Execution time is slightly lower for CauSumX (391.09s vs 481.67s)</li>
+                    <li>Greedy achieves higher utility (106,282.14 vs 75,694.75)</li>
+                    <li>Both algorithms provide similar coverage (Greedy: 94.49%, CauSumX: 94.44%)</li>
+                    <li>CauSumX has slightly higher protected coverage (95.08% vs 93.98%)</li>
+                    <li>Both algorithms focus on similar attributes (YearsCoding, Gender, SexualOrientation)</li>
+                    <li>Execution time is lower for CauSumX (328.85s vs 578.38s)</li>
                 </ul>
             </section>
 
             <section>
                 <h2>Fairness comparison</h2>
                 <ul>
-                    <li>CauSumX: Higher utility but lower coverage</li>
-                    <li>Greedy: Lower utility but much higher and more balanced coverage</li>
-                    <li>Protected coverage is higher for Greedy (94.85% vs 24.60%)</li>
-                    <li>Greedy's rules cover a wider range of demographics</li>
+                    <li>CauSumX: Lower utility but slightly higher protected coverage</li>
+                    <li>Greedy: Higher utility with marginally lower protected coverage</li>
+                    <li>Both algorithms achieve high overall coverage (>94%)</li>
+                    <li>Similar focus on demographic attributes in selected rules</li>
                 </ul>
             </section>
 
             <section>
                 <h2>Conclusions</h2>
                 <ul>
-                    <li>CauSumX: High utility, but narrow focus and low coverage</li>
-                    <li>Greedy: Better coverage and diversity, more balanced approach</li>
-                    <li>Trade-off between maximizing utility and ensuring fairness</li>
-                    <li>Choice depends on specific use case priorities</li>
+                    <li>Greedy: Higher utility, but slightly lower protected coverage</li>
+                    <li>CauSumX: Lower utility, but better execution time and protected coverage</li>
+                    <li>Both algorithms show good overall performance in terms of coverage</li>
+                    <li>Trade-off between maximizing utility and ensuring fairness is evident</li>
+                    <li>Choice depends on specific use case priorities (utility vs. fairness vs. execution time)</li>
                     <li>Further research needed to optimize fairness-utility balance</li>
                 </ul>
             </section>
