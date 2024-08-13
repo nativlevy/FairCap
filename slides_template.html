@@ -71,6 +71,19 @@
                 </ul>
             </section>
 
+            <section>
+                <h2>Experiment Setup</h2>
+                <h3>Stack Overflow Salary Database</h3>
+                <div style="font-size: 0.8em;">
+                    <h4>Actionable Attributes:</h4>
+                    <p>'Exercise', 'HoursComputer', 'DevType', 'FormalEducation', 'UndergradMajor', 'Country', 'Continent', 'Hobby', 'Student'</p>
+                    <h4>Grouping Pattern Attributes:</h4>
+                    <p>'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity', 'Age', 'YearsCoding', 'Dependents'</p>
+                    <h4>Protected Attribute:</h4>
+                    <p>RaceEthnicity (non-White or non-European descent)</p>
+                </div>
+            </section>
+
             {% for slide in slides %}
             <section>
                 <h2>Results: CauSumX (K={{ slide.k }})</h2>
@@ -156,8 +169,11 @@
             <section>
                 <h2>Key observations</h2>
                 <ul>
-                    <li>Add here</li>
+                    <li>For certain K values, we reach saturation and utility does not increase further</li>
+                    <li>There is an incentive to select more specific rules (as shown for K=4 in greedy, for example)</li>
+                    <li>In this case, the Greedy algorithm appears to be more fair than CauSumX (higher utility for the protected group), but we cannot derive a general rule of thumb from this single experiment</li>
                 </ul>
+            </section>
         </div>
     </div>
 
