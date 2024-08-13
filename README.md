@@ -1,6 +1,11 @@
 # Greedy Fair Prescription Rules Algorithm
 
-This project implements a greedy algorithm for generating fair prescription rules in machine learning models. It aims to balance utility and fairness in decision-making processes, particularly focusing on protected groups.
+This project implements a greedy algorithm for generating fair prescription rules. It aims to balance utility and fairness in decision-making processes, particularly focusing on protected groups.
+
+## Slides
+
+Experiment slides are available online at:
+https://nativlevy.github.io/FairPrescriptionRules/slides.html
 
 ## Installation
 
@@ -157,8 +162,3 @@ The `generate_slides.py` script does the following:
 4. The generated slides include metrics such as execution time, expected utility, coverage, and the selected rules for each algorithm.
 
 You can view the generated slides by opening the `slides.html` file in a web browser. The presentation uses reveal.js for a smooth slideshow experience.
-
-## Slides
-
-The generated slides are also available online at:
-https://nativlevy.github.io/FairPrescriptionRules/slides.html
