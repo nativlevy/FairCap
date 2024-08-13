@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CauSumX vs Greedy Algorithm Comparison</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/theme/white.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         .reveal {
@@ -79,8 +78,10 @@
                     <p>'Exercise', 'HoursComputer', 'DevType', 'FormalEducation', 'UndergradMajor', 'Country', 'Continent', 'Hobby', 'Student'</p>
                     <h4>Grouping Pattern Attributes:</h4>
                     <p>'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity', 'Age', 'YearsCoding', 'Dependents'</p>
-                    <h4>Protected Attribute:</h4>
+                    <h4>Protected Group:</h4>
                     <p>RaceEthnicity (non-White or non-European descent)</p>
+                    <h4>Target Class:</h4>
+                    <p>'ConvertedSalary'</p>
                 </div>
             </section>
 
@@ -169,9 +170,10 @@
             <section>
                 <h2>Key observations</h2>
                 <ul>
-                    <li>For certain K values, we reach saturation and utility does not increase further</li>
+                    <li>Greedy is more fair than Causumx (in our case the Greedy overall utility is higher, but we can’t derive a general rule of thumb)</li>
+                    <li>CauSumX has a higher overall utility compared to Greedy for most K values</li>
+                    <li>In the Greedy algorithms, for certain K values, we reach saturation and utility does not increase further</li>
                     <li>There is an incentive to select more specific rules (as shown for K=4 in greedy, for example)</li>
-                    <li>In this case, the Greedy algorithm appears to be more fair than CauSumX (higher utility for the protected group), but we cannot derive a general rule of thumb from this single experiment</li>
                 </ul>
             </section>
         </div>
