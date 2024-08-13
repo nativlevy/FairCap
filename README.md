@@ -115,8 +115,31 @@ Contains the definition of the causal graph (SO_DAG) used in the project.
    a. Highest CATE
    b. Highest unfairness score
    c. Highest coverage + protected coverage (marginal score)
-4. Iterate K times to get K rules.
-5. Calculate the final fairness constraint satisfaction.
+4. The benefit of a rule is calculated as:
+   benefit(r) = utility(r) / (τ - utility_p(r)), if τ ≥ utility_p(r)
+               utility(r), otherwise
+   Where τ is a threshold and utility_p(r) is the utility for the protected group.
+5. Statistical parity fairness is enforced:
+   |Σ_r ((coverage_p(r) / |Coverage(R)_p|) * utility_p(r) - (coverage_p(r) / |Coverage(R)_p̄|) * utility_p̄(r))| ≤ ε
+   Where Coverage(R)_p is the set of individuals in the protected group covered by all rules r ∈ R.
+6. Normalize the values as they are on different scales.
+7. Iterate K times to get K rules.
+8. Calculate the final fairness constraint satisfaction.
+
+The scoring function for a rule could be: 
+score = (utility_protected + utility_unprotected) * unfairness_score * coverage_factor
+
+Where:
+- coverage_factor rewards rules that cover more individuals, especially from the protected group
+- unfairness_score is calculated as described in step 2
+
+Example of choosing the best treatment pattern for a given grouping pattern:
+p1: CATE = 100, CATE_p (protected) = 50 -> score = 100/|100 - 50| = 2
+p2: CATE = 80, CATE_p = 70 -> score = 80/|80 - 70| = 8
+p3: CATE = 30, CATE_p = 60 -> score = |30/|30 - 60|| = 1
+p4: CATE = 80, CATE_p = 80 -> score = 80 (when CATE = CATE_p, score = CATE)
+
+The best treatment pattern is p4 and the second best is p2.
 
 ## Output
 
