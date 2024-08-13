@@ -107,24 +107,7 @@ Contains the definition of the causal graph (SO_DAG) used in the project.
 ## Algorithm Overview
 
 1. Use Apriori algorithm to get grouping patterns.
-2. For each grouping pattern:
-   a. Find the treatment with the highest unfairness score.
-   b. Calculate fairness score as: CATE / |CATE - CATE_p|
-   c. If CATE = CATE_p, unfairness score = CATE
-3. Use a greedy algorithm to choose the best rule (rule = grouping pattern + treatment pattern) based on:
-   a. Highest CATE
-   b. Highest unfairness score
-   c. Highest coverage + protected coverage (marginal score)
-4. The benefit of a rule is calculated as:
-   benefit(r) = utility(r) / (τ - utility_p(r)), if τ ≥ utility_p(r)
-               utility(r), otherwise
-   Where τ is a threshold and utility_p(r) is the utility for the protected group.
-5. Statistical parity fairness is enforced:
-   |Σ_r ((coverage_p(r) / |Coverage(R)_p|) * utility_p(r) - (coverage_p(r) / |Coverage(R)_p̄|) * utility_p̄(r))| ≤ ε
-   Where Coverage(R)_p is the set of individuals in the protected group covered by all rules r ∈ R.
-6. Normalize the values as they are on different scales.
-7. Iterate K times to get K rules.
-8. Calculate the final fairness constraint satisfaction.
+2.
 
 The scoring function for a rule could be: 
 score = (utility_protected + utility_unprotected) * unfairness_score * coverage_factor
