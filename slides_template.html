@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CauSumX vs Greedy Algorithm Comparison</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/theme/white.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        .reveal {
+            font-family: 'Open Sans', sans-serif;
+            font-size: 28px;
+        }
+        .reveal h1 {
+            font-size: 2.2em;
+            color: #2c3e50;
+        }
+        .reveal h2 {
+            font-size: 1.8em;
+            color: #2c3e50;
+        }
+        .reveal h3 {
+            font-size: 1.4em;
+            color: #2c3e50;
+        }
+        .reveal table {
+            margin: 0 auto;
+            border-collapse: collapse;
+            font-size: 0.8em;
+        }
+        .reveal th, .reveal td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: left;
+        }
+        .reveal th {
+            background-color: #f2f2f2;
+        }
+        .rule {
+            background-color: #f9f9f9;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            text-align: left;
+            font-size: 0.8em;
+        }
+        .reveal ul, .reveal ol {
+            display: inline-block;
+            text-align: left;
+            margin-left: 1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+            <section>
+                <h1>CauSumX vs Greedy Algorithm</h1>
+                <h3>A comparative analysis of fair prescription rules</h3>
+                <p>August 2024</p>
+            </section>
+
+            <section>
+                <h2>Project overview</h2>
+                <ul>
+                    <li>Goal: Generate fair prescription rules for a given dataset</li>
+                    <li>Focus: Balance utility and fairness in rule selection</li>
+                    <li>Comparison: CauSumX vs Greedy algorithm approaches</li>
+                    <li>Dataset: Stack Overflow Developer survey (so_countries_col_new.csv)</li>
+                </ul>
+            </section>
+
+            {% for slide in slides %}
+            <section>
+                <h2>Results: CauSumX (K={{ slide.k }})</h2>
+                <table>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                    </tr>
+                    <tr>
+                        <td>Execution Time</td>
+                        <td>{{ "%.2f"|format(slide.causumx.execution_time) }} seconds</td>
+                    </tr>
+                    <tr>
+                        <td>Expected Utility</td>
+                        <td>{{ "%.2f"|format(slide.causumx.expected_utility) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Protected Expected Utility</td>
+                        <td>{{ "%.2f"|format(slide.causumx.protected_expected_utility) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Coverage</td>
+                        <td>{{ "%.2f"|format(slide.causumx.coverage) }}%</td>
+                    </tr>
+                    <tr>
+                        <td>Protected Coverage</td>
+                        <td>{{ "%.2f"|format(slide.causumx.protected_coverage) }}%</td>
+                    </tr>
+                </table>
+            </section>
+
+            <section>
+                <h2>CauSumX selected rules (K={{ slide.k }})</h2>
+                {% for rule in slide.causumx.rules %}
+                <div class="rule">
+                    <strong>Rule {{ loop.index }}:</strong> Condition: {{ rule.condition | tojson }}<br>
+                    Treatment: {{ rule.treatment | tojson }}
+                </div>
+                {% endfor %}
+            </section>
+
+            <section>
+                <h2>Results: Greedy (K={{ slide.k }})</h2>
+                <table>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                    </tr>
+                    <tr>
+                        <td>Execution Time</td>
+                        <td>{{ "%.2f"|format(slide.greedy.execution_time) }} seconds</td>
+                    </tr>
+                    <tr>
+                        <td>Expected Utility</td>
+                        <td>{{ "%.2f"|format(slide.greedy.expected_utility) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Protected Expected Utility</td>
+                        <td>{{ "%.2f"|format(slide.greedy.protected_expected_utility) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Coverage</td>
+                        <td>{{ "%.2f"|format(slide.greedy.coverage) }}%</td>
+                    </tr>
+                    <tr>
+                        <td>Protected Coverage</td>
+                        <td>{{ "%.2f"|format(slide.greedy.protected_coverage) }}%</td>
+                    </tr>
+                </table>
+            </section>
+
+            <section>
+                <h2>Greedy selected rules (K={{ slide.k }})</h2>
+                {% for rule in slide.greedy.rules %}
+                <div class="rule">
+                    <strong>Rule {{ loop.index }}:</strong> Condition: {{ rule.condition | tojson }}<br>
+                    Treatment: {{ rule.treatment | tojson }}
+                </div>
+                {% endfor %}
+            </section>
+            {% endfor %}
+
+            <section>
+                <h2>Key observations</h2>
+                <ul>
+                    <li>Greedy generally achieves higher utility</li>
+                    <li>Both algorithms provide similar coverage</li>
+                    <li>Greedy tends to have higher protected utility</li>
+                    <li>Both algorithms focus on similar attributes (YearsCoding, Gender, SexualOrientation)</li>
+                    <li>Execution time is generally lower for CauSumX</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Fairness comparison</h2>
+                <ul>
+                    <li>CauSumX: Lower utility but often higher protected coverage</li>
+                    <li>Greedy: Higher utility with slightly lower protected coverage</li>
+                    <li>Both algorithms achieve high overall coverage (>94%)</li>
+                    <li>Similar focus on demographic attributes in selected rules</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Conclusions</h2>
+                <ul>
+                    <li>Greedy: Higher utility, but slightly lower protected coverage</li>
+                    <li>CauSumX: Lower utility, but better execution time and protected coverage</li>
+                    <li>Both algorithms show good overall performance in terms of coverage</li>
+                    <li>Trade-off between maximizing utility and ensuring fairness is evident</li>
+                    <li>Choice depends on specific use case priorities (utility vs. fairness vs. execution time)</li>
+                    <li>Further research needed to optimize fairness-utility balance</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Thank you</h2>
+                <p>Questions?</p>
+            </section>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.js"></script>
+    <script>
+        Reveal.initialize({
+            transition: 'none',
+            transitionSpeed: 'fast'
+        });
+    </script>
+</body>
+</html>
