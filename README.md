@@ -156,7 +156,7 @@ The `generate_slides.py` script does the following:
 3. For each value of k (4 to 7), it generates slides comparing the results of the greedy and CauSumX algorithms.
 4. The generated slides include metrics such as execution time, expected utility, coverage, and the selected rules for each algorithm.
 
-You can view the generated slides by opening the `slides.html` file in a web browser. The presentation uses reveal.js for a smooth, interactive slideshow experience.
+You can view the generated slides by opening the `slides.html` file in a web browser. The presentation uses reveal.js for a smooth slideshow experience.
 
 ## Slides
 
