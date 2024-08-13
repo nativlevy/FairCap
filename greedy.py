@@ -380,7 +380,7 @@ def main():
     # Load data
     df = load_data('data/so_countries_col_new.csv')
 
-    # Define protected group (non-male in this case)
+    # Define protected group
     protected_group = set(df[df['RaceEthnicity'] != 'White or of European descent'].index)
     logging.info(f"Protected group size: {len(protected_group)} out of {len(df)} total")
 
