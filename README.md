@@ -136,6 +136,29 @@ Both algorithms will generate output files with their results:
 
 These files contain detailed information about the selected rules, their fairness scores, and other relevant metrics.
 
+## Generating Slides
+
+To generate the presentation slides, follow these steps:
+
+1. Ensure you have run both the greedy and CauSumX algorithms, which will generate the necessary CSV files (`experiment_results_greedy.csv` and `experiment_results_causumx.csv`).
+
+2. Run the slide generation script:
+   ```
+   python generate_slides.py
+   ```
+
+3. This will create a file named `slides.html` in the current directory.
+
+The `generate_slides.py` script does the following:
+
+1. Reads the CSV files containing the results from both algorithms.
+2. Uses a Jinja2 template (`slides_template.html`) to create an HTML presentation.
+3. For each value of k (4 to 7), it generates slides comparing the results of the greedy and CauSumX algorithms.
+4. The generated slides include metrics such as execution time, expected utility, coverage, and the selected rules for each algorithm.
+
+You can view the generated slides by opening the `slides.html` file in a web browser. The presentation uses reveal.js for a smooth, interactive slideshow experience.
+
 ## Slides
 
+The generated slides are also available online at:
 https://nativlevy.github.io/FairPrescriptionRules/slides.html
