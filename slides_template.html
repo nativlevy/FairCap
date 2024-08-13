@@ -98,30 +98,30 @@
                     </tr>
                     <tr>
                         <td>Execution Time</td>
-                        <td>{{ "%.2f"|format(slide.causumx.execution_time) }} seconds</td>
+                        <td>{{ "%.2f"|format(slide.CauSumX.execution_time) }} seconds</td>
                     </tr>
                     <tr>
                         <td>Expected Utility</td>
-                        <td>{{ "%.2f"|format(slide.causumx.expected_utility) }}</td>
+                        <td>{{ "%.2f"|format(slide.CauSumX.expected_utility) }}</td>
                     </tr>
                     <tr>
                         <td>Protected Expected Utility</td>
-                        <td>{{ "%.2f"|format(slide.causumx.protected_expected_utility) }}</td>
+                        <td>{{ "%.2f"|format(slide.CauSumX.protected_expected_utility) }}</td>
                     </tr>
                     <tr>
                         <td>Coverage</td>
-                        <td>{{ "%.2f"|format(slide.causumx.coverage) }}%</td>
+                        <td>{{ "%.2f"|format(slide.CauSumX.coverage) }}%</td>
                     </tr>
                     <tr>
                         <td>Protected Coverage</td>
-                        <td>{{ "%.2f"|format(slide.causumx.protected_coverage) }}%</td>
+                        <td>{{ "%.2f"|format(slide.CauSumX.protected_coverage) }}%</td>
                     </tr>
                 </table>
             </section>
 
             <section>
                 <h2>CauSumX selected rules (K={{ slide.k }})</h2>
-                {% for rule in slide.causumx.rules %}
+                {% for rule in slide.CauSumX.rules %}
                 <div class="rule">
                     <strong>Rule {{ loop.index }}:</strong> Condition: {{ rule.condition | tojson }}<br>
                     Treatment: {{ rule.treatment | tojson }}
@@ -173,7 +173,8 @@
             <section>
                 <h2>Key observations</h2>
                 <ul>
-                    <li>Greedy is more fair than Causumx (in our case the Greedy overall utility is higher, but we can't derive a general rule of thumb)</li>
+                    <li>Greedy is more fair than CauSumX</li>
+                    <li>In this specific case, Greedy achieves higher overall utility than CauSumX. However, this result cannot be generalized as a universal rule</li>
                     <li>CauSumX has a higher overall utility compared to Greedy for most K values</li>
                     <li>In the Greedy algorithms, for certain K values, we reach saturation and utility does not increase further</li>
                     <li>There is an incentive to select more specific rules (as shown for K=4 in greedy, for example)</li>
