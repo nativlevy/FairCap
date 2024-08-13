@@ -111,23 +111,21 @@ Contains the definition of the causal graph (SO_DAG) used in the project.
 3. Create Rule objects for each group-treatment pair, calculating utility and protected utility.
 4. Initialize empty solution set and coverage tracking.
 5. While the number of rules is less than the maximum allowed:
-   a. For each candidate rule, calculate a score based on:
+   - For each candidate rule, calculate a score based on:
       - The rule's utility
       - Coverage of both protected and unprotected groups
       - Fairness (balance between overall utility and protected group utility)
-   b. Select the rule with the highest score
-   c. Add the selected rule to the solution set
-   d. Update coverage for both protected and unprotected groups
+   - Select the rule with the highest score
+   - Add the selected rule to the solution set
+   - Update coverage for both protected and unprotected groups
 6. If coverage thresholds are met, switch focus to improving utility for the protected group:
-   a. Select rules that maximize protected utility
-   b. Continue until maximum number of rules is reached or no improvement is possible
+   - Select rules that maximize protected utility
+   - Continue until maximum number of rules is reached or no improvement is possible
 7. Calculate final metrics:
    - Expected utility
    - Protected expected utility
    - Overall coverage
    - Protected group coverage
-
-The algorithm balances between maximizing overall utility and ensuring fairness for the protected group, with a mechanism to adjust focus once certain coverage thresholds are met.
 
 ## Output
 
