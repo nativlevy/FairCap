@@ -104,7 +104,7 @@ Handles data preprocessing and transformation. Key functions:
 
 Contains the definition of the causal graph (SO_DAG) used in the project.
 
-## Algorithm Overview
+## Greedy Algorithm Overview
 
 1. Use Apriori algorithm to get grouping patterns.
 2.
