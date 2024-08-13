@@ -106,23 +106,28 @@ Contains the definition of the causal graph (SO_DAG) used in the project.
 
 ## Greedy Algorithm Overview
 
-1. Use Apriori algorithm to get grouping patterns.
-2.
+1. Generate grouping patterns using the Apriori algorithm.
+2. For each grouping pattern, find the best treatment that maximizes fairness and effectiveness.
+3. Create Rule objects for each group-treatment pair, calculating utility and protected utility.
+4. Initialize empty solution set and coverage tracking.
+5. While the number of rules is less than the maximum allowed:
+   a. For each candidate rule, calculate a score based on:
+      - The rule's utility
+      - Coverage of both protected and unprotected groups
+      - Fairness (balance between overall utility and protected group utility)
+   b. Select the rule with the highest score
+   c. Add the selected rule to the solution set
+   d. Update coverage for both protected and unprotected groups
+6. If coverage thresholds are met, switch focus to improving utility for the protected group:
+   a. Select rules that maximize protected utility
+   b. Continue until maximum number of rules is reached or no improvement is possible
+7. Calculate final metrics:
+   - Expected utility
+   - Protected expected utility
+   - Overall coverage
+   - Protected group coverage
 
-The scoring function for a rule could be: 
-score = (utility_protected + utility_unprotected) * unfairness_score * coverage_factor
-
-Where:
-- coverage_factor rewards rules that cover more individuals, especially from the protected group
-- unfairness_score is calculated as described in step 2
-
-Example of choosing the best treatment pattern for a given grouping pattern:
-p1: CATE = 100, CATE_p (protected) = 50 -> score = 100/|100 - 50| = 2
-p2: CATE = 80, CATE_p = 70 -> score = 80/|80 - 70| = 8
-p3: CATE = 30, CATE_p = 60 -> score = |30/|30 - 60|| = 1
-p4: CATE = 80, CATE_p = 80 -> score = 80 (when CATE = CATE_p, score = CATE)
-
-The best treatment pattern is p4 and the second best is p2.
+The algorithm balances between maximizing overall utility and ensuring fairness for the protected group, with a mechanism to adjust focus once certain coverage thresholds are met.
 
 ## Output
 
