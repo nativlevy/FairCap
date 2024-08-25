@@ -384,13 +384,13 @@ def main():
     protected_group = set(df[df['RaceEthnicity'] != 'White or of European descent'].index)
     logging.info(f"Protected group size: {len(protected_group)} out of {len(df)} total")
 
-    # Define attributes for grouping patterns
+    # Define attributes for grouping patterns - non-actionable attributes
     attributes = [
         'Gender', 'SexualOrientation', 'EducationParents', 'RaceEthnicity',
         'Age', 'YearsCoding', 'Dependents',
     ]
 
-    # Run experiments for different values of k
+    # Run experiments for different values of k = the number of rules
     results = []
     for k in range(MIX_K, MAX_K + 1):
         result = run_experiment(k, df, protected_group, attributes, 

@@ -1,5 +1,4 @@
 .aider*
-data/
 .venv/
 .idea/
 Temp.csv
