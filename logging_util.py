@@ -10,12 +10,15 @@ formatter = logging.Formatter(
 logging.basicConfig(level=logging.DEBUG)
 
 
-def init_logger(model_name):
+def init_logger(model_name, is_prod=False):
     logger = logging.getLogger(model_name)
-    logger.setLevel(logging.DEBUG)
     out_handler = logging.FileHandler(os.path.join(
         os.getenv('HOME'), 'output', 'stdout.log'))
-    out_handler.setLevel(logging.DEBUG)
+    if is_prod:
+        logger.setLevel(logging.WARNING)
+    else:
+        logger.setLevel(logging.DEBUG)
+        out_handler.setLevel(logging.DEBUG)
     out_handler.setFormatter(formatter)
     logger.addHandler(out_handler)
     logger.propagate = False

@@ -1,7 +1,7 @@
 from concurrent import futures
 import logging
 import time
-from remote_util import clean_up, run_algorithm, synch_repo_at_remote
+from remote_util import clean_up, fetch_logs_from_remote, run_algorithm, synch_repo_at_remote
 
 
 def summarize_exp_data(remote_exp_dir, local_out_dir, executor, is_exp_remote=False):
@@ -45,7 +45,7 @@ def run_single_experiment(model, data_path, executor, remote=True):
         return ""
 
 
-def run_single_remote_exmpt(expmt_config, executor):
+def run_single_remote_exmpt(expmt_config, timestamp):
     """
     Remote experiments are mainly for production purpose, we run this very 
     experiment on a designated remote server.
@@ -83,11 +83,22 @@ def run_single_remote_exmpt(expmt_config, executor):
     if run_algo_status != 0:
         logging.error("Error occurred at node %s when running algorithm. See more details %s/stderr.log" % (
             expmt_config[2],  expmt_config[2]))
+    else:
+        logging.info("Algo %s completed running on %s" % (expmt_config[1],
+                                                          expmt_config[2]))
 
     # Future 3. Fetch all the outputs, including logs, experiment results
     # Even if the model failed on remote machines, we still fetch the logs
+    fetch_status = fetch_logs_from_remote(
+        algo_name=expmt_config[1], timestamp=timestamp, remote_host=expmt_config[2])
+    if fetch_status != 0:
+        logging.error("Failed to fetch outputs from  %s" % (
+            expmt_config[2]))
+    else:
+        logging.info("Algo %s output fetched from %s" % (expmt_config[1],
+                                                         expmt_config[2]))
 
-    return 0
+    return run_algo_status
 
 
 def ts_prefix():

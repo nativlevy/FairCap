@@ -13,7 +13,7 @@ import logging
 import subprocess
 import os
 import sys
-from exmpt_config import REMOTE_USER, REMOTE_HOSTNAMES, PROJECT_PATH
+from exmpt_config import ALL_OUTPUT_PATH, REMOTE_USER, REMOTE_HOSTNAMES, PROJECT_PATH
 
 
 def prep_remote_cmd(command: str, remote_usr: str = REMOTE_USER, remote_host: str = REMOTE_HOSTNAMES[0]) -> str:
@@ -96,18 +96,29 @@ def cp_local_to_remote(local_path='', remote_path='~', remote_usr: str = REMOTE_
     return subprocess.call(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
-def cp_remote_to_local(remote_path, local_path='./', remote_usr: str = REMOTE_USER, remote_host: str = REMOTE_HOSTNAMES[0]):
+def fetch_logs_from_remote(algo_name, timestamp, remote_path: str = '~/output', remote_usr: str = REMOTE_USER, remote_host: str = REMOTE_HOSTNAMES[0]):
+    """_summary_
+        Copy remote:~/output to PROJECT_PATH/output/algo_name
+    """
     # Make a directory for local, replace if already exists
+    local_path = os.path.join(ALL_OUTPUT_PATH, timestamp, algo_name)
     os.makedirs(local_path, exist_ok=True)
     tar_file = 'logs.tar'
     tar_file_path = os.path.join(remote_path, tar_file)
+    # tarball remote file
     run_remote_cmd_async('tar -C %s -cf %s .' % (remote_path,
                                                  tar_file_path), remote_usr, remote_host)
+    # Copy to local
     subprocess.call(["scp", "-r", "-p", '%s@%s:%s' %
-                    (remote_usr, remote_host, tar_file_path), local_path])
+                    (remote_usr, remote_host, tar_file_path), local_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    # Extract at local
     subprocess.call(['tar', '-xf', os.path.join(local_path, tar_file),
-                     '-C', local_path])
-    subprocess.call(['rm', '-rf', os.path.join(local_path, tar_file)])
+                     '-C', local_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # Remove tar
+    subprocess.call(['rm', '-rf', os.path.join(local_path, tar_file)],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return 0
 
 
 def synch_repo_at_remote(remote_host: str):

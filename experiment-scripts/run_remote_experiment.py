@@ -17,9 +17,10 @@ from exmpt_config import PROJECT_PATH, ALL_OUTPUT_PATH
 
 # TODO better Experiment config spec
 expmt_configs = [['python3 FairPrescriptionRules/greedy.py',
-                  "", "node0.remote.fair-prescrip-pg0.utah.cloudlab.us"]]
+                  "greedy", "node0.remote.fair-prescrip-pg0.utah.cloudlab.us"]]
 
 logging.basicConfig(level=logging.DEBUG)
+
 
 def main():
     """
@@ -35,18 +36,20 @@ def main():
     #   2. stderr.log
     #   3. experiment results
 
-    # Prepare a output directory
-    os.makedirs(os.path.join(PROJECT_PATH, 'output', ts_prefix()))
+    # Prepare a output directory, prefixed with time stamp
+    tempore = ts_prefix()
+
+    os.makedirs(os.path.join(PROJECT_PATH, 'output', tempore))
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         f = []
         for expmt_config in expmt_configs:
             # Synch codebase -> run algo -> pull result
             f.append(executor.submit(
-                run_single_remote_exmpt, expmt_config, executor))
+                run_single_remote_exmpt, expmt_config, tempore))
 
         for i in f:
-            print(i.result())
+            print(i)
 
     print("done")
 
