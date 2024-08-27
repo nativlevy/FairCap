@@ -18,4 +18,5 @@ def init_logger(model_name):
     out_handler.setLevel(logging.DEBUG)
     out_handler.setFormatter(formatter)
     logger.addHandler(out_handler)
+    logger.propagate = False
     return logger

@@ -13,8 +13,7 @@ import json
 import statistics
 from logging_util import init_logger
 
-# logger = init_logger('greedy')
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+logger = init_logger('greedy')
 
 
 class Rule:
@@ -406,11 +405,11 @@ def main():
     """
     Main function to run the greedy fair prescription rules algorithm for different values of k.
     """
-    logging.info("info")
+    logger.info("info")
 
-    logging.debug("debug")
-    logging.warning("warning")
-    logging.error("errrrrr")
+    logger.debug("debug")
+    logger.warning("warning")
+    logger.error("errrrrr")
     print(1/0)
     # Load data
     df = load_data(os.path.join(PROJECT_PATH, 'data/so_countries_col_new.csv'))
