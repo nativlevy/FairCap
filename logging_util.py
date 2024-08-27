@@ -1,7 +1,6 @@
 import logging
 import os
 import sys
-from macro_config import ALGO_OUTPUT_PATH
 
 formatter = logging.Formatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
