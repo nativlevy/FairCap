@@ -1,15 +1,16 @@
 import pandas as pd
 from typing import List, Set, Dict
 from Algorithms_causumx import getAllGroups, getGroupstreatmentsforGreeedy
-from consts import APRIORI, MIX_K, MAX_K, unprotected_coverage_threshold, protected_coverage_threshold, \
+from consts import APRIORI, MIX_K, MAX_K, PROJECT_PATH, unprotected_coverage_threshold, protected_coverage_threshold, \
     fairness_threshold
 from dags import SO_DAG
 import logging
 import time
 import csv
 import json
+import os
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 
 class Rule:
     """
@@ -353,7 +354,7 @@ def main():
     Main function to run the greedy fair prescription rules algorithm for different values of k.
     """
     # Load data
-    df = load_data('data/so_countries_col_new.csv')
+    df = load_data(os.path.join(PROJECT_PATH,'data/so_countries_col_new.csv'))
 
     # Define protected group (non-male in this case)
     protected_group = set(df[df['RaceEthnicity'] != 'White or of European descent'].index)

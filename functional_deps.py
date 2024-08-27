@@ -1,6 +1,9 @@
+import os
 import pandas as pd
 import numpy as np
 from scipy.stats import entropy
+
+from consts import PROJECT_PATH
 
 def calculate_functional_dependencies(df, grouping_attribute, epsilon=0.1):
     """
@@ -56,7 +59,7 @@ def calculate_conditional_entropy(df, x, y):
 # Example usage
 if __name__ == "__main__":
     # Load your data
-    df = pd.read_csv("data/so_countries_col_new.csv")
+    df = pd.read_csv(os.path.join(PROJECT_PATH,'data/so_countries_col_new.csv'))
     # Set the grouping attribute (e.g., 'Country')
     grouping_attribute = 'Country'
 
