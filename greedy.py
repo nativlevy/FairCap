@@ -405,12 +405,6 @@ def main():
     """
     Main function to run the greedy fair prescription rules algorithm for different values of k.
     """
-    logger.info("info")
-
-    logger.debug("debug")
-    logger.warning("warning")
-    logger.error("errrrrr")
-    print(1/0)
     # Load data
     df = load_data(os.path.join(PROJECT_PATH, 'data/so_countries_col_new.csv'))
     # Define protected group

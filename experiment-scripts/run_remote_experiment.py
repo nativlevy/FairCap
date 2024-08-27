@@ -17,7 +17,8 @@ from exmpt_config import PROJECT_PATH, ALL_OUTPUT_PATH
 
 # TODO better Experiment config spec
 expmt_configs = [['python3 FairPrescriptionRules/greedy.py',
-                  "greedy", "node0.remote.fair-prescrip-pg0.utah.cloudlab.us"]]
+                  "greedy", "node0.remote.fair-prescrip-pg0.utah.cloudlab.us"], ['python3 FairPrescriptionRules/causumx.py',
+                                                                                 "causumx", "node1.remote.fair-prescrip-pg0.utah.cloudlab.us"]]
 
 logging.basicConfig(level=logging.DEBUG)
 
