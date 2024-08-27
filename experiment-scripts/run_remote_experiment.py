@@ -6,37 +6,37 @@ This script launch an experiment, runs both Greedy and CauSumX where X will be t
 
 # import utils
 import logging
+from expmt_util import run_single_remote_exmpt, ts_prefix
+from remote_util import synch_repo_at_remote, run_algorithm
+import concurrent.futures
+import os
 import subprocess
 import sys
+from exmpt_config import PROJECT_PATH, ALL_OUTPUT_PATH
 
-import concurrent.futures
-from remote_util import synch_repo_at_remote, run_algorithm
 
 # TODO better Experiment config spec
 expmt_configs = [['python3 FairPrescriptionRules/greedy.py',
                   "", "node0.remote.fair-prescrip-pg0.utah.cloudlab.us"]]
-logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 
-
-def run_single_remote_exmpt(expmt_config, executor):
-    # Return 0 if success; 1 otherwise
-    # Attempt to synch codebase; future will be done EVENTUALLY as rsynch always returns a status code.
-    synch_future = executor.submit(synch_repo_at_remote, expmt_config[2])
-    if synch_future.result() != 0:
-        return 1
-
-    run_algo_future = executor.submit(
-        run_algorithm, expmt_config[0], expmt_config[2])
-    if run_algo_future.result() != 0:
-        return 1
-    return 0
-
+logging.basicConfig(level=logging.DEBUG)
 
 def main():
     """
+
     for each model in the model list and a provided dataset path, submit a request 
     """
     print("start")
+
+    # Every experiment performed will have a time stamped output directory.
+    # This directory contains the remote output directory
+    # Each remote output directory has the following:
+    #   1. stdout.log
+    #   2. stderr.log
+    #   3. experiment results
+
+    # Prepare a output directory
+    os.makedirs(os.path.join(PROJECT_PATH, 'output', ts_prefix()))
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         f = []
