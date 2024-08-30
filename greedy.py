@@ -406,7 +406,7 @@ def main():
     Main function to run the greedy fair prescription rules algorithm for different values of k.
     """
     # Load data
-    df = load_data(os.path.join(PROJECT_PATH, 'data/so_countries_col_new.csv'))
+    df = load_data(os.path.join(PROJECT_PATH, 'data/so_countries_col_new_mini.csv'))
     # Define protected group
     protected_group = set(
         df[df['RaceEthnicity'] != 'White or of European descent'].index)
