@@ -12,13 +12,7 @@ import concurrent.futures
 import os
 import subprocess
 import sys
-from exmpt_config import PROJECT_PATH, ALL_OUTPUT_PATH
-
-
-# TODO better Experiment config spec
-expmt_configs = [['python3 FairPrescriptionRules/greedy.py',
-                  "greedy", "node0.remote.fair-prescrip-pg0.utah.cloudlab.us"], ['python3 FairPrescriptionRules/causumx.py',
-                                                                                 "causumx", "node1.remote.fair-prescrip-pg0.utah.cloudlab.us"]]
+from exmpt_config import PROJECT_PATH, ALL_OUTPUT_PATH, SO_CONFIG
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -31,6 +25,7 @@ def main():
     print("start")
 
     # Every experiment performed will have a time stamped output directory.
+
     # This directory contains the remote output directory
     # Each remote output directory has the following:
     #   1. stdout.log
@@ -44,10 +39,10 @@ def main():
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         f = []
-        for expmt_config in expmt_configs:
+        for config in SO_CONFIG:
             # Synch codebase -> run algo -> pull result
             f.append(executor.submit(
-                run_single_remote_exmpt, expmt_config, tempore))
+                run_single_remote_exmpt, config, tempore))
 
         for i in f:
             print(i)

@@ -13,10 +13,10 @@ import logging
 import subprocess
 import os
 import sys
-from exmpt_config import ALL_OUTPUT_PATH, REMOTE_USER, REMOTE_HOSTNAMES, PROJECT_PATH
+from exmpt_config import ALL_OUTPUT_PATH, REMOTE_USER, PROJECT_PATH
 
 
-def prep_remote_cmd(command: str, remote_usr: str = REMOTE_USER, remote_host: str = REMOTE_HOSTNAMES[0]) -> str:
+def prep_remote_cmd(command: str, remote_host: str, remote_usr: str = REMOTE_USER,) -> str:
     """_summary_
     Prepare a bash script to be run command on remote_usr@remote_host
     Example:
@@ -40,7 +40,7 @@ def prep_remote_cmd(command: str, remote_usr: str = REMOTE_USER, remote_host: st
     return remote_cmd_tokens
 
 
-def run_remote_cmd_sync(command: str, remote_usr: str = REMOTE_USER, remote_host: str = REMOTE_HOSTNAMES[0]) -> str:
+def run_remote_cmd_sync(command: str, remote_host: str, remote_usr: str = REMOTE_USER) -> str:
     """_summary_
     Execute command on remote_usr@remote_host right away
     Command example:
@@ -57,11 +57,11 @@ def run_remote_cmd_sync(command: str, remote_usr: str = REMOTE_USER, remote_host
 
     logging.info("Execute remote command: `%s` synchronously " % command)
 
-    return subprocess.run(prep_remote_cmd(command, remote_usr, remote_host),
-                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, universal_newlines=True).stdout
+    return subprocess.run(prep_remote_cmd(command, remote_host, remote_usr),
+                          stderr=subprocess.DEVNULL, universal_newlines=True).stdout
 
 
-def run_remote_cmd_async(command: str, remote_usr: str = REMOTE_USER, remote_host: str = REMOTE_HOSTNAMES[0]):
+def run_remote_cmd_async(command: str, remote_host: str, remote_usr: str = REMOTE_USER):
     """_summary_
     Execute command on remote_usr@remote_host right away. Execution can finish at anytime. Use this function when remote commands can be executed in parallel
 
@@ -80,10 +80,10 @@ def run_remote_cmd_async(command: str, remote_usr: str = REMOTE_USER, remote_hos
 
     logging.info("Execute remote command: (%s) asynchronously " % command)
 
-    return subprocess.Popen(prep_remote_cmd(command, remote_usr, remote_host))
+    return subprocess.Popen(prep_remote_cmd(command, remote_host, remote_usr))
 
 
-def cp_local_to_remote(local_path='', remote_path='~', remote_usr: str = REMOTE_USER, remote_host: str = REMOTE_HOSTNAMES[0], exclude_paths=[]):
+def cp_local_to_remote(remote_host: str, local_path='', remote_path='~', remote_usr: str = REMOTE_USER, exclude_paths=[]):
     logging.info("Synching {%s} to {%s@%s:%s}" %
                  (local_path, remote_usr, remote_host, remote_path))
     args = ["rsync", "-ar", "-e", "ssh", local_path,
@@ -93,10 +93,10 @@ def cp_local_to_remote(local_path='', remote_path='~', remote_usr: str = REMOTE_
             args.append('--exclude')
             args.append(exclude_paths[i])
 
-    return subprocess.call(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return subprocess.call(args, stderr=subprocess.DEVNULL)
 
 
-def fetch_logs_from_remote(algo_name, timestamp, remote_path: str = '~/output', remote_usr: str = REMOTE_USER, remote_host: str = REMOTE_HOSTNAMES[0]):
+def fetch_logs_from_remote(algo_name, timestamp, remote_host, remote_path: str = '~/output', remote_usr: str = REMOTE_USER):
     """_summary_
         Copy remote:~/output to PROJECT_PATH/output/algo_name
     """
@@ -107,24 +107,23 @@ def fetch_logs_from_remote(algo_name, timestamp, remote_path: str = '~/output', 
     tar_file_path = os.path.join(remote_path, tar_file)
     # tarball remote file
     run_remote_cmd_async('tar -C %s -cf %s .' % (remote_path,
-                                                 tar_file_path), remote_usr, remote_host)
+                                                 tar_file_path), remote_host, remote_usr)
     # Copy to local
     subprocess.call(["scp", "-r", "-p", '%s@%s:%s' %
-                    (remote_usr, remote_host, tar_file_path), local_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    (remote_usr, remote_host, tar_file_path), local_path])
 
     # Extract at local
     subprocess.call(['tar', '-xf', os.path.join(local_path, tar_file),
-                     '-C', local_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                     '-C', local_path])
     # Remove tar
-    subprocess.call(['rm', '-rf', os.path.join(local_path, tar_file)],
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.call(['rm', '-rf', os.path.join(local_path, tar_file)])
     return 0
 
 
 def synch_repo_at_remote(remote_host: str):
     # Returns a status code: 0 means success; non-0 mean failure
     return cp_local_to_remote(local_path=PROJECT_PATH,
-                              remote_host=remote_host, exclude_paths=['*/__pycache__', 'output'])
+                              remote_host=remote_host, exclude_paths=['*/__pycache__', 'output', 'venv', 'lib', 'include', 'bin'])
 
 
 def clean_up(remote_host):
