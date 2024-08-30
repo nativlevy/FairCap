@@ -4,7 +4,7 @@ import sys
 import pandas as pd
 from typing import List, Set, Dict
 from Algorithms import getAllGroups, getGroupstreatmentsforGreeedy
-from consts import APRIORI, MIX_K, MAX_K, PROJECT_PATH, unprotected_coverage_threshold, protected_coverage_threshold, \
+from consts import APRIORI, MIX_K, MAX_K, PROJECT_PATH, DATA_PATH, WORKER_OUTPUT_PATH, unprotected_coverage_threshold, protected_coverage_threshold, \
     fairness_threshold
 from dags import SO_DAG
 import time
@@ -357,7 +357,7 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attribut
                  f"{k} rules, and fairness threshold {fairness_threshold}")
 
     # save all rules to an output file
-    with open('rules_greedy.json', 'w') as f:
+    with open(os.path.join(WORKER_OUTPUT_PATH, 'rules_greedy.json'), 'w') as f:
         json.dump([{
             'condition': rule.condition,
             'treatment': rule.treatment,
@@ -406,7 +406,7 @@ def main():
     Main function to run the greedy fair prescription rules algorithm for different values of k.
     """
     # Load data
-    df = load_data(os.path.join(PROJECT_PATH, 'data/so_countries_col_new_mini.csv'))
+    df = load_data(os.path.join(DATA_PATH, 'so_countries_col_new_mini.csv'))
     # Define protected group
     protected_group = set(
         df[df['RaceEthnicity'] != 'White or of European descent'].index)
@@ -429,7 +429,7 @@ def main():
         logging.info(f"Completed experiment for k={k}")
 
     # Write results to CSV
-    with open('experiment_results_greedy.csv', 'w', newline='') as csvfile:
+    with open(os.path.join(WORKER_OUTPUT_PATH, 'experiment_results_greedy.csv'), 'w', newline='') as csvfile:
         fieldnames = ['k', 'execution_time', 'expected_utility', 'protected_expected_utility', 'coverage',
                       'protected_coverage', 'selected_rules']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)

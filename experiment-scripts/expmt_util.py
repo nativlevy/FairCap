@@ -84,8 +84,8 @@ def run_single_remote_exmpt(config: Config, timestamp):
         config.start_script, config.remote_hostname)
     # Per implementation, `run_algorithm`s return 0 if success, 1 otherwise
     if run_algo_status != 0:
-        logging.error("Error occurred at node %s when running algorithm. See more details %s/stderr.log" % (
-            config.remote_hostname, config.remote_hostname))
+        logging.error("Error(%s) occurred at %s. See more details %s/stderr.log" % (
+            run_algo_status, config.remote_hostname, config.remote_hostname))
     else:
         logging.info("Algo %s completed running on %s" % (
             config.algo_name, config.remote_hostname))

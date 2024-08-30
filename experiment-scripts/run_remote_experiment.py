@@ -12,7 +12,7 @@ import concurrent.futures
 import os
 import subprocess
 import sys
-from exmpt_config import PROJECT_PATH, ALL_OUTPUT_PATH, SO_CONFIG
+from exmpt_config import PROJECT_PATH, MASTER_OUTPUT_PATH, SO_CONFIG
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -35,7 +35,7 @@ def main():
     # Prepare a output directory, prefixed with time stamp
     tempore = ts_prefix()
 
-    os.makedirs(os.path.join(PROJECT_PATH, 'output', tempore))
+    os.makedirs(os.path.join(MASTER_OUTPUT_PATH, tempore))
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         f = []

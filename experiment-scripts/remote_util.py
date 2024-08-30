@@ -13,7 +13,7 @@ import logging
 import subprocess
 import os
 import sys
-from exmpt_config import ALL_OUTPUT_PATH, REMOTE_USER, PROJECT_PATH
+from exmpt_config import MASTER_OUTPUT_PATH, REMOTE_USER, PROJECT_PATH, WORKER_OUTPUT_PATH
 
 
 def prep_remote_cmd(command: str, remote_host: str, remote_usr: str = REMOTE_USER,) -> str:
@@ -58,7 +58,7 @@ def run_remote_cmd_sync(command: str, remote_host: str, remote_usr: str = REMOTE
     logging.info("Execute remote command: `%s` synchronously " % command)
 
     return subprocess.run(prep_remote_cmd(command, remote_host, remote_usr),
-                          stderr=subprocess.DEVNULL, universal_newlines=True).stdout
+                          stderr=subprocess.DEVNULL, universal_newlines=True).returncode
 
 
 def run_remote_cmd_async(command: str, remote_host: str, remote_usr: str = REMOTE_USER):
@@ -96,17 +96,17 @@ def cp_local_to_remote(remote_host: str, local_path='', remote_path='~', remote_
     return subprocess.call(args, stderr=subprocess.DEVNULL)
 
 
-def fetch_logs_from_remote(algo_name, timestamp, remote_host, remote_path: str = '~/output', remote_usr: str = REMOTE_USER):
+def fetch_logs_from_remote(algo_name, timestamp, remote_host, remote_usr: str = REMOTE_USER):
     """_summary_
         Copy remote:~/output to PROJECT_PATH/output/algo_name
     """
     # Make a directory for local, replace if already exists
-    local_path = os.path.join(ALL_OUTPUT_PATH, timestamp, algo_name)
+    local_path = os.path.join(MASTER_OUTPUT_PATH, timestamp, algo_name)
     os.makedirs(local_path, exist_ok=True)
     tar_file = 'logs.tar'
-    tar_file_path = os.path.join(remote_path, tar_file)
+    tar_file_path = os.path.join(WORKER_OUTPUT_PATH, tar_file)
     # tarball remote file
-    run_remote_cmd_async('tar -C %s -cf %s .' % (remote_path,
+    run_remote_cmd_async('tar -C %s -cf %s .' % (WORKER_OUTPUT_PATH,
                                                  tar_file_path), remote_host, remote_usr)
     # Copy to local
     subprocess.call(["scp", "-r", "-p", '%s@%s:%s' %
@@ -128,14 +128,14 @@ def synch_repo_at_remote(remote_host: str):
 
 def clean_up(remote_host):
     commands = [
-        "pkill -9 python;", "rm -r output;", "mkdir output"
+        "pkill -9 python;", "rm -r output;", "mkdir ~/FairPrescriptionRules/output"
     ]
     return run_remote_cmd_sync(command=' '.join(commands), remote_host=remote_host)
 
 
 def run_algorithm(algorithm_cmd: str, remote_host: str):
     # Cat all stdout and stderr on remote machine
-    flags = ' &> output/stdout.log 2> output/stderr.log'
+    flags = ' &> ~/FairPrescriptionRules/output/stdout.log 2> ~/FairPrescriptionRules/output/stderr.log'
 
     # Returns a status code: 0 means success; non-0 mean failure
     return run_remote_cmd_sync(command=algorithm_cmd + flags, remote_host=remote_host)

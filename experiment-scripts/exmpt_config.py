@@ -6,13 +6,15 @@ import sys
 # Location of config.py
 CONFIG_PATH = os.path.abspath(__file__)
 PROJECT_PATH = Path(__file__).parent.parent
-ALL_OUTPUT_PATH = os.path.join(PROJECT_PATH, 'output')
+MASTER_OUTPUT_PATH = os.path.join(PROJECT_PATH, 'output')
+WORKER_OUTPUT_PATH = 'FairPrescriptionRules/output'
 
 # cloud lab configs
 REMOTE_USER = "bcyl2"
 CLOUDLAB_EXPERIMENT_NAME = "remote"
 CLOUDLAB_PROJECT_NAME = "fair-prescrip"
-CLOUDLAB_NODES = ['node0', 'node1', 'node2']
+# TODO add more node as we have more algo
+CLOUDLAB_NODES = ['node0', 'node1']
 CLOUDLAB_HOST_SUFFIX = 'pg0.utah.cloudlab.us'
 
 
@@ -22,8 +24,6 @@ class Config:
         self.start_script = 'python3 FairPrescriptionRules/%s' % (start_script)
         self.remote_hostname = "%s.%s.%s-%s" % (
             node_name, CLOUDLAB_EXPERIMENT_NAME, CLOUDLAB_PROJECT_NAME, CLOUDLAB_HOST_SUFFIX)
-        
-    
 
 
 # SO Config
