@@ -1,10 +1,9 @@
 import logging
 import os
-import sys
 import pandas as pd
 from typing import List, Set, Dict
-from Algorithms import getAllGroups, getGroupstreatmentsforGreeedy
-from consts import APRIORI, MIX_K, MAX_K, PROJECT_PATH, DATA_PATH, WORKER_OUTPUT_PATH, unprotected_coverage_threshold, protected_coverage_threshold, \
+from src.models.greedy.Algorithms import getAllGroups, getGroupstreatmentsforGreeedy
+from consts import APRIORI, MIX_K, MAX_K, DATA_PATH, WORKER_OUTPUT_PATH, unprotected_coverage_threshold, protected_coverage_threshold, \
     fairness_threshold
 from dags import SO_DAG
 import time
