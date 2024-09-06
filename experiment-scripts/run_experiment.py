@@ -43,6 +43,7 @@ def main():
 
     is_remote = exmpt_config['_is_remote']
     models = exmpt_config['_models']
+    k = exmpt_config['_k']
     # Prepare a output directory, prefixed with time stamp
     tempore = ts_prefix()
     # TODO add me back
@@ -54,18 +55,22 @@ def main():
 
             for model in models:
                 config = {**data_config, **model, **
-                          {'_output_path': WORKER_OUTPUT_PATH}}
+                          {'_output_path': WORKER_OUTPUT_PATH, '_k': k}}
                 f.append(executor.submit(
                     run_single_remote_exmpt, config))
 
         print("done")
         return
     else:
-        for model in models:
-            config = {**data_config, **model, **
-                      {'_output_path': os.path.join(
-                          PROJECT_PATH, 'output', tempore, model['_name'])}}
-            run_single_local_exmpt(config)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            f = []
+            for model in models:
+                config = {**data_config, **model, **
+                          {'_output_path': os.path.join(
+                              PROJECT_PATH, 'output', tempore, model['_name']), '_k': k}}
+                f.append(executor.submit(
+                    run_single_local_exmpt, config))
+                # run_single_local_exmpt(config)
     print("start")
 
 
