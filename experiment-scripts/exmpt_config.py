@@ -4,9 +4,12 @@ from pathlib import Path
 import sys
 
 # Location of config.py
-CONFIG_PATH = os.path.abspath(__file__)
 PROJECT_PATH = Path(__file__).parent.parent
-MASTER_OUTPUT_PATH = os.path.join(PROJECT_PATH, 'output')
+CONFIG_PATH = os.path.join(
+    Path(__file__).parent, 'experiment-configs')
+
+DATA_PATH = os.path.join(PROJECT_PATH, 'data')
+CONTROLLER_OUTPUT_PATH = os.path.join(PROJECT_PATH, 'output')
 WORKER_OUTPUT_PATH = 'FairPrescriptionRules/output'
 
 # cloud lab configs

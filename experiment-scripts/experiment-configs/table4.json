@@ -1,0 +1,19 @@
+{
+  "_is_remote": true,
+  "_remote_user": "bcyl2",
+  "_remote_experiment_name": "remote",
+  "_remote_project_name": "fair-prescrip",
+  "_remote_nodes": ["node0", "node1"],
+  "_remote_postfix": "pg0.utah.cloudlab.us",
+  "_k": 1,
+  "_models": [
+    {
+      "_name": "greedy",
+      "_start": "greedy.py"
+    },
+    {
+      "_name": "causumx",
+      "_start": "causumx.py"
+    }
+  ]
+}

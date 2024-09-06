@@ -13,7 +13,7 @@ import logging
 import subprocess
 import os
 import sys
-from exmpt_config import MASTER_OUTPUT_PATH, REMOTE_USER, PROJECT_PATH, WORKER_OUTPUT_PATH
+from exmpt_config import CONTROLLER_OUTPUT_PATH, REMOTE_USER, PROJECT_PATH, WORKER_OUTPUT_PATH
 
 
 def prep_remote_cmd(command: str, remote_host: str, remote_usr: str = REMOTE_USER,) -> str:

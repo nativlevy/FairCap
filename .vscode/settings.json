@@ -1,0 +1,13 @@
+{
+    "python.analysis.extraPaths": [
+        "./src/models",
+        "./src/models/common"
+    ],
+    "python.analysis.autoFormatStrings": true,
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.autoSearchPaths": true,
+    "python.analysis.completeFunctionParens": true,
+    "cSpell.words": [
+        "dowhy"
+    ]
+}

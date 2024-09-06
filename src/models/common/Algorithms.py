@@ -1,17 +1,26 @@
+import os
+import sys
+import warnings
 import ast
 import statistics
-import Utils
-import warnings
-import Data2Transactions
+
 import time
 import logging
 import multiprocessing
 from functools import partial
 
+import pandas as pd
+
+
+import Utils
+import Data2Transactions
 warnings.filterwarnings('ignore')
 PATH = "../../../data/"
 
-logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
+
+logging.basicConfig(level=logging.WARNING,
+                    format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
+
 
 def filterPatterns(df, groupingAtt, groups):
     """
@@ -27,8 +36,7 @@ def filterPatterns(df, groupingAtt, groups):
     """
     groups_dic = {}
     for group in groups:
-        df['GROUP_MEMBER'] = df.apply(lambda row: isGroupMember(row, group), axis=1)
-        df_g = df[df['GROUP_MEMBER'] == 1]
+        df_g = df.loc[(df[group.keys()] == group.values()).all(axis=1)]
         covered = set(df_g[groupingAtt].tolist())
         groups_dic[str(group)] = frozenset(covered)
     from collections import defaultdict
@@ -38,13 +46,14 @@ def filterPatterns(df, groupingAtt, groups):
         grouped[groups_dic[key]].append(key)
 
     ans = []
-    for k,v in grouped.items():
+    for k, v in grouped.items():
         if len(v) > 1:
             v = [ast.literal_eval(i) for i in v]
             ans.append(min(v, key=lambda x: len(x)))
         else:
             ans.append(ast.literal_eval(v[0]))
     return ans
+
 
 def getAllGroups(df_org, atts, t):
     """
@@ -63,6 +72,7 @@ def getAllGroups(df_org, atts, t):
     df, rows, columns = Data2Transactions.removeHeader(df, 'Temp.csv')
     rules = Data2Transactions.getRules(df, rows, columns, min_support=t)
     return rules
+
 
 def getGroupstreatmentsforGreeedy(DAG, df, groups, ordinal_atts, targetClass, actionable_atts, print_times, protected_group):
     """
@@ -85,10 +95,11 @@ def getGroupstreatmentsforGreeedy(DAG, df, groups, ordinal_atts, targetClass, ac
 
     # Create a partial function with fixed arguments
     process_group_partial = partial(process_group_greedy, df=df,
-                                    targetClass=targetClass, DAG=DAG, ordinal_atts=ordinal_atts, 
+                                    targetClass=targetClass, DAG=DAG, ordinal_atts=ordinal_atts,
                                     actionable_atts=actionable_atts, protected_group=protected_group)
 
     # Use multiprocessing to process groups in parallel
+    groups = [groups[1]]
     with multiprocessing.Pool() as pool:
         results = pool.map(process_group_partial, groups)
 
@@ -99,13 +110,14 @@ def getGroupstreatmentsforGreeedy(DAG, df, groups, ordinal_atts, targetClass, ac
 
     if print_times:
         logging.info(f"Elapsed time step 2: {elapsed_time} seconds")
-    
+
     # Log summary statistics for utilities
     utilities = [result['utility'] for result in groups_dic.values()]
     logging.info(f"Utility statistics: min={min(utilities):.4f}, max={max(utilities):.4f}, "
                  f"mean={statistics.mean(utilities):.4f}, median={statistics.median(utilities):.4f}")
-    
+
     return groups_dic, elapsed_time
+
 
 def process_group_greedy(group, df, targetClass, DAG, ordinal_atts, actionable_atts, protected_group):
     """
@@ -123,25 +135,26 @@ def process_group_greedy(group, df, targetClass, DAG, ordinal_atts, actionable_a
     Returns:
         dict: Information about the best treatment for the group.
     """
-    df['GROUP_MEMBER'] = df.apply(lambda row: isGroupMember(row, group), axis=1)
-    df_g = df[df['GROUP_MEMBER'] == 1]
-    drop_atts = list(group.keys())
-    drop_atts.append('GROUP_MEMBER')
+    # Filtering tuples with grouping predicates
+    df_g = df.loc[(df[group.keys()] == group.values()).all(axis=1)]
 
-    covered = set(df_g['GROUP_MEMBER'].tolist())
+    drop_atts = list(group.keys())
+    # drop_atts.append('GROUP_MEMBER')
+
+    # covered = set(df_g['GROUP_MEMBER'].tolist())
 
     (t_h, cate_h) = getHighTreatments(df_g, group, targetClass,
                                       DAG, drop_atts,
                                       ordinal_atts, actionable_atts, protected_group)
-
+    # TODO investigate the effect of removing 'covered': covered
     covered_indices = set(df_g.index)
     return {
         'group_size': len(df_g),
-        'covered': covered,
         'covered_indices': covered_indices,
         'treatment': t_h,
         'utility': cate_h
     }
+
 
 def isGroupMember(row, group):
     """
@@ -165,10 +178,11 @@ def isGroupMember(row, group):
             else:
                 return 0
         elif int(row[att]) == int(group[att]):
-                return 1
+            return 1
         elif not row[att] == group[att]:
             return 0
     return 1
+
 
 def calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target, protected_group):
     """
@@ -185,15 +199,19 @@ def calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target, protect
     Returns:
         float: The calculated fairness score.
     """
-    cate_all = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
+    cate_all = Utils.getTreatmentCATE(
+        df_g, DAG, treatment, ordinal_atts, target)
     protected_df = df_g[df_g.index.isin(protected_group)]
-    cate_protected = Utils.getTreatmentCATE(protected_df, DAG, treatment, ordinal_atts, target)
-    
-    logging.debug(f"CATE all: {cate_all:.4f}, CATE protected: {cate_protected:.4f}")
-    
+    cate_protected = Utils.getTreatmentCATE(
+        protected_df, DAG, treatment, ordinal_atts, target)
+
+    logging.debug(
+        f"CATE all: {cate_all:.4f}, CATE protected: {cate_protected:.4f}")
+
     if cate_all == cate_protected:
         return cate_all
     return cate_all / abs(cate_all - cate_protected)
+
 
 def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionable_atts_org, protected_group):
     """
@@ -221,11 +239,11 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionabl
     """
     logging.info(f'Starting getHighTreatments for group: {group}')
     logging.debug(f'Initial df_g shape: {df_g.shape}')
-    
+
     df_g.drop(dropAtt, axis=1, inplace=True)
     actionable_atts = [a for a in actionable_atts_org if not a in dropAtt]
     df_g = df_g.loc[:, ~df_g.columns.str.contains('^Unnamed')]
-    
+
     logging.debug(f'df_g shape after dropping attributes: {df_g.shape}')
     logging.debug(f'Actionable attributes: {actionable_atts}')
 
@@ -236,45 +254,60 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionabl
 
     for level in range(1, 6):  # Up to 5 treatment levels
         logging.info(f'Processing treatment level {level}')
-        
-        if level == 1:
-            treatments = Utils.getLevel1treatments(actionable_atts, df_g, ordinal_atts)
-        else:
-            positive_treatments = [t for t in treatments if Utils.getTreatmentCATE(df_g, DAG, t, ordinal_atts, target) > 0]
-            treatments = Utils.getNextLeveltreatments(positive_treatments, df_g, ordinal_atts, True, False, DAG, target)
 
-        logging.info(f'Number of treatments at level {level}: {len(treatments)}')
-        logging.debug(f'Sample of treatments: {treatments[:5] if len(treatments) > 5 else treatments}')
+        if level == 1:
+            treatments = Utils.getLevel1treatments(
+                actionable_atts, df_g, ordinal_atts)
+        else:
+            positive_treatments = [t for t in treatments if Utils.getTreatmentCATE(
+                df_g, DAG, t, ordinal_atts, target) > 0]
+            treatments = Utils.getNextLeveltreatments(
+                positive_treatments, df_g, ordinal_atts, True, False, DAG, target)
+
+        logging.info(
+            f'Number of treatments at level {level}: {len(treatments)}')
+        logging.debug(
+            f'Sample of treatments: {treatments[:5] if len(treatments) > 5 else treatments}')
 
         for treatment in treatments:
-            fairness_score = calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target, protected_group)
-            cate = Utils.getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target)
+            fairness_score = calculate_fairness_score(
+                treatment, df_g, DAG, ordinal_atts, target, protected_group)
+            cate = Utils.getTreatmentCATE(
+                df_g, DAG, treatment, ordinal_atts, target)
             protected_df = df_g[df_g.index.isin(protected_group)]
-            protected_cate = Utils.getTreatmentCATE(protected_df, DAG, treatment, ordinal_atts, target)
-            
+            protected_cate = Utils.getTreatmentCATE(
+                protected_df, DAG, treatment, ordinal_atts, target)
+
             # Combine fairness score, CATE, and protected CATE with more emphasis on protected CATE
             score = fairness_score * cate * (protected_cate ** 2)
 
-            logging.debug(f'Treatment: {treatment}, Fairness Score: {fairness_score:.4f}, CATE: {cate:.4f}, Protected CATE: {protected_cate:.4f}, Combined Score: {score:.4f}')
+            logging.debug(
+                f'Treatment: {treatment}, Fairness Score: {fairness_score:.4f}, CATE: {cate:.4f}, Protected CATE: {protected_cate:.4f}, Combined Score: {score:.4f}')
 
             if score > max_score and cate > 0 and protected_cate > 0:
                 max_score = score
                 best_treatment = treatment
                 best_cate = cate
                 best_protected_cate = protected_cate
-                logging.info(f'New best treatment found at level {level}: {best_treatment}')
-                logging.info(f'New best score: {max_score:.4f}, CATE: {best_cate:.4f}, Protected CATE: {best_protected_cate:.4f}')
+                logging.info(
+                    f'New best treatment found at level {level}: {best_treatment}')
+                logging.info(
+                    f'New best score: {max_score:.4f}, CATE: {best_cate:.4f}, Protected CATE: {best_protected_cate:.4f}')
 
         if level > 1 and max_score <= prev_max_score:
-            logging.info(f'Stopping at level {level} as no better treatment found')
+            logging.info(
+                f'Stopping at level {level} as no better treatment found')
             break
 
         prev_max_score = max_score
 
     logging.info(f'Finished processing group: {group}')
-    logging.info(f'Final best treatment: {best_treatment}, CATE: {best_cate:.4f}, Protected CATE: {best_protected_cate:.4f}, Combined Score: {max_score:.4f}')
+    logging.info(
+        f'Final best treatment: {best_treatment}, CATE: {best_cate:.4f}, Protected CATE: {best_protected_cate:.4f}, Combined Score: {max_score:.4f}')
     logging.info('#######################################')
-    return (best_treatment, best_protected_cate)  # Return protected CATE instead of overall CATE
+    # Return protected CATE instead of overall CATE
+    return (best_treatment, best_protected_cate)
+
 
 def filter_above_median(treatments_cate):
     """
@@ -286,7 +319,8 @@ def filter_above_median(treatments_cate):
     Returns:
         dict: Filtered dictionary of treatments with above-median positive CATE values.
     """
-    positive_values = [value for value in treatments_cate.values() if value > 0]
+    positive_values = [
+        value for value in treatments_cate.values() if value > 0]
 
     if not positive_values:
         return {}

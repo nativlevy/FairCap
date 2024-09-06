@@ -1,13 +1,13 @@
+import logging
+from z3 import *
+import copy
+import ast
+from itertools import product
+from itertools import chain, combinations
 import random
 from dowhy import CausalModel
 import warnings
 warnings.filterwarnings('ignore')
-from itertools import chain, combinations
-from itertools import product
-import ast
-import copy
-from z3 import *
-import logging
 
 """
 This module contains utility functions for causal inference and treatment effect estimation.
@@ -16,6 +16,7 @@ treatment effects (CATE), and solving optimization problems related to set cover
 """
 
 THRESHOLD = 0.1
+
 
 def getRandomTreatment(atts, df):
     """
@@ -36,13 +37,16 @@ def getRandomTreatment(atts, df):
     for a in selectedAtts:
         val = random.choice(list(set(df[a].tolist())))
         ans[a] = val
-    df['TempTreatment'] = df.apply(lambda row: addTempTreatment(row, ans), axis=1)
-    logging.info(f"TempTreatment value counts: {df['TempTreatment'].value_counts()}")
+    df['TempTreatment'] = df.apply(
+        lambda row: addTempTreatment(row, ans), axis=1)
+    logging.info(
+        f"TempTreatment value counts: {df['TempTreatment'].value_counts()}")
     valid = list(set(df['TempTreatment'].tolist()))
     # no tuples in treatment group
     if len(valid) < 2:
         return None
     return ans, df
+
 
 def getAllTreatments(atts, df):
     """
@@ -56,16 +60,18 @@ def getAllTreatments(atts, df):
         list: A list of all valid treatment dictionaries.
     """
     ans = []
-    atts_vals = getAttsVals(atts,df)
+    atts_vals = getAttsVals(atts, df)
 
     for selectedAtts in chain.from_iterable(combinations(atts, r) for r in range(len(atts)+1)):
         if len(selectedAtts) == 0:
             continue
-        dict_you_want = {your_key: atts_vals[your_key] for your_key in selectedAtts}
+        dict_you_want = {your_key: atts_vals[your_key]
+                         for your_key in selectedAtts}
         keys, values = zip(*dict_you_want.items())
         permutations_dicts = [dict(zip(keys, v)) for v in product(*values)]
         for p in permutations_dicts:
-            df['TempTreatment'] = df.apply(lambda row: addTempTreatment(row, p), axis=1)
+            df['TempTreatment'] = df.apply(
+                lambda row: addTempTreatment(row, p), axis=1)
             valid = list(set(df['TempTreatment'].tolist()))
             # no tuples in treatment group
             if len(valid) < 2:
@@ -73,6 +79,7 @@ def getAllTreatments(atts, df):
             ans.append(p)
     logging.info(f"Number of patterns to consider: {len(ans)}")
     return ans
+
 
 def countHighLow(df, bound, att):
     """
@@ -95,9 +102,10 @@ def countHighLow(df, bound, att):
             high = high + 1
         else:
             low = low + 1
-    return high,low
+    return high, low
 
-def getAttsVals(atts,df):
+
+def getAttsVals(atts, df):
     """
     Get unique values for each attribute in the dataframe.
 
@@ -113,6 +121,7 @@ def getAttsVals(atts,df):
         vals = list(set(df[a].tolist()))
         ans[a] = vals
     return ans
+
 
 def getNextLeveltreatments(treatments_cate, df_g, ordinal_atts, high, low, dag, target):
     """
@@ -130,13 +139,16 @@ def getNextLeveltreatments(treatments_cate, df_g, ordinal_atts, high, low, dag, 
     Returns:
         list: A list of next level treatment dictionaries.
     """
-    logging.debug(f"getNextLeveltreatments input: treatments_cate={treatments_cate}, high={high}, low={low}")
+    logging.debug(
+        f"getNextLeveltreatments input: treatments_cate={treatments_cate}, high={high}, low={low}")
     treatments = []
 
-    positives = getTreatmeants(treatments_cate, 'positive', df_g, dag, ordinal_atts, target)
+    positives = getTreatmeants(
+        treatments_cate, 'positive', df_g, dag, ordinal_atts, target)
     treatments = getCombTreatments(df_g, positives, treatments, ordinal_atts)
     logging.debug(f"getNextLeveltreatments output: treatments={treatments}")
     return treatments
+
 
 def getCombTreatments(df_g, positives, treatments, ordinal_atts):
     """
@@ -155,7 +167,8 @@ def getCombTreatments(df_g, positives, treatments, ordinal_atts):
         t = copy.deepcopy(comb[1])
         t.update(comb[0])
         if len(t.keys()) == 2:
-            df_g['TempTreatment'] = df_g.apply(lambda row: addTempTreatment(row, t, ordinal_atts), axis=1)
+            df_g['TempTreatment'] = df_g.apply(
+                lambda row: addTempTreatment(row, t, ordinal_atts), axis=1)
             valid = list(set(df_g['TempTreatment'].tolist()))
             # no tuples in treatment group
             if len(valid) < 2:
@@ -168,7 +181,8 @@ def getCombTreatments(df_g, positives, treatments, ordinal_atts):
 
     return treatments
 
-def getLevel1treatments(atts, df,ordinal_atts):
+
+def getLevel1treatments(atts, df, ordinal_atts):
     """
     Generate level 1 treatments (single attribute-value pairs).
 
@@ -181,13 +195,14 @@ def getLevel1treatments(atts, df,ordinal_atts):
         list: A list of level 1 treatment dictionaries.
     """
     ans = []
-    atts_vals = getAttsVals(atts,df)
+    atts_vals = getAttsVals(atts, df)
 
     count = 0
     for att in atts_vals:
         for val in atts_vals[att]:
-            p = {att:val}
-            df['TempTreatment'] = df.apply(lambda row: addTempTreatment(row, p, ordinal_atts), axis=1)
+            p = {att: val}
+            df['TempTreatment'] = df.apply(
+                lambda row: addTempTreatment(row, p, ordinal_atts), axis=1)
             valid = list(set(df['TempTreatment'].tolist()))
             # no tuples in treatment group
             if len(valid) < 2:
@@ -196,10 +211,12 @@ def getLevel1treatments(atts, df,ordinal_atts):
             count = count+1
             # treatment group is too big or too small
             if size > 0.9*len(df) or size < 0.1*len(df):
-                logging.debug(f"Treatment group {p} is too big or too small: {size} out of total {len(df)}")
+                logging.debug(
+                    f"Treatment group {p} is too big or too small: {size} out of total {len(df)}")
                 continue
             ans.append(p)
     return ans
+
 
 def getTreatmeants(treatments_cate, bound, df_g, DAG, ordinal_atts, target):
     """
@@ -216,7 +233,8 @@ def getTreatmeants(treatments_cate, bound, df_g, DAG, ordinal_atts, target):
     Returns:
         list: A list of treatments meeting the specified criteria.
     """
-    logging.debug(f"getTreatmeants input: treatments_cate={treatments_cate}, bound={bound}")
+    logging.debug(
+        f"getTreatmeants input: treatments_cate={treatments_cate}, bound={bound}")
     ans = []
     if isinstance(treatments_cate, list):
         for treatment in treatments_cate:
@@ -224,14 +242,15 @@ def getTreatmeants(treatments_cate, bound, df_g, DAG, ordinal_atts, target):
                 if getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target) > 0:
                     ans.append(treatment)
     else:
-        for k,v in treatments_cate.items():
+        for k, v in treatments_cate.items():
             if bound == 'positive':
                 if v > 0:
                     ans.append(ast.literal_eval(k))
     logging.debug(f"getTreatmeants output: ans={ans}")
     return ans
 
-def getCates(DAG, t_h,t_l,cate_h, cate_l, df_g, ordinal_atts, target, treatments):
+
+def getCates(DAG, t_h, t_l, cate_h, cate_l, df_g, ordinal_atts, target, treatments):
     """
     Calculate Conditional Average Treatment Effects (CATE) for a list of treatments.
 
@@ -264,7 +283,8 @@ def getCates(DAG, t_h,t_l,cate_h, cate_l, df_g, ordinal_atts, target, treatments
 
     logging.debug(f"treatments_cate in getCates: {treatments_cate}")
 
-    return treatments_cate, t_h, cate_h, t_l,cate_l
+    return treatments_cate, t_h, cate_h, t_l, cate_l
+
 
 def getCatesGreedy(DAG, t_h, cate_h, df_g, ordinal_atts, target, treatments):
     """
@@ -296,6 +316,7 @@ def getCatesGreedy(DAG, t_h, cate_h, df_g, ordinal_atts, target, treatments):
 
     return treatments_cate, t_h, cate_h
 
+
 def getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target):
     """
     Calculate the Conditional Average Treatment Effect (CATE) for a given treatment.
@@ -310,7 +331,8 @@ def getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target):
     Returns:
         float: The calculated CATE value, or 0 if the calculation fails or is insignificant.
     """
-    df_g['TempTreatment'] = df_g.apply(lambda row: addTempTreatment(row, treatment, ordinal_atts), axis=1)
+    df_g['TempTreatment'] = df_g.apply(
+        lambda row: addTempTreatment(row, treatment, ordinal_atts), axis=1)
     DAG_ = changeDAG(DAG, treatment)
     causal_graph = """
                         digraph {
@@ -329,6 +351,7 @@ def getTreatmentCATE(df_g, DAG, treatment, ordinal_atts, target):
     logging.debug(f"Treatment: {treatment}, ATE: {ATE}, p_value: {p_value}")
 
     return ATE
+
 
 def addTempTreatment(row, ans, ordinal_atts):
     """
@@ -352,6 +375,7 @@ def addTempTreatment(row, ans, ordinal_atts):
             if not row[a] == ans[a]:
                 return 0
     return 1
+
 
 def changeDAG(dag, randomTreatment):
     """
@@ -383,11 +407,12 @@ def changeDAG(dag, randomTreatment):
     for a in toAdd:
         if not a in DAG:
             DAG.append(a)
-    
+
     # Ensure TempTreatment is connected to the outcome
     DAG.append('TempTreatment -> ConvertedSalary;')
-    
+
     return list(set(DAG))
+
 
 def estimateATE(causal_graph, df, T, O):
     """
@@ -404,7 +429,7 @@ def estimateATE(causal_graph, df, T, O):
     """
     # Filter for required records
     df_filtered = df[(df[T] == 0) | (df[T] == 1)]
-    
+
     model = CausalModel(
         data=df_filtered,
         graph=causal_graph.replace("\n", " "),
@@ -416,9 +441,10 @@ def estimateATE(causal_graph, df, T, O):
     causal_estimate_reg = model.estimate_effect(estimands,
                                                 method_name="backdoor.linear_regression",
                                                 target_units="ate",
-                                                effect_modifiers = [],
+                                                effect_modifiers=[],
                                                 test_significance=True)
     return causal_estimate_reg.value, causal_estimate_reg.test_stat_significance()['p_value']
+
 
 def LP_solver(sets, weights, tau, k, m):
     """
@@ -446,7 +472,8 @@ def LP_solver(sets, weights, tau, k, m):
     elements = set.union(*[set(sets[name]) for name in sets])
     element_covered = [Bool(f"Element_{element}") for element in elements]
     for i, element in enumerate(elements):
-        solver.add(Implies(element_covered[i], Or([set_vars[name] for name in sets if element in sets[name]])))
+        solver.add(Implies(element_covered[i], Or(
+            [set_vars[name] for name in sets if element in sets[name]])))
 
     solver.add(Sum(element_covered) >= (tau * m))
 
@@ -456,7 +483,8 @@ def LP_solver(sets, weights, tau, k, m):
     # Check for satisfiability and retrieve the optimal solution
     if solver.check() == sat:
         model = solver.model()
-        selected_sets = [name for name in sets if is_true(model[set_vars[name]])]
+        selected_sets = [
+            name for name in sets if is_true(model[set_vars[name]])]
         return selected_sets
     else:
         logging.warning("No solution was found!")
