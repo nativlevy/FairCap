@@ -6,8 +6,8 @@
   "_cloudlab_nodes": ["node0", "node1"],
   "_models": [
     {
-      "_name": "greedy",
-      "_start": "greedy.py"
+      "_name": "causumx",
+      "_start": "causumx.py"
     }
   ]
 }

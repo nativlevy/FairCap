@@ -378,7 +378,7 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attrI: L
 
 
 def main_cmd(config_str):
-    config = json.load(config_str)
+    config = json.loads(config_str)
     main(config)
 
 
@@ -465,4 +465,4 @@ def main(config):
 
 
 if __name__ == "__main__":
-    main()
+    main_cmd(sys.argv[1])
