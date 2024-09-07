@@ -1,0 +1,13 @@
+{
+  "_is_remote": true,
+  "_k": [3, 5],
+  "_cloudlab_user": "bcyl2",
+  "_cloudlab_postfix": "remote.fair-prescrip-pg0.utah.cloudlab.us",
+  "_cloudlab_nodes": ["node0", "node1"],
+  "_models": [
+    {
+      "_name": "greedy",
+      "_start": "greedy.py"
+    }
+  ]
+}

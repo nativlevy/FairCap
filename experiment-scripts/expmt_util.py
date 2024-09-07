@@ -69,7 +69,7 @@ def run_single_local_exmpt(config):
     return 0
 
 
-def run_single_remote_exmpt(config: Config, timestamp):
+def run_single_remote_exmpt(config):
     """
     Remote experiments are mainly for production purpose, we run this very
     experiment on a designated remote server.
@@ -86,42 +86,42 @@ def run_single_remote_exmpt(config: Config, timestamp):
     4. Finally, we mark this future as completed. The ThreadPool will carry out
     the next step: data analysis, creating tables, plotting charts, etc.
     """
-
+    remote_host = config['_remote_host']
+    algo_name = config['_name']
     # Step 0: Kill previous experiment
-    clean_up(config.remote_hostname)
+    clean_up(config)
 
     # Step1: Attempt to synch codebase; future will be done EVENTUALLY as rsynch always returns a status code. rsynch returns 0 if success, 255 otherwise
-    synch_status = synch_repo_at_remote(config.remote_hostname)
+    synch_status = synch_repo_at_remote(config)
     if synch_status != 0:
         logging.error("Failed to synch codebase at node %s. rsynch returns  status code %d" % (
-            config.remote_hostname, synch_status))
+            remote_host, synch_status))
         # If fail to synch, abort this experiment. No logs fetched
         return 1
     else:
         logging.info("Finished synching the codebase at node %s " % (
-            config.remote_hostname))
+            remote_host))
 
     # Step 2. Attempt to run code logic
-    run_algo_status = run_algorithm(
-        config.start_script, config.remote_hostname)
+    run_algo_status = run_algorithm(config)
     # Per implementation, `run_algorithm`s return 0 if success, 1 otherwise
     if run_algo_status != 0:
-        logging.error("Error(%s) occurred at %s. See more details %s/stderr.log" % (
-            run_algo_status, config.remote_hostname, config.remote_hostname))
+        logging.error("Error(%s) occurred at %s. See more details at %s's stderr.log" % (
+            run_algo_status, remote_host, remote_host))
     else:
         logging.info("Algo %s completed running on %s" % (
-            config.algo_name, config.remote_hostname))
+            algo_name, remote_host))
 
     # Future 3. Fetch all the outputs, including logs, experiment results
     # Even if the model failed on remote machines, we still fetch the logs
     fetch_status = fetch_logs_from_remote(
-        algo_name=config.algo_name, timestamp=timestamp, remote_host=config.remote_hostname)
+        config)
     if fetch_status != 0:
         logging.error("Failed to fetch outputs from  %s" % (
-            config.remote_hostname))
+            remote_host))
     else:
         logging.info("Algo %s output fetched from %s" %
-                     (config.algo_name, config.remote_hostname))
+                     (algo_name, remote_host))
 
     return run_algo_status
 

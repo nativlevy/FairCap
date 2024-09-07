@@ -19,14 +19,12 @@ from exmpt_config import PROJECT_PATH, DATA_PATH, CONTROLLER_OUTPUT_PATH, CONFIG
 logging.basicConfig(level=logging.DEBUG)
 
 
-def main():
+def main(data_config_path, expmt_config_path):
     """
     Input:
         argv[1]: data configuration path
         argv[2]: experiment configuration path
     """
-    data_config_path = sys.argv[1]
-    expmt_config_path = sys.argv[2]
 
     # --------------------------- LOAD CONFIGS --------------------------------
     # Data config
@@ -49,15 +47,27 @@ def main():
     # TODO add me back
     # os.makedirs(os.path.join(CONTROLLER_OUTPUT_PATH, tempore))
     if is_remote:
+        remote_nodes = exmpt_config['_cloudlab_nodes'] 
+        remote_postfix = exmpt_config['_cloudlab_postfix'] 
+        remote_username = exmpt_config['_cloudlab_user'] 
+
+        if len(remote_nodes) < len(models):
+            raise AssertionError("%d nodes required; %d provided" % (len(models), len(remote_nodes)))
+        
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             # Every experiment performed will have a time stamped output directory.
             f = []
-
-            for model in models:
+            
+            for i in range(len(models)):
+                model = models[i]
+                remote_host = "{}.{}".format(remote_nodes[i], remote_postfix)
                 config = {**data_config, **model, **
-                          {'_output_path': WORKER_OUTPUT_PATH, '_k': k}}
-                f.append(executor.submit(
-                    run_single_remote_exmpt, config))
+                          {'_output_path':  os.path.join(WORKER_OUTPUT_PATH, model['_name']), '_control_output_path': os.path.join(PROJECT_PATH, 'output', tempore, model['_name']), '_k': k, '_remote_host': remote_host, '_remote_user': remote_username
+                           }}
+                # f.append(executor.submit(
+                #     run_single_remote_exmpt, config))
+                run_single_remote_exmpt(config)
+
 
         print("done")
         return
@@ -71,4 +81,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1], sys.argv[2])
