@@ -414,7 +414,7 @@ def main(config):
         logging.info(f"Completed experiment for k={k}")
 
     # Write results to CSV
-    with open(os.path.join(config['_output_path'], 'experiment_results_greedy.csv'), 'w+', newline='') as csvfile:
+    with open(os.path.join(config['_output_path'], 'experiment_results_causumx.csv'), 'w+', newline='') as csvfile:
         fieldnames = ['k', 'execution_time', 'expected_utility', 'protected_expected_utility', 'coverage',
                       'protected_coverage', 'selected_rules']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
