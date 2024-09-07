@@ -101,7 +101,6 @@ def run_single_remote_exmpt(config):
     else:
         logging.info("Finished synching the codebase at node %s " % (
             remote_host))
-
     # Step 2. Attempt to run code logic
     run_algo_status = run_algorithm(config)
     # Per implementation, `run_algorithm`s return 0 if success, 1 otherwise

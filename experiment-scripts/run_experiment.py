@@ -64,11 +64,11 @@ def main(data_config_path, expmt_config_path):
                 config = {**data_config, **model, **
                           {'_output_path':  os.path.join(WORKER_OUTPUT_PATH, model['_name']), '_control_output_path': os.path.join(PROJECT_PATH, 'output', tempore, model['_name']), '_k': k, '_remote_host': remote_host, '_remote_user': remote_username
                            }}
-                # f.append(executor.submit(
-                #     run_single_remote_exmpt, config))
-                run_single_remote_exmpt(config)
+                f.append(executor.submit(
+                    run_single_remote_exmpt, config))
+                # run_single_remote_exmpt(config)
 
-
+        
         print("done")
         return
     else:

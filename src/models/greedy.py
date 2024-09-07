@@ -404,6 +404,7 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attrI: L
 
 def main_cmd(config_str):
     config = json.loads(config_str)
+    os.makedirs(config['_output_path'], exist_ok=True)
     main(config)
 
 # TODO unwind me
@@ -417,7 +418,6 @@ def main(config):
 
     dataset_path, datatable_path, dag_path, immutable_attributes, mutable_attributes, protected_attributes, protected_values, target_outcome = config['_dataset_path'], config[
         '_datatable_path'], config['_dag_path'], config['_immutable_attributes'], config['_mutable_attributes'], config['_protected_attributes'], config['_protected_values'],  config['_target_outcome']
-    print(config['_k'])
     MIX_K, MAX_K = config['_k']
     sys.path.append(os.path.join(DATA_PATH, dataset_path))
     from dags import SO_DAG

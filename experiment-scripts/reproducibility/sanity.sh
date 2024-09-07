@@ -1,3 +1,3 @@
 
 
-python ../run_experiment.py stackoverflow/config.json remote1.json 
+python ../run_experiment.py stackoverflow/config.json remote_full.json 

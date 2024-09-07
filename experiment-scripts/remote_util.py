@@ -132,7 +132,7 @@ def synch_repo_at_remote(config):
 
 def clean_up(config):
     commands = [
-        "pkill -9 python;", "rm -fr %s;" % config['_output_path'], "mkdir %s" %  config['_output_path']
+        "pkill -9 python;", "rm -fr %s;" % config['_output_path'], "mkdir -p %s" %  config['_output_path']
     ]
     return run_remote_cmd_sync(config=config, command=' '.join(commands))
 
@@ -141,11 +141,10 @@ def clean_up(config):
 def run_algorithm(config):
     arg_flag =  "\'{}\' {} ".format(json.dumps(config), config['_output_path'])
     # Cat all stdout and stderr on remote machine
-    output_flag = ' &> ~/{}/stdout.log 2> ~/{}/stderr.log'.format(config['_output_path'], config['_output_path'])
+    output_flag = ' &> {}/stdout.log 2> {}/stderr.log'.format(config['_output_path'], config['_output_path'])
 
     # TODO embed env into cloudlab
     algorithm_cmd = "python3 FairPrescriptionRules/src/models/{} {} {}".format(config["_start"], arg_flag, output_flag)
-    print(algorithm_cmd)
 
     # Returns a status code: 0 means success; non-0 mean failure
     return run_remote_cmd_sync(command=algorithm_cmd, config=config)
