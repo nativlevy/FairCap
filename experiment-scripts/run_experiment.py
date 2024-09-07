@@ -62,15 +62,11 @@ def main():
         print("done")
         return
     else:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-            f = []
-            for model in models:
-                config = {**data_config, **model, **
-                          {'_output_path': os.path.join(
-                              PROJECT_PATH, 'output', tempore, model['_name']), '_k': k}}
-                f.append(executor.submit(
-                    run_single_local_exmpt, config))
-                # run_single_local_exmpt(config)
+        for model in models:
+            config = {**data_config, **model, **
+                      {'_output_path': os.path.join(
+                          PROJECT_PATH, 'output', tempore, model['_name']), '_k': k}}
+            run_single_local_exmpt(config)
     print("start")
 
 

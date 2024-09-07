@@ -137,7 +137,6 @@ def process_group_greedy(group, df, targetClass, DAG, ordinal_atts, actionable_a
     """
     # Filtering tuples with grouping predicates
     df_g = df.loc[(df[group.keys()] == group.values()).all(axis=1)]
-
     drop_atts = list(group.keys())
     # drop_atts.append('GROUP_MEMBER')
 
