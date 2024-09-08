@@ -13,7 +13,7 @@ import statistics
 
 sys.path.append(os.path.join(Path(__file__).parent, 'common'))
 from consts import APRIORI, MIX_K, MAX_K, DATA_PATH, PROJECT_PATH, unprotected_coverage_threshold, protected_coverage_threshold, fairness_threshold  # NOQA
-from Algorithms import getAllGroups, getGroupstreatmentsforGreeedy  # NOQA
+from Algorithms import getAllGroups, getGroupstreatmentsforGreedy  # NOQA
 
 # logger = init_logger('greedy')
 
@@ -322,7 +322,7 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attrI: L
 
     # Get treatments for each grouping pattern
     logging.info("Getting treatments for each grouping pattern")
-    group_treatments, _ = getGroupstreatmentsforGreeedy(
+    group_treatments, _ = getGroupstreatmentsforGreedy(
         DAG, df, grouping_patterns, {}, tgtO, attrM, True, protected_group)
 
     # Create Rule objects

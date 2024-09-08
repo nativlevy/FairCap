@@ -74,7 +74,7 @@ def getAllGroups(df_org, atts, t):
     return rules
 
 
-def getGroupstreatmentsforGreeedy(DAG, df, groups, ordinal_atts, targetClass, actionable_atts, print_times, protected_group):
+def getGroupstreatmentsforGreedy(DAG, df, groups, ordinal_atts, targetClass, actionable_atts, print_times, protected_group):
     """
     Get treatments for each group using a greedy approach.
 
