@@ -59,20 +59,20 @@ def load_data(file_path: str) -> pd.DataFrame:
     return df
 
 
-def get_grouping_patterns(df: pd.DataFrame, attributes: List[str], apriori: float) -> List[dict]:
+def get_grouping_patterns(df: pd.DataFrame, grp_attrs: List[str], apriori_th: float) -> List[dict]:
     """
     Generate and filter grouping patterns from the data.
 
     Args:
         df (pd.DataFrame): Input data.
-        attributes (List[str]): Attributes to consider for grouping.
-        apriori (float): Apriori threshold for pattern generation.
+        grp_attrs (List[str]): Attributes to consider for grouping.
+        apriori_th (float): Apriori threshold for pattern generation.
 
     Returns:
         List[dict]: Filtered list of grouping patterns.
     """
-    logging.info(f"Getting grouping patterns with apriori={apriori}")
-    grouping_patterns = getAllGroups(df, attributes, apriori)
+    logging.info(f"Getting grouping patterns with apriori={apriori_th}")
+    grouping_patterns = getAllGroups(df, grp_attrs, apriori_th)
     logging.info(f"Initial grouping patterns: {len(grouping_patterns)}")
 
     def apply_pattern(pattern):

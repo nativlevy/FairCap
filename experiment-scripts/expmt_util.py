@@ -62,7 +62,6 @@ def run_single_local_exmpt(config):
     Path(config["_output_path"]).mkdir(parents=True, exist_ok=True)
     if algo_name == 'greedy':
         greedy.main(config)
-
     elif algo_name == 'causumx':
         causumx.main(config)
 

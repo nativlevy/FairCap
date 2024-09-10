@@ -2,6 +2,7 @@ import pandas as pd
 from apyori import apriori
 from mlxtend.frequent_patterns import apriori
 from mlxtend.preprocessing import TransactionEncoder
+from sklearn.preprocessing import OneHotEncoder
 import logging
 
 # Configure logging
@@ -101,28 +102,44 @@ def getRules(df, rows, columns, min_support):
         list: A list of dictionaries, where each dictionary represents a rule.
     """
     logging.info(f"Getting rules with min_support={min_support}")
-    records = []
-    for i in range(0, rows):
-        records.append([str(df.values[i, j]) for j in range(0, columns)])
-
-    logging.info(f"Number of records: {len(records)}")
-
-    te = TransactionEncoder()
-
-    te_ary = te.fit(records).transform(records)
-
-    df = pd.DataFrame(te_ary, columns=te.columns_)
-
+   
+    def entry_with_col_name(col_name, entry):
+        """Prefix an entry with it's, combined with ' = '
+        e.g:
+            -------------------------
+            | Age                   |
+            | '18 - 24 years old'   | 
+            -------------------------
+            becomes 
+            -----------------------------
+            | Age                       |
+            | 'Age_18 - 24 years old'   | 
+            -----------------------------
+        
+        """
+        return f"{col_name}_{entry}"
+    enc = OneHotEncoder(handle_unknown='ignore', feature_name_combiner=entry_with_col_name, sparse_output=False)
+    enc.set_output(transform = 'pandas')
+    df = enc.fit_transform(df)
+    df = df.reindex(sorted(df.columns), axis=1)
     frequent_itemsets = apriori(df, min_support=min_support, use_colnames=True)
+    def set_to_dict(s):
+        """Transport a string to to a tuple in the dictionary
 
-    rules = []
-    for index, row in frequent_itemsets.iterrows():
-        parts = set(row["itemsets"])
-        temp = {}
-        for part in parts:
-            part = part.split("=")
-            temp[part[0].strip()] = part[1].strip()
-        rules.append(temp)
+        Args:
+            s (list[str]): list of attributes in the format:
+                x_y
+
+        Returns:
+            _type_: _description_
+        """
+        _rule = {}
+        for i in s:
+            k, v = i.split('_')
+            _rule[k] = v
+        return _rule
+    rules = list(map(set_to_dict, frequent_itemsets['itemsets'])) 
+
     
     logging.info(f"Generated {len(rules)} rules")
     return rules
