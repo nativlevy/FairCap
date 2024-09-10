@@ -8,6 +8,8 @@ import time
 import logging
 import multiprocessing
 from functools import partial
+from sklearn.preprocessing import OneHotEncoder
+from mlxtend.frequent_patterns import apriori
 
 import pandas as pd
 
@@ -55,22 +57,62 @@ def filterPatterns(df, groupingAtt, groups):
     return ans
 
 
-def getAllGroups(df_org, atts, t):
+def getAllGroups(df, atts, min_support):
     """
-    Generate all possible grouping patterns using Apriori algorithm.
+    Generate association rules from the dataframe using the Apriori algorithm.
+
+    This function converts the dataframe into a format suitable for the Apriori algorithm,
+    applies the algorithm, and then processes the results into a list of rules.
 
     Args:
-        df_org (pd.DataFrame): The original dataframe.
-        atts (list): List of attributes to consider for grouping.
-        t (float): The minimum support threshold for Apriori algorithm.
+        df (pd.DataFrame): The input dataframe.
+        rows (int): Number of rows in the dataframe.
+        columns (int): Number of columns in the dataframe.
+        min_support (float): The minimum support threshold for the Apriori algorithm.
 
     Returns:
-        list: All generated grouping patterns.
+        list: A list of dictionaries, where each dictionary represents a rule.
     """
-    df = df_org.copy(deep=True)
-    df = df[atts]
-    df, rows, columns = Data2Transactions.removeHeader(df, 'Temp.csv')
-    rules = Data2Transactions.getRules(df, rows, columns, min_support=t)
+    logging.info(f"Getting rules with min_support={min_support}")
+   
+    def entry_with_col_name(col_name, entry):
+        """Prefix an entry with it's, combined with ' = '
+        e.g:
+            -------------------------
+            | Age                   |
+            | '18 - 24 years old'   | 
+            -------------------------
+            becomes 
+            -----------------------------
+            | Age                       |
+            | 'Age_18 - 24 years old'   | 
+            -----------------------------
+        
+        """
+        return f"{col_name}_{entry}"
+    enc = OneHotEncoder(handle_unknown='ignore', feature_name_combiner=entry_with_col_name, sparse_output=False)
+    enc.set_output(transform = 'pandas')
+    df = enc.fit_transform(df)
+    df = df.reindex(sorted(df.columns), axis=1)
+    frequent_itemsets = apriori(df, min_support=min_support, use_colnames=True)
+    def set_to_dict(s):
+        """Transport a string to to a tuple in the dictionary
+
+        Args:
+            s (list[str]): list of attributes in the format:
+                x_y
+
+        Returns:
+            _type_: _description_
+        """
+        _rule = {}
+        for i in s:
+            k, v = i.split('_')
+            _rule[k] = v
+        return _rule
+    rules = list(map(set_to_dict, frequent_itemsets['itemsets'])) 
+    
+    logging.info(f"Generated {len(rules)} rules")
     return rules
 
 
