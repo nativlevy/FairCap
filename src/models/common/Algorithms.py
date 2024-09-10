@@ -141,7 +141,6 @@ def getGroupstreatmentsforGreedy(DAG, df, groups, ordinal_atts, targetClass, act
                                     actionable_atts=actionable_atts, protected_group=protected_group)
 
     # Use multiprocessing to process groups in parallel
-    groups = [groups[1]]
     with multiprocessing.Pool() as pool:
         results = pool.map(process_group_partial, groups)
 
