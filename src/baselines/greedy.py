@@ -36,6 +36,7 @@ def get_grouping_patterns(df: pd.DataFrame, grp_attrs: List[str], apriori_th: fl
     logging.info(f"Getting grouping patterns with apriori={apriori_th}")
     grouping_patterns = getAllGroups(df, grp_attrs, apriori_th)
     logging.info(f"Initial grouping patterns: {len(grouping_patterns)}")
+ 
 
     def apply_pattern(pattern):
         mask = pd.Series(True, index=df.index)
@@ -276,6 +277,8 @@ def run_single_experiment_with_k(k_rules: int, df: pd.DataFrame, protected_group
     start_time = time.time()
 
     grouping_patterns = get_grouping_patterns(df, attrI, APRIORI)
+    elapsed_time = time.time() - start_time 
+    logging.warning(f"Elapsed time step 1: {elapsed_time} seconds")
 
     # Get treatments for each grouping pattern
     logging.info("Getting treatments for each grouping pattern")

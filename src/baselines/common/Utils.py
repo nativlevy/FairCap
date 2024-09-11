@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from z3 import *
 import copy
 import ast
@@ -8,6 +9,9 @@ import random
 from dowhy import CausalModel
 import warnings
 warnings.filterwarnings('ignore')
+
+sys.path.append(os.path.join(Path(__file__).parent.parent.parent, 'helper'))
+import MutePrint 
 
 """
 This module contains utility functions for causal inference and treatment effect estimation.
@@ -437,12 +441,13 @@ def estimateATE(causal_graph, df, T, O):
         outcome=O)
 
     estimands = model.identify_effect()
+    with MutePrint:
+        causal_estimate_reg = model.estimate_effect(estimands,
 
-    causal_estimate_reg = model.estimate_effect(estimands,
-                                                method_name="backdoor.linear_regression",
-                                                target_units="ate",
-                                                effect_modifiers=[],
-                                                test_significance=True)
+                                                    method_name="backdoor.linear_regression",
+                                                    target_units="ate",
+                                                    effect_modifiers=[],
+                                                    test_significance=True)
     return causal_estimate_reg.value, causal_estimate_reg.test_stat_significance()['p_value']
 
 

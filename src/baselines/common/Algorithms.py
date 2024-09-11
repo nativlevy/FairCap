@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import sys
 import warnings
 import ast
@@ -12,7 +13,6 @@ from sklearn.preprocessing import OneHotEncoder
 from mlxtend.frequent_patterns import apriori
 
 import pandas as pd
-
 
 import Utils
 import Data2Transactions
@@ -59,24 +59,25 @@ def filterPatterns(df, groupingAtt, groups):
 
 def getAllGroups(df, atts, min_support):
     """
-    Generate association rules from the dataframe using the Apriori algorithm.
-
-    This function converts the dataframe into a format suitable for the Apriori algorithm,
-    applies the algorithm, and then processes the results into a list of rules.
+    Generate all possible grouping patterns using Apriori algorithm.
 
     Args:
-        df (pd.DataFrame): The input dataframe.
-        rows (int): Number of rows in the dataframe.
-        columns (int): Number of columns in the dataframe.
-        min_support (float): The minimum support threshold for the Apriori algorithm.
+        df_org (pd.DataFrame): The original dataframe.
+        atts (list): List of attributes to consider for grouping.
+        t (float): The minimum support threshold for Apriori algorithm.
 
     Returns:
-        list: A list of dictionaries, where each dictionary represents a rule.
+        list: All generated grouping patterns.
+        e.g.
+        [ {'Dependents': 'No', 'Gender': 'Male'},
+          {'Dependents': 'No'},
+          {'Gender': 'Male'}
+        ]
     """
     logging.info(f"Getting rules with min_support={min_support}")
    
     def entry_with_col_name(col_name, entry):
-        """Prefix an entry with it's, combined with ' = '
+        """Prefix an entry with it's, connected with '___'
         e.g:
             -------------------------
             | Age                   |
@@ -85,34 +86,40 @@ def getAllGroups(df, atts, min_support):
             becomes 
             -----------------------------
             | Age                       |
-            | 'Age_18 - 24 years old'   | 
+            | 'Age___18 - 24 years old' | 
             -----------------------------
         
         """
-        return f"{col_name}_{entry}"
+        return f"{col_name}___{entry}"
     enc = OneHotEncoder(handle_unknown='ignore', feature_name_combiner=entry_with_col_name, sparse_output=False)
     enc.set_output(transform = 'pandas')
+    df = df[atts] # SELECT df.atts from df
     df = enc.fit_transform(df)
-    df = df.reindex(sorted(df.columns), axis=1)
     frequent_itemsets = apriori(df, min_support=min_support, use_colnames=True)
     def set_to_dict(s):
         """Transport a string to to a tuple in the dictionary
 
         Args:
             s (list[str]): list of attributes in the format:
-                x_y
-
+                x___y
         Returns:
-            _type_: _description_
+            list[Dict]: dictionary of attributes in the format:
+                {
+                    "x0": y0,
+                    "x1": y1,
+                    "x2": y2
+                }
         """
         _rule = {}
         for i in s:
-            k, v = i.split('_')
+            k, v = i.split('___')
             _rule[k] = v
         return _rule
     rules = list(map(set_to_dict, frequent_itemsets['itemsets'])) 
     
     logging.info(f"Generated {len(rules)} rules")
+
+ 
     return rules
 
 
@@ -149,8 +156,7 @@ def getGroupstreatmentsforGreedy(DAG, df, groups, ordinal_atts, targetClass, act
 
     elapsed_time = time.time() - start_time
 
-    if print_times:
-        logging.info(f"Elapsed time step 2: {elapsed_time} seconds")
+    logging.warning(f"Elapsed time step 2: {elapsed_time} seconds")
 
     # Log summary statistics for utilities
     utilities = [result['utility'] for result in groups_dic.values()]

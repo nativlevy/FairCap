@@ -15,9 +15,7 @@ import os
 import subprocess
 import sys
 from exmpt_config import PROJECT_PATH, DATA_PATH, CONTROLLER_OUTPUT_PATH, CONFIG_PATH, WORKER_OUTPUT_PATH
-
-logging.basicConfig(level=logging.DEBUG)
-
+import argparse
 
 def main(data_config_path, expmt_config_path):
     """
@@ -44,6 +42,7 @@ def main(data_config_path, expmt_config_path):
     k = exmpt_config['_k']
     # Prepare a output directory, prefixed with time stamp
     tempore = ts_prefix()
+    logging.warning("BEGIN")
     # TODO add me back
     # os.makedirs(os.path.join(CONTROLLER_OUTPUT_PATH, tempore))
     if is_remote:
@@ -81,4 +80,6 @@ def main(data_config_path, expmt_config_path):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
+
     main(sys.argv[1], sys.argv[2])

@@ -10,13 +10,12 @@ from remote_util import clean_up, fetch_logs_from_remote, run_algorithm, synch_r
 
 
 from exmpt_config import PROJECT_PATH, Config
-sys.path.append(os.path.join(PROJECT_PATH, 'src/models'))
-sys.path.append(os.path.join(PROJECT_PATH, 'src/models/common'))
+sys.path.append(os.path.join(PROJECT_PATH, 'src/baselines'))
+sys.path.append(os.path.join(PROJECT_PATH, 'src/baselines/common'))
 import greedy  # NOQA
 import causumx  # NOQA
 
 
-logging.basicConfig(level=logging.DEBUG)
 
 
 def summarize_exp_data(remote_exp_dir, local_out_dir, executor, is_exp_remote=False):
