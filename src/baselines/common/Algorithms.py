@@ -139,6 +139,14 @@ def getGroupstreatmentsforGreedy(DAG, df, groups, ordinal_atts, targetClass, act
 
     Returns:
         tuple: A dictionary of group treatments and the elapsed time.
+        e.g.
+        {"group predicate 1":   
+            {'group_size': 123,
+            'covered_indices': {4,5,6},
+            'treatment': None,
+            'utility': 0
+            }
+        }
     """
     start_time = time.time()
 
