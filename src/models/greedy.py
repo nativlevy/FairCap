@@ -9,6 +9,7 @@ import time
 import csv
 import json
 import statistics
+from common import PrescriptionRule, load_data
 # from utility.logging_util import init_logger
 
 sys.path.append(os.path.join(Path(__file__).parent, 'common'))
@@ -18,45 +19,6 @@ from Algorithms import getAllGroups, getGroupstreatmentsforGreedy  # NOQA
 # logger = init_logger('greedy')
 
 
-class Rule:
-    """
-    Represents a prescription rule with associated metrics.
-
-    Attributes:
-        condition (Dict): The condition part of the rule.
-        treatment (Dict): The treatment part of the rule.
-        covered_indices (Set[int]): Indices of individuals covered by this rule.
-        covered_protected_indices (Set[int]): Indices of protected individuals covered by this rule.
-        utility (float): The utility of this rule.
-        protected_utility (float): The utility of this rule for the protected group.
-    """
-
-    def __init__(self, condition: Dict, treatment: Dict, covered_indices: Set[int],
-                 covered_protected_indices: Set[int], utility: float, protected_utility: float):
-        self.condition = condition
-        self.treatment = treatment
-        self.covered_indices = covered_indices
-        self.covered_protected_indices = covered_protected_indices
-        self.utility = utility
-        self.protected_utility = protected_utility
-
-
-def load_data(file_path: str) -> pd.DataFrame:
-    """
-    Load data from a CSV file into a pandas DataFrame.
-
-    Args:
-        file_path (str): Path to the CSV file.
-
-    Returns:
-        pd.DataFrame: Loaded data.
-    """
-    logging.info(f"Loading data from {file_path}")
-    df = pd.read_csv(file_path)
-    df = df.drop(['Unnamed: 0'], axis=1, errors='ignore')
-
-    logging.info(f"Loaded {len(df)} rows and {len(df.columns)} columns")
-    return df
 
 
 def get_grouping_patterns(df: pd.DataFrame, grp_attrs: List[str], apriori_th: float) -> List[dict]:
@@ -106,12 +68,7 @@ def get_grouping_patterns(df: pd.DataFrame, grp_attrs: List[str], apriori_th: fl
 
     return filtered_patterns
 
-
-def return_rule_utility(rule: Rule) -> float:
-    return rule.utility
-
-
-def calculate_expected_utility(rules: List[Rule]) -> float:
+def calculate_expected_utility(rules: List[PrescriptionRule]) -> float:
     """
     Calculate the expected utility of a set of rules.
 
@@ -138,7 +95,7 @@ def calculate_expected_utility(rules: List[Rule]) -> float:
     return expected_utility
 
 
-def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_protected: Set[int],
+def score_rule(rule: PrescriptionRule, solution: List[PrescriptionRule], covered: Set[int], covered_protected: Set[int],
                protected_group: Set[int],
                unprotected_coverage_threshold: float, protected_coverage_threshold: float) -> float:
     """
@@ -188,9 +145,9 @@ def score_rule(rule: Rule, solution: List[Rule], covered: Set[int], covered_prot
     return score
 
 
-def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
+def greedy_fair_prescription_rules(rules: List[PrescriptionRule], protected_group: Set[int],
                                    unprotected_coverage_threshold: float, protected_coverage_threshold: float,
-                                   max_rules: int, total_individuals: int, fairness_threshold: float) -> List[Rule]:
+                                   max_rules: int, total_individuals: int, fairness_threshold: float) -> List[PrescriptionRule]:
     """
     Greedy algorithm to select fair prescription rules.
 
@@ -295,7 +252,7 @@ def greedy_fair_prescription_rules(rules: List[Rule], protected_group: Set[int],
     return solution
 
 
-def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attrI: List[str], attrM: List[str], tgtO: str,
+def run_single_experiment_with_k(k_rules: int, df: pd.DataFrame, protected_group: Set[int], attrI: List[str], attrM: List[str], tgtO: str,
                    unprotected_coverage_threshold: float, protected_coverage_threshold: float,
                    fairness_threshold: float,
                    DAG: List[str], config: Dict) -> Dict:
@@ -340,7 +297,7 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attrI: L
             len(covered_indices) if len(covered_indices) > 0 else 0
         protected_utility = utility * protected_proportion
 
-        rules.append(Rule(condition, treatment, covered_indices,
+        rules.append(PrescriptionRule(condition, treatment, covered_indices,
                      covered_protected_indices, utility, protected_utility))
 
     logging.info(f"Created {len(rules)} Rule objects")
@@ -355,7 +312,7 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attrI: L
     total_individuals = len(df)
     logging.info(f"Running greedy algorithm with unprotected coverage threshold {unprotected_coverage_threshold}, "
                  f"protected coverage threshold {protected_coverage_threshold}, "
-                 f"{k} rules, and fairness threshold {fairness_threshold}")
+                 f"{k_rules} rules, and fairness threshold {fairness_threshold}")
 
     # save all rules to an output file
     with open(os.path.join(config['_output_path'], 'rules_greedy.json'), 'w+') as f:
@@ -369,7 +326,7 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attrI: L
         } for rule in rules], f, indent=4)
 
     selected_rules = greedy_fair_prescription_rules(rules, protected_group, unprotected_coverage_threshold,
-                                                    protected_coverage_threshold, k, total_individuals, fairness_threshold)
+                                                    protected_coverage_threshold, k_rules, total_individuals, fairness_threshold)
 
     # Calculate metrics
     expected_utility = calculate_expected_utility(selected_rules)
@@ -378,12 +335,12 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attrI: L
     total_protected_coverage = set().union(
         *[rule.covered_protected_indices for rule in selected_rules])
     protected_expected_utility = calculate_expected_utility(
-        [Rule(r.condition, r.treatment, r.covered_protected_indices, r.covered_protected_indices, r.protected_utility, r.protected_utility) for r in selected_rules])
+        [PrescriptionRule(r.condition, r.treatment, r.covered_protected_indices, r.covered_protected_indices, r.protected_utility, r.protected_utility) for r in selected_rules])
 
     end_time = time.time()
     execution_time = end_time - start_time
 
-    logging.info(f"Experiment results for k={k}:")
+    logging.info(f"Experiment results for k={k_rules}:")
     logging.info(f"Expected utility: {expected_utility:.4f}")
     logging.info(
         f"Protected expected utility: {protected_expected_utility:.4f}")
@@ -392,7 +349,7 @@ def run_experiment(k: int, df: pd.DataFrame, protected_group: Set[int], attrI: L
         f"Protected coverage: {len(total_protected_coverage) / len(protected_group):.2%}")
 
     return {
-        'k': k,
+        'k': k_rules,
         'execution_time': execution_time,
         'selected_rules': selected_rules,
         'expected_utility': expected_utility,
@@ -423,7 +380,7 @@ def main(config):
     from dags import SO_DAG
 
     # ------------------------- PARSING CONFIG ENDS  -------------------------
-    # Load data
+    # ------------------------ DATASET SETUP BEGINS -------------------------- 
     df = load_data(os.path.join(DATA_PATH, dataset_path, datatable_path))
     # Define protected group
     protected_group = set(
@@ -431,11 +388,12 @@ def main(config):
 
     logging.info(
         f"Protected group size: {len(protected_group)} out of {len(df)} total")
+    # ------------------------ DATASET SETUP ENDS ----------------------------
 
     # Run experiments for different values of k = the number of rules
     results = []
     for k in range(MIX_K, MAX_K + 1):
-        result = run_experiment(k, df, protected_group, immutable_attributes, mutable_attributes, target_outcome,
+        result = run_single_experiment_with_k(k, df, protected_group, immutable_attributes, mutable_attributes, target_outcome,
                                 unprotected_coverage_threshold, protected_coverage_threshold,
                                 fairness_threshold, SO_DAG, config)
         results.append(result)
