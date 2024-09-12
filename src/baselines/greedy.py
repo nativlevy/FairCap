@@ -276,14 +276,16 @@ def run_single_experiment_with_k(k_rules: int, df: pd.DataFrame, protected_group
     """
     start_time = time.time()
 
+    # Step 1. Grouping pattern mining
     grouping_patterns = get_grouping_patterns(df, attrI, APRIORI)
     elapsed_time = time.time() - start_time 
     logging.warning(f"Elapsed time step 1: {elapsed_time} seconds")
 
+    # Step 2. Treatment mining using greedy
     # Get treatments for each grouping pattern
     logging.info("Getting treatments for each grouping pattern")
     group_treatments, _ = getGroupstreatmentsforGreedy(
-        DAG, df, grouping_patterns, {}, tgtO, attrM, True, protected_group)
+        DAG, df, grouping_patterns, {}, tgtO, attrM, protected_group)
 
     # Create Rule objects
     rules = []

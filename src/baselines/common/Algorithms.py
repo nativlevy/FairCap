@@ -123,7 +123,7 @@ def getAllGroups(df, atts, min_support):
     return rules
 
 
-def getGroupstreatmentsforGreedy(DAG, df, groups, ordinal_atts, targetClass, actionable_atts, print_times, protected_group):
+def getGroupstreatmentsforGreedy(DAG, df, groups, ordinal_atts, targetClass, mutable_attr, protected_group):
     """
     Get treatments for each group using a greedy approach.
 
@@ -133,8 +133,7 @@ def getGroupstreatmentsforGreedy(DAG, df, groups, ordinal_atts, targetClass, act
         groups (list): List of group patterns.
         ordinal_atts (dict): Dictionary of ordinal attributes and their ordered values.
         targetClass (str): The target variable name.
-        actionable_atts (list): List of actionable attributes.
-        print_times (bool): Whether to print execution times.
+        mutable_attr (list): List of mutable/actionable attributes.
         protected_group (set): Set of indices representing the protected group.
 
     Returns:
@@ -146,14 +145,15 @@ def getGroupstreatmentsforGreedy(DAG, df, groups, ordinal_atts, targetClass, act
             'treatment': None,
             'utility': 0
             }
-        }
+        },
+        6.123 (seconds)
     """
     start_time = time.time()
 
     # Create a partial function with fixed arguments
-    process_group_partial = partial(process_group_greedy, df=df,
+    process_group_partial = partial(getTreatmentForEachGroupPattern, df=df,
                                     targetClass=targetClass, DAG=DAG, ordinal_atts=ordinal_atts,
-                                    actionable_atts=actionable_atts, protected_group=protected_group)
+                                    actionable_atts=mutable_attr, protected_group=protected_group)
 
     # Use multiprocessing to process groups in parallel
     with multiprocessing.Pool() as pool:
@@ -174,7 +174,7 @@ def getGroupstreatmentsforGreedy(DAG, df, groups, ordinal_atts, targetClass, act
     return groups_dic, elapsed_time
 
 
-def process_group_greedy(group, df, targetClass, DAG, ordinal_atts, actionable_atts, protected_group):
+def getTreatmentForEachGroupPattern(group, df, targetClass, DAG, ordinal_atts, actionable_atts, protected_group):
     """
     Process a single group to find the best treatment.
 
@@ -194,8 +194,7 @@ def process_group_greedy(group, df, targetClass, DAG, ordinal_atts, actionable_a
     df_g = df.loc[(df[group.keys()] == group.values()).all(axis=1)]
     drop_atts = list(group.keys())
     # drop_atts.append('GROUP_MEMBER')
-
-    # covered = set(df_g['GROUP_MEMBER'].tolist())
+    covered = set(df_g['GROUP_MEMBER'].tolist())
 
     (t_h, cate_h) = getHighTreatments(df_g, group, targetClass,
                                       DAG, drop_atts,
