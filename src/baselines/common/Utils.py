@@ -186,7 +186,7 @@ def getCombTreatments(df_g, positives, treatments, ordinal_atts):
     return treatments
 
 
-def getLevel1treatments(atts, df, ordinal_atts):
+def getRootTreatments(atts, df, ordinal_atts):
     """
     Generate level 1 treatments (single attribute-value pairs).
 
@@ -200,8 +200,10 @@ def getLevel1treatments(atts, df, ordinal_atts):
     """
     ans = []
     atts_vals = getAttsVals(atts, df)
+    # All possible values of all mutable attribute
 
     count = 0
+    # for all possible value of each attribute 
     for att in atts_vals:
         for val in atts_vals[att]:
             p = {att: val}
@@ -369,6 +371,7 @@ def addTempTreatment(row, ans, ordinal_atts):
     Returns:
         int: 1 if the row satisfies the treatment conditions, 0 otherwise.
     """
+    # For each 
     for a in ans:
         if a in ordinal_atts:
             index = ordinal_atts[a].index(ans[a])

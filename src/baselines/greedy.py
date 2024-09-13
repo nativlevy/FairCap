@@ -253,7 +253,7 @@ def greedy_fair_prescription_rules(rules: List[PrescriptionRule], protected_grou
     return solution
 
 
-def run_single_experiment_with_k(k_rules: int, df: pd.DataFrame, df_protec: pd.DataFrame, attrI: List[str], attrM: List[str], tgtO: str,
+def run_single_experiment_with_k(k_rules: int, grouping_patterns: List[dict], df: pd.DataFrame, df_protec: pd.DataFrame, attrI: List[str], attrM: List[str], tgtO: str,
                    unprotected_coverage_threshold: float, protected_coverage_threshold: float,
                    fairness_threshold: float,
                    DAG: List[str], config: Dict) -> Dict:
@@ -262,6 +262,7 @@ def run_single_experiment_with_k(k_rules: int, df: pd.DataFrame, df_protec: pd.D
 
     Args:
         k (int): Number of rules to select.
+        grouping_patterns (List[dict]): List of grouping pattern
         df (pd.DataFrame): The input dataframe.
         df_protec (pd.DataFrame): The dataframe of protected attributes.
         attrI (List[str]): List of immutable attributes for grouping patterns.
@@ -276,19 +277,16 @@ def run_single_experiment_with_k(k_rules: int, df: pd.DataFrame, df_protec: pd.D
     """
     start_time = time.time()
 
-    # Step 1. Grouping pattern mining
-    grouping_patterns = get_grouping_patterns(df, attrI, APRIORI)
-    elapsed_time = time.time() - start_time 
-    logging.warning(f"Elapsed time step 1: {elapsed_time} seconds")
+
 
     # Step 2. Treatment mining using greedy
     # Get treatments for each grouping pattern
     logging.info("Getting treatments for each grouping pattern")
     group_treatments, _ = getGroupstreatmentsforGreedy(
         DAG, df, df_protec, grouping_patterns, {}, tgtO, attrM)
-
     # Create Rule objects
     rules = []
+    protected_group = df_protec.index
     for group, data in group_treatments.items():
         condition = eval(group)
         treatment = data['treatment']
@@ -378,7 +376,14 @@ def main(config):
     """
     # ------------------------ PARSING CONFIG BEGINS  -------------------------
 
-    dataset_path, datatable_path, dag_path, immutable_attr, mutable_attr, protected_attr, protected_val, target_outcome = config['_dataset_path'], config[
+    """
+        attrI := Immutable/unactionable attributes
+        attrM := Mutable/actionable attributes
+        attrP := Protected attributes
+        valP  := Values of protected attributes
+        tgt   := Target outcome
+    """
+    dataset_path, datatable_path, dag_path, attrI, attrM, attrP, valP, tgt = config['_dataset_path'], config[
         '_datatable_path'], config['_dag_path'], config['_immutable_attributes'], config['_mutable_attributes'], config['_protected_attributes'], config['_protected_values'],  config['_target_outcome']
     MIX_K, MAX_K = config['_k']
     sys.path.append(os.path.join(DATA_PATH, dataset_path))
@@ -389,16 +394,20 @@ def main(config):
     df =load_data(os.path.join(DATA_PATH, dataset_path, datatable_path))
     # Define protected group
     protected_group = set(
-        df[df[protected_attr] != protected_val].index)
-    df_protec = df[(df[protected_attr] == protected_val).all(axis=1)]
+        df[df[attrP] != valP].index)
+    df_protec = df[(df[attrP] == valP).all(axis=1)]
     logging.info(
         f"Protected group size: {len(protected_group)} out of {len(df)} total")
     # ------------------------ DATASET SETUP ENDS ----------------------------
-
+    start_time = time.time
+    # Step 1. Grouping pattern mining
+    grouping_patterns = get_grouping_patterns(df, attrI, APRIORI)
+    elapsed_time = time.time() - start_time 
+    logging.warning(f"Elapsed time for group mining: {elapsed_time} seconds")
     # Run experiments for different values of k = the number of rules
     results = []
     for k in range(MIX_K, MAX_K + 1):
-        result = run_single_experiment_with_k(k, df, df_protec, protected_group, immutable_attr, mutable_attr, target_outcome,
+        result = run_single_experiment_with_k(k, grouping_patterns, df, df_protec, protected_group, attrI, attrM, tgt,
                                 unprotected_coverage_threshold, protected_coverage_threshold,
                                 fairness_threshold, SO_DAG, config)
         results.append(result)

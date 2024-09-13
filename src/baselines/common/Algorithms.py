@@ -148,7 +148,7 @@ def getGroupstreatmentsforGreedy(DAG, df, df_protec, groups, ordinal_atts, targe
         6.123 (seconds)
     """
     start_time = time.time()
-
+    protected_group = df_protec.index
     # Create a partial function with fixed arguments
     process_group_partial = partial(getTreatmentForOneGroupPattern, df=df,
                                     targetClass=targetClass, DAG=DAG, ordinal_atts=ordinal_atts,
@@ -300,7 +300,7 @@ def getHighTreatments(df_g, group, target, DAG, ordinal_atts, mutable_attr, prot
         logging.info(f'Processing treatment level {level}')
 
         if level == 1:
-            treatments = Utils.getLevel1treatments(
+            treatments = Utils.getRootTreatments(
                 mutable_attr, df_g, ordinal_atts)
         else:
             positive_treatments = [t for t in treatments if Utils.getTreatmentCATE(

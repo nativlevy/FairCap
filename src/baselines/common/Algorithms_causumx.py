@@ -233,7 +233,7 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionabl
         logging.info(f'Processing treatment level {level}')
 
         if level == 1:
-            treatments = Utils.getLevel1treatments(
+            treatments = Utils.getRootTreatments(
                 actionable_atts, df_g, ordinal_atts)
         else:
             positive_treatments = [t for t in treatments if Utils.getTreatmentCATE(
