@@ -123,7 +123,7 @@ def getAllGroups(df, atts, min_support):
     return rules
 
 
-def getGroupstreatmentsforGreedy(DAG, df, groups, ordinal_atts, targetClass, mutable_attr, protected_group):
+def getGroupstreatmentsforGreedy(DAG, df, df_protec, groups, ordinal_atts, targetClass, mutable_attr):
     """
     Get treatments for each group using a greedy approach.
 
@@ -134,7 +134,6 @@ def getGroupstreatmentsforGreedy(DAG, df, groups, ordinal_atts, targetClass, mut
         ordinal_atts (dict): Dictionary of ordinal attributes and their ordered values.
         targetClass (str): The target variable name.
         mutable_attr (list): List of mutable/actionable attributes.
-        protected_group (set): Set of indices representing the protected group.
 
     Returns:
         tuple: A dictionary of group treatments and the elapsed time.
@@ -151,7 +150,7 @@ def getGroupstreatmentsforGreedy(DAG, df, groups, ordinal_atts, targetClass, mut
     start_time = time.time()
 
     # Create a partial function with fixed arguments
-    process_group_partial = partial(getTreatmentForEachGroupPattern, df=df,
+    process_group_partial = partial(getTreatmentForOneGroupPattern, df=df,
                                     targetClass=targetClass, DAG=DAG, ordinal_atts=ordinal_atts,
                                     actionable_atts=mutable_attr, protected_group=protected_group)
 
@@ -174,9 +173,9 @@ def getGroupstreatmentsforGreedy(DAG, df, groups, ordinal_atts, targetClass, mut
     return groups_dic, elapsed_time
 
 
-def getTreatmentForEachGroupPattern(group, df, targetClass, DAG, ordinal_atts, actionable_atts, protected_group):
+def getTreatmentForOneGroupPattern(group, df, targetClass, DAG, ordinal_atts, actionable_atts, protected_group):
     """
-    Process a single group to find the best treatment.
+    Process a single group pattern (Pg1 ^ Pg2 ^...) to find the best treatment.
 
     Args:
         group (dict): The group pattern.
@@ -191,19 +190,19 @@ def getTreatmentForEachGroupPattern(group, df, targetClass, DAG, ordinal_atts, a
         dict: Information about the best treatment for the group.
     """
     # Filtering tuples with grouping predicates
-    df_g = df.loc[(df[group.keys()] == group.values()).all(axis=1)]
-    drop_atts = list(group.keys())
-    # drop_atts.append('GROUP_MEMBER')
-    covered = set(df_g['GROUP_MEMBER'].tolist())
+    mask = (df[group.keys()] == group.values()).all(axis=1)
+    df_g = df.loc[mask]
+    covered = set(mask.tolist())
 
     (t_h, cate_h) = getHighTreatments(df_g, group, targetClass,
-                                      DAG, drop_atts,
+                                      DAG,
                                       ordinal_atts, actionable_atts, protected_group)
     # TODO investigate the effect of removing 'covered': covered
     covered_indices = set(df_g.index)
     return {
         'group_size': len(df_g),
         'covered_indices': covered_indices,
+        'covered': covered,
         'treatment': t_h,
         'utility': cate_h
     }
@@ -266,7 +265,7 @@ def calculate_fairness_score(treatment, df_g, DAG, ordinal_atts, target, protect
     return cate_all / abs(cate_all - cate_protected)
 
 
-def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionable_atts_org, protected_group):
+def getHighTreatments(df_g, group, target, DAG, ordinal_atts, mutable_attr, protected_group):
     """
     Find the best treatment for a given group that maximizes fairness and effectiveness.
 
@@ -278,9 +277,8 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionabl
         group (dict): The group definition.
         target (str): The target variable name.
         DAG (list): The causal graph represented as a list of edges.
-        dropAtt (list): Attributes to be dropped from consideration.
         ordinal_atts (dict): Dictionary of ordinal attributes and their ordered values.
-        actionable_atts_org (list): Original list of actionable attributes.
+        mutable_attr_org (list): Original list of actionable/mutable attributes.
         protected_group (set): Set of indices representing the protected group.
 
     Returns:
@@ -291,14 +289,7 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionabl
     The function logs detailed information about its progress and decisions.
     """
     logging.info(f'Starting getHighTreatments for group: {group}')
-    logging.debug(f'Initial df_g shape: {df_g.shape}')
-
-    df_g.drop(dropAtt, axis=1, inplace=True)
-    actionable_atts = [a for a in actionable_atts_org if not a in dropAtt]
-    df_g = df_g.loc[:, ~df_g.columns.str.contains('^Unnamed')]
-
-    logging.debug(f'df_g shape after dropping attributes: {df_g.shape}')
-    logging.debug(f'Actionable attributes: {actionable_atts}')
+    logging.debug(f'Actionable attributes: {mutable_attr}')
 
     max_score = float('-inf')
     best_treatment = None
@@ -310,7 +301,7 @@ def getHighTreatments(df_g, group, target, DAG, dropAtt, ordinal_atts, actionabl
 
         if level == 1:
             treatments = Utils.getLevel1treatments(
-                actionable_atts, df_g, ordinal_atts)
+                mutable_attr, df_g, ordinal_atts)
         else:
             positive_treatments = [t for t in treatments if Utils.getTreatmentCATE(
                 df_g, DAG, t, ordinal_atts, target) > 0]

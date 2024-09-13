@@ -253,7 +253,7 @@ def greedy_fair_prescription_rules(rules: List[PrescriptionRule], protected_grou
     return solution
 
 
-def run_single_experiment_with_k(k_rules: int, df: pd.DataFrame, protected_group: Set[int], attrI: List[str], attrM: List[str], tgtO: str,
+def run_single_experiment_with_k(k_rules: int, df: pd.DataFrame, df_protec: pd.DataFrame, attrI: List[str], attrM: List[str], tgtO: str,
                    unprotected_coverage_threshold: float, protected_coverage_threshold: float,
                    fairness_threshold: float,
                    DAG: List[str], config: Dict) -> Dict:
@@ -263,7 +263,7 @@ def run_single_experiment_with_k(k_rules: int, df: pd.DataFrame, protected_group
     Args:
         k (int): Number of rules to select.
         df (pd.DataFrame): The input dataframe.
-        protected_group (Set[int]): Set of indices in the protected group.
+        df_protec (pd.DataFrame): The dataframe of protected attributes.
         attrI (List[str]): List of immutable attributes for grouping patterns.
         attrM (List[str]): List of mutable attributes for grouping patterns.
         tgtO (str): Target outcome
@@ -285,7 +285,7 @@ def run_single_experiment_with_k(k_rules: int, df: pd.DataFrame, protected_group
     # Get treatments for each grouping pattern
     logging.info("Getting treatments for each grouping pattern")
     group_treatments, _ = getGroupstreatmentsforGreedy(
-        DAG, df, grouping_patterns, {}, tgtO, attrM, protected_group)
+        DAG, df, df_protec, grouping_patterns, {}, tgtO, attrM)
 
     # Create Rule objects
     rules = []
@@ -378,19 +378,19 @@ def main(config):
     """
     # ------------------------ PARSING CONFIG BEGINS  -------------------------
 
-    dataset_path, datatable_path, dag_path, immutable_attributes, mutable_attributes, protected_attributes, protected_values, target_outcome = config['_dataset_path'], config[
+    dataset_path, datatable_path, dag_path, immutable_attr, mutable_attr, protected_attr, protected_val, target_outcome = config['_dataset_path'], config[
         '_datatable_path'], config['_dag_path'], config['_immutable_attributes'], config['_mutable_attributes'], config['_protected_attributes'], config['_protected_values'],  config['_target_outcome']
     MIX_K, MAX_K = config['_k']
     sys.path.append(os.path.join(DATA_PATH, dataset_path))
     from dags import SO_DAG
 
     # ------------------------- PARSING CONFIG ENDS  -------------------------
-    # ------------------------ DATASET SETUP BEGINS -------------------------- 
-    df = load_data(os.path.join(DATA_PATH, dataset_path, datatable_path))
+# ------------------------ DATASET SETUP BEGINS -------------------------- 
+    df =load_data(os.path.join(DATA_PATH, dataset_path, datatable_path))
     # Define protected group
     protected_group = set(
-        df[df[protected_attributes] != protected_values].index)
-
+        df[df[protected_attr] != protected_val].index)
+    df_protec = df[(df[protected_attr] == protected_val).all(axis=1)]
     logging.info(
         f"Protected group size: {len(protected_group)} out of {len(df)} total")
     # ------------------------ DATASET SETUP ENDS ----------------------------
@@ -398,7 +398,7 @@ def main(config):
     # Run experiments for different values of k = the number of rules
     results = []
     for k in range(MIX_K, MAX_K + 1):
-        result = run_single_experiment_with_k(k, df, protected_group, immutable_attributes, mutable_attributes, target_outcome,
+        result = run_single_experiment_with_k(k, df, df_protec, protected_group, immutable_attr, mutable_attr, target_outcome,
                                 unprotected_coverage_threshold, protected_coverage_threshold,
                                 fairness_threshold, SO_DAG, config)
         results.append(result)
