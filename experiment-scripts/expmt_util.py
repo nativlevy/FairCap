@@ -59,6 +59,7 @@ def run_single_local_exmpt(config):
 
     algo_name = config["_name"]
     Path(config["_output_path"]).mkdir(parents=True, exist_ok=True)
+    # TODO hoist
     if algo_name == 'greedy':
         greedy.main(config)
     elif algo_name == 'causumx':
@@ -124,6 +125,6 @@ def run_single_remote_exmpt(config):
 
 
 def ts_prefix():
-    tempore = time.strftime('%m-%d:%H:%M',
+    tempore = time.strftime('%m-%d/%H:%M',
                             time.localtime())
     return tempore

@@ -5,15 +5,55 @@
   "_remote_project_name": "fair-prescrip",
   "_remote_nodes": ["node0", "node1"],
   "_remote_postfix": "pg0.utah.cloudlab.us",
-  "_k": 1,
+  "_k": [4, 4],
   "_models": [
     {
-      "_name": "greedy",
+      "_name": "causumx",
       "_start": "greedy.py"
     },
     {
-      "_name": "causumx",
-      "_start": "causumx.py"
+      "_name": "greedy[group_coverage]",
+      "_start": "greedy.py",
+      "_coverage_constraint": ["group", 0.5, 0.5]
+    },
+    {
+      "_name": "greedy[rule_coverage]",
+      "_start": "greedy.py",
+      "_coverage_constraint": ["rule", 0.5, 0.5]
+    },
+    {
+      "_name": "greedy[group_fair]",
+      "_start": "greedy.py",
+      "_fairness_constraint": ["group_sp", 0.5]
+    },
+    {
+      "_name": "greedy[individual_fair]",
+      "_start": "greedy.py",
+      "_fairness_constraint": ["individual_sp", 0.5]
+    },
+    {
+      "_name": "greedy[group_coverage_group_fair]",
+      "_start": "greedy.py",
+      "_coverage_constraint": ["group", 0.5, 0.5],
+      "_fairness_constraint": ["group_sp", 0.5]
+    },
+    {
+      "_name": "greedy[rule_coverage_group_fair]",
+      "_start": "greedy.py",
+      "_coverage_constraint": ["rule", 0.5, 0.5],
+      "_fairness_constraint": ["group_sp", 0.5]
+    },
+    {
+      "_name": "greedy[group_coverage_individual_fair]",
+      "_start": "greedy.py",
+      "_coverage_constraint": ["group", 0.5, 0.5],
+      "_fairness_constraint": ["individual_sp", 0.5]
+    },
+    {
+      "_name": "greedy[rule_coverage_individual_fair]",
+      "_start": "greedy.py",
+      "_coverage_constraint": ["rule", 0.5, 0.5],
+      "_fairness_constraint": ["individual_sp", 0.5]
     }
   ]
 }

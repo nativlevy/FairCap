@@ -36,7 +36,9 @@ def main(data_config_path, expmt_config_path):
         expmt_config_path = os.path.join(CONFIG_PATH, expmt_config_path)
     with open(os.path.join(CONFIG_PATH, expmt_config_path)) as json_file:
         exmpt_config = json.load(json_file)
+ 
 
+     
     is_remote = exmpt_config['_is_remote']
     models = exmpt_config['_models']
     k = exmpt_config['_k']

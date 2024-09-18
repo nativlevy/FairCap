@@ -9,146 +9,33 @@ import time
 import csv
 import json
 import statistics
-from common import PrescriptionRule, load_data
+import concurrent
+
+
+SRC_PATH = Path(__file__).parent.parent 
+sys.path.append(os.path.join(SRC_PATH, 'tools'))
+sys.path.append(os.path.join(SRC_PATH, 'algorithms'))
+sys.path.append(os.path.join(SRC_PATH, 'algorithms', 'metrics'))
+from group_mining import getConstrGroups, getGroups
+from treatment_mining import getTreatmentForAllGroups
+from utility_functions import expected_utility
+from fairness import score_rule
+
+from load_data import load_data
+from prescription import Prescription
+
+
 # from utility.logging_util import init_logger
 
 sys.path.append(os.path.join(Path(__file__).parent, 'common'))
 from consts import APRIORI, MIX_K, MAX_K, DATA_PATH, PROJECT_PATH, unprotected_coverage_threshold, protected_coverage_threshold, fairness_threshold  # NOQA
-from Algorithms import getAllGroups, getGroupstreatmentsforGreedy  # NOQA
-
-# logger = init_logger('greedy')
 
 
 
-
-def get_grouping_patterns(df: pd.DataFrame, grp_attrs: List[str], apriori_th: float) -> List[dict]:
-    """
-    Generate and filter grouping patterns from the data.
-
-    Args:
-        df (pd.DataFrame): Input data.
-        grp_attrs (List[str]): Attributes to consider for grouping.
-        apriori_th (float): Apriori threshold for pattern generation.
-
-    Returns:
-        List[dict]: Filtered list of grouping patterns.
-    """
-    logging.info(f"Getting grouping patterns with apriori={apriori_th}")
-    grouping_patterns = getAllGroups(df, grp_attrs, apriori_th)
-    logging.info(f"Initial grouping patterns: {len(grouping_patterns)}")
- 
-
-    def apply_pattern(pattern):
-        mask = pd.Series(True, index=df.index)
-        for col, val in pattern.items():
-            mask &= df[col] == val
-        return frozenset(df.index[mask])
-
-    # Create a dictionary to store patterns by their coverage
-    coverage_dict = {}
-    for pattern in grouping_patterns:
-        coverage = apply_pattern(pattern)
-        if coverage in coverage_dict:
-            if len(pattern) < len(coverage_dict[coverage]):
-                coverage_dict[coverage] = pattern
-        else:
-            coverage_dict[coverage] = pattern
-
-    filtered_patterns = list(coverage_dict.values())
-
-    # Sort filtered patterns by length (shorter first) and then by coverage size (larger first)
-    filtered_patterns.sort(key=lambda x: (len(x), -len(apply_pattern(x))))
-
-    logging.info(f"Filtered grouping patterns: {len(filtered_patterns)}")
-    logging.info("Final filtered patterns:")
-    for i, pattern in enumerate(filtered_patterns):
-        covered_indices = apply_pattern(pattern)
-        logging.info(f"Pattern {i}: {pattern}")
-        logging.info(f"  Length (key-value pairs): {len(pattern)}")
-        logging.info(f"  Coverage: {len(covered_indices)}")
-
-    return filtered_patterns
-
-def calculate_expected_utility(rules: List[PrescriptionRule]) -> float:
-    """
-    Calculate the expected utility of a set of rules.
-
-    Args:
-        rules (List[Rule]): List of rules to calculate the expected utility for.
-
-    Returns:
-        float: The calculated expected utility.
-    """
-    coverage = set()
-    for rule in rules:
-        coverage.update(rule.covered_indices)
-
-    if not coverage:
-        return 0.0
-
-    total_utility = 0.0
-    for t in coverage:
-        rules_covering_t = [r for r in rules if t in r.covered_indices]
-        min_utility = min(r.utility for r in rules_covering_t)
-        total_utility += min_utility
-
-    expected_utility = total_utility / len(coverage)
-    return expected_utility
-
-
-def score_rule(rule: PrescriptionRule, solution: List[PrescriptionRule], covered: Set[int], covered_protected: Set[int],
-               protected_group: Set[int],
-               unprotected_coverage_threshold: float, protected_coverage_threshold: float) -> float:
-    """
-    Calculate the score for a given rule based on various factors.
-
-    Args:
-        rule (Rule): The rule to score.
-        solution (List[Rule]): Current set of selected rules.
-        covered (Set[int]): Set of indices covered by current solution.
-        covered_protected (Set[int]): Set of protected indices covered by current solution.
-        protected_group (Set[int]): Set of indices in the protected group.
-        unprotected_coverage_threshold (float): Threshold for unprotected group coverage.
-        protected_coverage_threshold (float): Threshold for protected group coverage.
-
-    Returns:
-        float: The calculated score for the rule.
-    """
-    new_covered = rule.covered_indices - covered
-    new_covered_protected = rule.covered_protected_indices - covered_protected
-
-    logging.debug(
-        f"Scoring rule: new_covered={len(new_covered)}, new_covered_protected={len(new_covered_protected)}")
-
-    if len(rule.covered_indices) == 0:
-        logging.warning("Rule covers no individuals, returning -inf score")
-        return float('-inf')
-
-    # Calculate expected utility with the new rule added to the solution
-    new_solution = solution + [rule]
-    expected_utility = calculate_expected_utility(new_solution)
-
-    # Calculate coverage factors for both protected and unprotected groups
-    protected_coverage_factor = (len(new_covered_protected) / len(protected_group)) / \
-        protected_coverage_threshold if protected_coverage_threshold > 0 else 1
-    unprotected_coverage_factor = (len(new_covered - new_covered_protected) / (len(rule.covered_indices) - len(
-        protected_group))) / unprotected_coverage_threshold if unprotected_coverage_threshold > 0 else 1
-
-    # Use the minimum of the two coverage factors
-    coverage_factor = min(protected_coverage_factor,
-                          unprotected_coverage_factor)
-
-    score = rule.utility * coverage_factor
-
-    logging.debug(f"Rule score: {score:.4f} (expected_utility: {expected_utility:.4f}, "
-                  f"utility: {rule.utility:.4f}, coverage_factor: {coverage_factor:.4f}")
-
-    return score
-
-
-def greedy_fair_prescription_rules(rules: List[PrescriptionRule], protected_group: Set[int],
+# TODO maybe reuse for LPsolution 
+def greedy_fair_prescription_rules(rules: List[Prescription], protected_group: Set[int],
                                    unprotected_coverage_threshold: float, protected_coverage_threshold: float,
-                                   max_rules: int, total_individuals: int, fairness_threshold: float) -> List[PrescriptionRule]:
+                                   max_rules: int, total_individuals: int, fairness_threshold: float) -> List[Prescription]:
     """
     Greedy algorithm to select fair prescription rules.
 
@@ -253,7 +140,7 @@ def greedy_fair_prescription_rules(rules: List[PrescriptionRule], protected_grou
     return solution
 
 
-def run_single_experiment_with_k(k_rules: int, grouping_patterns: List[dict], df: pd.DataFrame, df_protec: pd.DataFrame, attrI: List[str], attrM: List[str], tgtO: str,
+def getKRules(k_rules: int, grouping_patterns: List[dict], df: pd.DataFrame, df_protec: pd.DataFrame, attrI: List[str], attrM: List[str], tgtO: str,
                    unprotected_coverage_threshold: float, protected_coverage_threshold: float,
                    fairness_threshold: float,
                    DAG: List[str], config: Dict) -> Dict:
@@ -277,17 +164,15 @@ def run_single_experiment_with_k(k_rules: int, grouping_patterns: List[dict], df
     """
     start_time = time.time()
 
-
-
     # Step 2. Treatment mining using greedy
     # Get treatments for each grouping pattern
     logging.info("Getting treatments for each grouping pattern")
-    group_treatments, _ = getGroupstreatmentsforGreedy(
+    group_treatment_dict, _ = getTreatmentForAllGroups(
         DAG, df, df_protec, grouping_patterns, {}, tgtO, attrM)
     # Create Rule objects
     rules = []
     protected_group = df_protec.index
-    for group, data in group_treatments.items():
+    for group, data in group_treatment_dict.items():
         condition = eval(group)
         treatment = data['treatment']
         covered_indices = data['covered_indices']
@@ -300,7 +185,7 @@ def run_single_experiment_with_k(k_rules: int, grouping_patterns: List[dict], df
             len(covered_indices) if len(covered_indices) > 0 else 0
         protected_utility = utility * protected_proportion
 
-        rules.append(PrescriptionRule(condition, treatment, covered_indices,
+        rules.append(Prescription(condition, treatment, covered_indices,
                      covered_protected_indices, utility, protected_utility))
 
     logging.info(f"Created {len(rules)} Rule objects")
@@ -328,23 +213,22 @@ def run_single_experiment_with_k(k_rules: int, grouping_patterns: List[dict], df
             'protected_coverage': len(rule.covered_protected_indices)
         } for rule in rules], f, indent=4)
 
-    selected_rules = greedy_fair_prescription_rules(rules, protected_group, unprotected_coverage_threshold,
-                                                    protected_coverage_threshold, k_rules, total_individuals, fairness_threshold)
+    selected_rules = greedy_fair_prescription_rules(rules, protected_group, unprotected_coverage_threshold,protected_coverage_threshold, k_rules, total_individuals, fairness_threshold)
 
     # Calculate metrics
-    expected_utility = calculate_expected_utility(selected_rules)
+    e_util = expected_utility(selected_rules)
     total_coverage = set().union(
         *[rule.covered_indices for rule in selected_rules])
     total_protected_coverage = set().union(
         *[rule.covered_protected_indices for rule in selected_rules])
-    protected_expected_utility = calculate_expected_utility(
-        [PrescriptionRule(r.condition, r.treatment, r.covered_protected_indices, r.covered_protected_indices, r.protected_utility, r.protected_utility) for r in selected_rules])
+    protected_expected_utility = expected_utility(
+        [Prescription(r.condition, r.treatment, r.covered_protected_indices, r.covered_protected_indices, r.protected_utility, r.protected_utility) for r in selected_rules])
 
     end_time = time.time()
     execution_time = end_time - start_time
 
     logging.info(f"Experiment results for k={k_rules}:")
-    logging.info(f"Expected utility: {expected_utility:.4f}")
+    logging.info(f"Expected utility: {e_util:.4f}")
     logging.info(
         f"Protected expected utility: {protected_expected_utility:.4f}")
     logging.info(f"Coverage: {len(total_coverage) / len(df):.2%}")
@@ -355,7 +239,7 @@ def run_single_experiment_with_k(k_rules: int, grouping_patterns: List[dict], df
         'k': k_rules,
         'execution_time': execution_time,
         'selected_rules': selected_rules,
-        'expected_utility': expected_utility,
+        'expected_utility': e_util,
         'protected_expected_utility': protected_expected_utility,
         'coverage': len(total_coverage) / len(df),
         'protected_coverage': len(total_protected_coverage) / len(protected_group)
@@ -383,15 +267,29 @@ def main(config):
         valP  := Values of protected attributes
         tgt   := Target outcome
     """
-    dataset_path, datatable_path, dag_path, attrI, attrM, attrP, valP, tgt = config['_dataset_path'], config[
-        '_datatable_path'], config['_dag_path'], config['_immutable_attributes'], config['_mutable_attributes'], config['_protected_attributes'], config['_protected_values'],  config['_target_outcome']
-    MIX_K, MAX_K = config['_k']
-    sys.path.append(os.path.join(DATA_PATH, dataset_path))
-    from dags import SO_DAG
+    dataset_path = config.get('_dataset_path')
+    datatable_path = config.get('_datatable_path')
+    dag_path = config.get('_dag_path')
+    attrI = config.get('_immutable_attributes')
+    attrM = config.get('_mutable_attributes')
+    attrP = config.get('_protected_attributes')
+    valP = config.get('_protected_values')
+    tgt =  config.get('_target_outcome')
+    cvrg_constr = config.get('_coverage_constraint', None)
+
+    MIX_K, MAX_K = config.get('_k', [4,4])
 
     # ------------------------- PARSING CONFIG ENDS  -------------------------
-# ------------------------ DATASET SETUP BEGINS -------------------------- 
-    df =load_data(os.path.join(DATA_PATH, dataset_path, datatable_path))
+    # ------------------------ DATASET SETUP BEGINS -------------------------- 
+    df, DAG =load_data(os.path.join(DATA_PATH, dataset_path, datatable_path), os.path.join(DATA_PATH, dataset_path, dag_path))
+
+    # TODO Formalize DAG
+    V, E = DAG.nodes(), list(map(lambda a: "%s -> %s" % a, DAG.edges()))
+    DAG = []
+    for v in V:
+        DAG.append(v)
+    for e in E:
+        DAG.append(e)
     # Define protected group
     protected_group = set(
         df[df[attrP] != valP].index)
@@ -399,17 +297,20 @@ def main(config):
     logging.info(
         f"Protected group size: {len(protected_group)} out of {len(df)} total")
     # ------------------------ DATASET SETUP ENDS ----------------------------
-    start_time = time.time
+    start_time = time.time()
     # Step 1. Grouping pattern mining
-    grouping_patterns = get_grouping_patterns(df, attrI, APRIORI)
+    
+    grouping_patterns = getConstrGroups(df, attrI, min_sup=APRIORI, constr=cvrg_constr)
+
     elapsed_time = time.time() - start_time 
     logging.warning(f"Elapsed time for group mining: {elapsed_time} seconds")
     # Run experiments for different values of k = the number of rules
     results = []
     for k in range(MIX_K, MAX_K + 1):
-        result = run_single_experiment_with_k(k, grouping_patterns, df, df_protec, protected_group, attrI, attrM, tgt,
+        # TODO make signature shorter 
+        result = getKRules(k, grouping_patterns, df, df_protec, attrI, attrM, tgt,
                                 unprotected_coverage_threshold, protected_coverage_threshold,
-                                fairness_threshold, SO_DAG, config)
+                                fairness_threshold, DAG, config)
         results.append(result)
         logging.info(f"Completed experiment for k={k}")
 

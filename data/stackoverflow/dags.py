@@ -1,4 +1,4 @@
-SO_DAG = [
+DAG = [
     'Continent;',
     'HoursComputer;',
     'UndergradMajor;',

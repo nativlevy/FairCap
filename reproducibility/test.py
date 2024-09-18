@@ -189,3 +189,10 @@ for pattern in grouping_patterns:
 filtered_patterns = list(coverage_dict.values())
 
 # %%
+import pygraphviz as pgv
+DAG = pgv.AGraph('/Users/bcyl/FairPrescriptionRules/data/stackoverflow/so.dot', directed=True)
+DAG.edges()
+V, E = DAG.nodes(), list(map(lambda a: "%s -> %s" % a, DAG.edges()))
+[*V, *E]
+
+# %%

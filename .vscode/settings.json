@@ -1,13 +1,22 @@
 {
     "python.analysis.extraPaths": [
         "./src/models",
-        "./src/models/common"
+        "./src/models/common",
+        "./src/baselines/common",
+        "./src/helper",
+        "./src/algorithms/metrics",
+        "./src/algorithms",
+        "./src/tools"
     ],
     "python.analysis.autoFormatStrings": true,
     "python.analysis.autoImportCompletions": true,
     "python.analysis.autoSearchPaths": true,
     "python.analysis.completeFunctionParens": true,
     "cSpell.words": [
-        "dowhy"
-    ]
+        "dowhy",
+        "Groupstreatmentsfor"
+    ],
+    "files.watcherExclude": {
+        "**/target": true
+    }
 }
