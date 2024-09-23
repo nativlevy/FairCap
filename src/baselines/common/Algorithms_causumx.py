@@ -67,7 +67,7 @@ def getAllGroups(df_org, atts, t):
     return rules
 
 
-def getGroupstreatmentsforGreeedy(DAG, df, groups, ordinal_atts, targetClass, actionable_atts, print_times, protected_group):
+def getGroupstreatmentsforGreeedy(DAG, df, groups, ordinal_atts, targetClass, actionable_atts, protected_group):
     """
     Get treatments for each group using a greedy approach.
 
@@ -78,7 +78,6 @@ def getGroupstreatmentsforGreeedy(DAG, df, groups, ordinal_atts, targetClass, ac
         ordinal_atts (dict): Dictionary of ordinal attributes and their ordered values.
         targetClass (str): The target variable name.
         actionable_atts (list): List of actionable attributes.
-        print_times (bool): Whether to print execution times.
         protected_group (set): Set of indices representing the protected group.
 
     Returns:
@@ -99,9 +98,6 @@ def getGroupstreatmentsforGreeedy(DAG, df, groups, ordinal_atts, targetClass, ac
     groups_dic = {str(group): result for group, result in zip(groups, results)}
 
     elapsed_time = time.time() - start_time
-
-    if print_times:
-        logging.info(f"Elapsed time step 2: {elapsed_time} seconds")
     return groups_dic, elapsed_time
 
 

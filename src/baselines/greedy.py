@@ -140,10 +140,7 @@ def greedy_fair_prescription_rules(rules: List[Prescription], protected_group: S
     return solution
 
 
-def getKRules(k_rules: int, grouping_patterns: List[dict], df: pd.DataFrame, idx_protec: Set[int], attrI: List[str], attrM: List[str], tgtO: str,
-                   unprotected_coverage_threshold: float, protected_coverage_threshold: float,
-                   fairness_threshold: float,
-                   DAG, config: Dict) -> Dict:
+def getKRules(k_rules: int, group_treatment_dict, df: pd.DataFrame, idx_protec: Set[int], unprotected_coverage_threshold: float, protected_coverage_threshold: float, fairness_threshold: float, config: Dict) -> Dict:
     """
     Run an experiment for a specific number of rules (k).
 
@@ -163,13 +160,7 @@ def getKRules(k_rules: int, grouping_patterns: List[dict], df: pd.DataFrame, idx
         Dict: A dictionary containing the results of the experiment.
     """
     start_time = time.time()
-
-    # Step 2. Treatment mining using greedy
-    # Get treatments for each grouping pattern
-    logging.info("Getting treatments for each grouping pattern")
-    group_treatment_dict, _ = getTreatmentForAllGroups(DAG, df, idx_protec, grouping_patterns, {}, tgtO, attrM)
-    # Create Rule objects
-    rules = []  
+    rules = []
     for group, data in group_treatment_dict.items():
         condition = eval(group)
         treatment = data['treatment']
@@ -222,9 +213,7 @@ def getKRules(k_rules: int, grouping_patterns: List[dict], df: pd.DataFrame, idx
     protec_exp_util = expected_utility(
         [Prescription(r.condition, r.treatment, r.covered_protected_indices, r.covered_protected_indices, r.protected_utility, r.protected_utility) for r in selected_rules])
 
-    end_time = time.time()
-    execution_time = end_time - start_time
-
+    execution_time = time.time() - start_time 
     logging.info(f"Experiment results for k={k_rules}:")
     logging.info(f"Expected utility: {exp_util:.4f}")
     logging.info(
@@ -307,13 +296,22 @@ def main(config):
 
     elapsed_time = time.time() - start_time 
     logging.warning(f"Elapsed time for group mining: {elapsed_time} seconds")
+
+
+    start_time = time.time()
+    # Step 2. Treatment mining using greedy
+    # Get treatments for each grouping pattern
+    logging.info("Step2: Getting candidate treatments for each grouping pattern")
+    group_treatment_dict, _ = getTreatmentForAllGroups(DAG, df, idx_protec, grouping_patterns, {}, tgt, attrM)
+    elapsed_time = time.time() - start_time 
+    logging.warning(f"Elapsed time for treatment mining: {elapsed_time} seconds")
+    # Create Rule objects
+    rules = [Prescription(g, t, df)]
     # Run experiments for different values of k = the number of rules
     results = []
     for k in range(MIX_K, MAX_K + 1):
         # TODO make signature shorter 
-        result = getKRules(k, grouping_patterns, df, idx_protec, attrI, attrM, tgt,
-                                unprotected_coverage_threshold, protected_coverage_threshold,
-                                fairness_threshold, DAG, config)
+        result = getKRules(k, group_treatment_dict, df, idx_protec, unprotected_coverage_threshold, protected_coverage_threshold, fairness_threshold, config)
         results.append(result)
         logging.info(f"Completed experiment for k={k}")
 

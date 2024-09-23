@@ -83,9 +83,6 @@ def getTreatmentForAllGroups(DAG, df, idx_protec: Set, groupPatterns, attrOrdina
     groups_dic = {str(group): result for group, result in zip(groupPatterns, groupTreatList)}
 
     elapsed_time = time.time() - start_time
-
-    logging.warning(f"Elapsed time step 2: {elapsed_time} seconds")
-
     # Log summary statistics for utilities
     utilities = [result['utility'] for result in groups_dic.values()]
     logging.info(f"Utility statistics: min={min(utilities):.4f}, max={max(utilities):.4f}, "
@@ -226,7 +223,7 @@ def getRootTreatments(attrM: List[Dict], df: pd.DataFrame, attrOrdinal) -> List[
             # TODO: experimental
             # df['TempTreatment'] = df.apply(
             #     lambda row: isTreatable(row, treatment, attrOrdinal), axis=1)
-            df['TempTreatment'] = df[attr] != val
+            df.loc[:,'TempTreatment'] = df[attr] != val
             valid = list(set(df['TempTreatment'].tolist()))
             # Skip treatment where either all or none will be treated
             if len(valid) < 2:
