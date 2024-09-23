@@ -7,6 +7,7 @@ import subprocess
 import sys
 import time
 from remote_util import clean_up, fetch_logs_from_remote, run_algorithm, synch_repo_at_remote
+import cProfile
 
 
 from exmpt_config import PROJECT_PATH, Config
@@ -56,12 +57,15 @@ def summarize_exp_data(remote_exp_dir, local_out_dir, executor, is_exp_remote=Fa
 
 
 def run_single_local_exmpt(config):
-
     algo_name = config["_name"]
     Path(config["_output_path"]).mkdir(parents=True, exist_ok=True)
     # TODO hoist
     if algo_name == 'greedy':
-        greedy.main(config)
+        with cProfile.Profile() as pr:
+
+            greedy.main(config)
+            pr.print_stats()
+
     elif algo_name == 'causumx':
         causumx.main(config)
 

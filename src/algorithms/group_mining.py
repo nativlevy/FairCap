@@ -36,6 +36,7 @@ def getGroups(df: pd.DataFrame, attrI: List[str], min_sup: float) -> List[dict]:
     frequent_itemsets = apriori(df, min_support=min_sup, use_colnames=True)
     grouping_patterns = list(map(set_to_dict, frequent_itemsets['itemsets'])) 
     logging.info(f"Generated {len(grouping_patterns)} grouping patterns")
+    
     return grouping_patterns
 
 def getConstrGroups(df: pd.DataFrame, attrI: List[str], min_sup: float, constr: Tuple[str, float] = None) -> List[dict]:

@@ -2,12 +2,12 @@ import logging
 from typing import List, Set
 from prescription import Prescription
 
-from utility_functions import CATE
+from utility_functions import CATE, expected_utility
 
 
 def score_rule(rule: Prescription, solution: List[Prescription], covered: Set[int], covered_protected: Set[int],
                protected_group: Set[int],
-               unprotected_coverage_threshold: float, protected_coverage_threshold: float) -> float:
+               unprotected_coverage_threshold: float, protec_cvrg_th: float) -> float:
     """
     Calculate the score for a given rule based on various factors.
 
@@ -24,10 +24,9 @@ def score_rule(rule: Prescription, solution: List[Prescription], covered: Set[in
         float: The calculated score for the rule.
     """
     new_covered = rule.covered_indices - covered
-    new_covered_protected = rule.covered_protected_indices - covered_protected
-
+    new_covered_protec = rule.covered_protected_indices - covered_protected
     logging.debug(
-        f"Scoring rule: new_covered={len(new_covered)}, new_covered_protected={len(new_covered_protected)}")
+        f"Scoring rule: new_covered={len(new_covered)}, new_covered_protected={len(new_covered_protec)}")
 
     if len(rule.covered_indices) == 0:
         logging.warning("Rule covers no individuals, returning -inf score")
@@ -35,28 +34,30 @@ def score_rule(rule: Prescription, solution: List[Prescription], covered: Set[in
 
     # Calculate expected utility with the new rule added to the solution
     new_solution = solution + [rule]
-    expected_utility = expected_utility(new_solution)
+    exp_util = expected_utility(new_solution)
 
     # Calculate coverage factors for both protected and unprotected groups
-    protected_coverage_factor = (len(new_covered_protected) / len(protected_group)) / \
-        protected_coverage_threshold if protected_coverage_threshold > 0 else 1
-    unprotected_coverage_factor = (len(new_covered - new_covered_protected) / (len(rule.covered_indices) - len(
-        protected_group))) / unprotected_coverage_threshold if unprotected_coverage_threshold > 0 else 1
+    protec_cvrg_factor = (len(new_covered_protec) / len(protected_group)) / \
+        protec_cvrg_th if protec_cvrg_th > 0 else 1
+    unprotec_cvrg_factor = \
+        (len(new_covered - new_covered_protec) / \
+          (len(rule.covered_indices - protected_group))) /\
+            unprotected_coverage_threshold if unprotected_coverage_threshold > 0 else 1
 
     # Use the minimum of the two coverage factors
-    coverage_factor = min(protected_coverage_factor,
-                          unprotected_coverage_factor)
+    coverage_factor = min(protec_cvrg_factor,
+                          unprotec_cvrg_factor)
 
     score = rule.utility * coverage_factor
 
-    logging.debug(f"Rule score: {score:.4f} (expected_utility: {expected_utility:.4f}, "
+    logging.debug(f"Rule score: {score:.4f} (expected_utility: {exp_util:.4f}, "
                   f"utility: {rule.utility:.4f}, coverage_factor: {coverage_factor:.4f}")
 
     return score
 
 
 
-def group_fairness(treatment, df_g, DAG, attrOrdinal, tgtO, protected_group, variant='SP'):
+def group_fairness(treatment, df_g, DAG, attrOrdinal, tgtO, idx_protec, variant='SP'):
     """
     Calculate the fairness score for a given treatment.
 
@@ -73,12 +74,12 @@ def group_fairness(treatment, df_g, DAG, attrOrdinal, tgtO, protected_group, var
     """
     cate_all = CATE(
         df_g, DAG, treatment, attrOrdinal, tgtO)
-    protected_df = df_g[df_g.index.isin(protected_group)]
-    unprotected_df = df_g[not df_g.index.isin(protected_group)]
+    df_protec = df_g.loc[df_g.index.intersection(idx_protec)]
+    df_unprotec = df_g.loc[df_g.index.difference(idx_protec)]
     cate_protected = CATE(
-        protected_df, DAG, treatment, attrOrdinal, tgtO)
+        df_protec, DAG, treatment, attrOrdinal, tgtO)
     cate_unprotected = CATE(
-        unprotected_df, DAG, treatment, attrOrdinal, tgtO)
+        df_unprotec, DAG, treatment, attrOrdinal, tgtO)
 
     logging.debug(
         f"CATE unprotected: {cate_unprotected:.4f}, CATE protected: {cate_protected:.4f}")

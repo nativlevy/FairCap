@@ -47,6 +47,7 @@ def getRandomTreatment(atts, df):
         ans[a] = val
     df['TempTreatment'] = df.apply(
         lambda row: addTempTreatment(row, ans), axis=1)
+    
     logging.info(
         f"TempTreatment value counts: {df['TempTreatment'].value_counts()}")
     valid = list(set(df['TempTreatment'].tolist()))
