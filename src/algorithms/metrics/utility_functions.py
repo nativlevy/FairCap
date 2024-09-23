@@ -95,10 +95,10 @@ def estimateATE(graph, df, T, O):
     """
     # Filter for required records
     df_filtered = df[(df[T] == 0) | (df[T] == 1)]
-    graph = graph.replace("\n", " ")
+    graph_ = graph.replace("\n", " ")
     model = CausalModel(
         data=df_filtered,
-        graph=graph,
+        graph=graph_,
         treatment=T,
         outcome=O)
 
@@ -196,7 +196,8 @@ def DAG_after_treatments(DAG, treats: Dict, tgtO:str):
     newDAG.add_nodes_from(treated_nodes)
 
     newDAG.add_edges_from(newOutEdges) # add new nodes
-    newDAG.add_edge('TempTreatment', tgtO)
+    if not newDAG.has_edge('TempTreatment', tgtO):
+        newDAG.add_edge('TempTreatment', tgtO)
     return newDAG
 
 

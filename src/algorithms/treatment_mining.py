@@ -4,13 +4,17 @@ from functools import partial
 from itertools import combinations
 import logging
 import multiprocessing
-from concurrent.futures import ThreadPoolExecutor  
+import pygraphviz as pgv
+from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import shared_memory
+import pickle
 import statistics
 import time
 from typing import Dict, List, Set, Tuple
 import os, sys
 from pathlib import Path
 import pandas as pd
+from pygraphviz import AGraph
 from fairness import group_fairness
 from copy import deepcopy, copy
 from helpers import uniqueVal
@@ -56,17 +60,23 @@ def getTreatmentForAllGroups(DAG, df, idx_protec: Set, groupPatterns, attrOrdina
         6.123 (seconds)
     """
     start_time = time.time()
-    
+
+    # pickle df for efficiency
+    pickled_df = pickle.dumps(df)
+    df_nbytes = len(pickled_df)
+    shm = shared_memory.SharedMemory(create=True, size=df_nbytes)
+    shm.buf[:df_nbytes] = pickled_df
+
     # Create a partial function with fixed arguments
-    partialFn = partial(getTreatmentForEachGroup, df=df, idx_protec=idx_protec, tgtO=tgtO, DAG=DAG, attrOrdinal=attrOrdinal, attrM=attrM, fair_constr=None, cvrg_constr=None)
+    partialFn = partial(getTreatmentForEachGroup, shm_name=shm.name, DAG_str=DAG.to_string(), idx_protec=idx_protec, tgtO=tgtO, attrOrdinal=attrOrdinal, attrM=attrM, fair_constr=None, cvrg_constr=None)
+
     # Use multiprocessing to process groups in parallel
+    multiprocessing.set_start_method('fork')
+    with multiprocessing.Pool(processes=os.cpu_count()-1) as pool:
+        groupTreatList = pool.map(partialFn, groupPatterns)
 
-    # multiprocessing.set_start_method('fork')
-    # with multiprocessing.Pool() as pool:
-    #     results = pool.map(partialFn, groupPatterns)
-
-    with ThreadPoolExecutor() as exec:
-        groupTreatList = exec.map(partialFn, groupPatterns)
+    # with ThreadPoolExecutor() as exec:
+    #     groupTreatList = exec.map(partialFn, groupPatterns)
 
 
     # Combine results into groups_dic
@@ -84,7 +94,7 @@ def getTreatmentForAllGroups(DAG, df, idx_protec: Set, groupPatterns, attrOrdina
     return groups_dic, elapsed_time
 
 
-def getTreatmentForEachGroup(group, df: pd.DataFrame, idx_protec: pd.Index, tgtO: str, DAG, attrOrdinal: Dict, attrM: List[str], fair_constr: Tuple[str, float] = None, cvrg_constr: Tuple[str, float] = None):
+def getTreatmentForEachGroup(group, shm_name: str, DAG_str: str, idx_protec: pd.Index, tgtO: str, attrOrdinal: Dict, attrM: List[str], fair_constr: Tuple[str, float] = None, cvrg_constr: Tuple[str, float] = None):
     
     """
     Process a single group pattern (Pg1 ^ Pg2 ^...) to find the best treatment.
@@ -103,7 +113,10 @@ def getTreatmentForEachGroup(group, df: pd.DataFrame, idx_protec: pd.Index, tgtO
     Returns:
         dict: Information about the best treatment for the group.
     """
-    DAG = DAG.copy()
+    shm = shared_memory.SharedMemory(name=shm_name)
+    df = pickle.loads(shm.buf)
+    shm.close()
+    DAG = pgv.AGraph(DAG_str, strict=True) 
     # Filtering tuples with grouping predicates
     mask = (df[group.keys()] == group.values()).all(axis=1)
     df_g = df.loc[mask]
