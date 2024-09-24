@@ -60,14 +60,12 @@ def run_single_local_exmpt(config):
     algo_name = config["_name"]
     Path(config["_output_path"]).mkdir(parents=True, exist_ok=True)
     # TODO hoist
-    if algo_name == 'greedy':
-        with cProfile.Profile() as pr:
+    with cProfile.Profile() as pr:
+        greedy.main(config)
+        pr.print_stats()
 
-            greedy.main(config)
-            pr.print_stats()
-
-    elif algo_name == 'causumx':
-        causumx.main(config)
+    # elif algo_name == 'causumx':
+    #     causumx.main(config)
 
     return 0
 

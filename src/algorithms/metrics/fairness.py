@@ -57,7 +57,7 @@ def score_rule(rule: Prescription, solution: List[Prescription], covered: Set[in
 
 
 
-def benefit(cate_all, cate_protec, cate_unprotec, fair_constr={'variant': 'SP'}):
+def benefit(cate_all, cate_protec, cate_unprotec, fair_constr=None):
     """
     Calculate the fairness score for a given treatment.
 
@@ -66,20 +66,26 @@ def benefit(cate_all, cate_protec, cate_unprotec, fair_constr={'variant': 'SP'})
     Returns:
         float: The calculated fairness score.
     """
-    if fair_constr == None:
-        fair_constr = {'variant': 'SP'}
+ 
         
-    if fair_constr['variant'] == 'SP':
-        if cate_protec - cate_unprotec >= -0.001:
+    if fair_constr == None or fair_constr['variant'] != 'group_bgl':
+        fair_constr = {
+            'variant': 'group_sp',
+            'threshold': 0.05,
+        } 
+    if fair_constr['variant'] == 'group_bgl': 
+        threshold = fair_constr['threshold']
+        if threshold >= cate_protec:
+            return cate_all / (threshold - cate_protec)
+        else:
+            return cate_all 
+    else: # treat as group SP
+        if cate_protec - cate_unprotec >= fair_constr['threshold']:
             return cate_all
         else:
             return cate_all / abs(cate_unprotec - cate_protec)
-    elif fair_constr['variant'] == 'BGL': 
-        tau = fair_constr['tau']
-        if tau >= cate_protec:
-            return cate_all / (tau - cate_protec)
-        else:
-            return cate_all 
+      
+
 
 # TODO overload for prescription type
 # def group_fairness(prescription: Prescription, df_g, DAG, attrOrdinal, tgtO, protected_group, variant='SP'):

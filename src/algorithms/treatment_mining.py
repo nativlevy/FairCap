@@ -25,7 +25,7 @@ from coverage import rule_coverage
 
 
 # TODO better function name
-def getTreatmentForAllGroups(DAG, df, idx_protec: Set, groupPatterns, attrOrdinal, tgtO, attrM, fair_constr: Tuple[str, float] = None, cvrg_constr: Tuple[str, float] = None):
+def getTreatmentForAllGroups(DAG, df, idx_protec: Set, groupPatterns, attrOrdinal, tgtO, attrM, fair_constr: Dict, cvrg_constr: Dict ):
     """
     Get treatments for all group using a greedy approach.
 
@@ -67,7 +67,7 @@ def getTreatmentForAllGroups(DAG, df, idx_protec: Set, groupPatterns, attrOrdina
     shm.buf[:df_nbytes] = pickled_df
 
     # Create a partial function with fixed arguments
-    partialFn = partial(getTreatmentForEachGroup, shm_name=shm.name, DAG_str=DAG.to_string(), idx_protec=idx_protec, tgtO=tgtO, attrOrdinal=attrOrdinal, attrM=attrM, fair_constr=None, cvrg_constr=None)
+    partialFn = partial(getTreatmentForEachGroup, shm_name=shm.name, DAG_str=DAG.to_string(), idx_protec=idx_protec, tgtO=tgtO, attrOrdinal=attrOrdinal, attrM=attrM, fair_constr=fair_constr, cvrg_constr=cvrg_constr)
 
     # Use multiprocessing to process groups in parallel
     multiprocessing.set_start_method('fork')
@@ -89,7 +89,7 @@ def getTreatmentForAllGroups(DAG, df, idx_protec: Set, groupPatterns, attrOrdina
     return groups_dic, elapsed_time
 
 
-def getTreatmentForEachGroup(group, shm_name: str, DAG_str: str, idx_protec: pd.Index, tgtO: str, attrOrdinal: Dict, attrM: List[str], fair_constr: Tuple[str, float] = None, cvrg_constr: Tuple[str, float] = None):
+def getTreatmentForEachGroup(group, shm_name: str, DAG_str: str, idx_protec: pd.Index, tgtO: str, attrOrdinal: Dict, attrM: List[str], fair_constr: Dict, cvrg_constr: Dict):
     
     """
     Process a single group pattern (Pg1 ^ Pg2 ^...) to find the best treatment.

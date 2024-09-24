@@ -1,0 +1,49 @@
+## Local
+{
+    "_is_remote": false,
+    "_k": a list of 2 integers corrsponding to k upperbound and lower bound,
+    "_models": a list of model dictionary 
+}
+
+## Model
+{
+    "_name": string
+    "_start": path of program
+    "_coverage_constraint": coverage dictionary
+    "_fairness_constraint": fairness dictionary
+}
+
+## coverage constraint
+e.g. 1
+{
+    "variant": "group", 
+    "threshold": 0.5, 
+    "threshold_p": 0.5"
+}
+e.g. 2
+{
+    "variant": "rule", 
+    "threshold": 0.5, 
+    "threshold_p": 0.5"
+}
+## fairness constraint
+e.g. 1
+{
+    "variant": "group_sp", 
+    "threshold": 0.05
+}
+e.g. 2
+{
+    "variant": "individual_sp", 
+    "threshold": 0.05
+}
+e.g. 3
+{
+    "variant": "group_bgl", 
+    "threshold": 0.05
+}
+e.g. 4
+{
+    "variant": "individual_bgl", 
+    "threshold": 0.05
+}
