@@ -15,7 +15,7 @@ import os, sys
 from pathlib import Path
 import pandas as pd
 from pygraphviz import AGraph
-from fairness import group_fairness
+from fairness import benefit
 from copy import deepcopy, copy
 from helpers import uniqueVal
 from utility_functions import CATE, isTreatable
@@ -126,50 +126,64 @@ def getTreatmentForEachGroup(group, shm_name: str, DAG_str: str, idx_protec: pd.
     max_score = float('-inf')
     best_treatment = None
     best_cate = 0
-    best_protected_cate = 0
 
     for level in range(1, 6):  # Up to 5 treatment levels
         logging.info(f'Processing treatment level {level}')
+        treatments = []
         if level == 1:
             treatments = getRootTreatments(
                 attrM, df_g, attrOrdinal)
-            treatmentCATEs = [CATE(
-                df_g, DAG, t, attrOrdinal, tgtO) for t in treatments]
-            positive_treatments = [treatments[i] for i in range(len(treatments)) if treatmentCATEs[i] > 0]
             
         else:
             treatments = getLeafTreatments(
-                positive_treatments, df_g, attrOrdinal, True, False, DAG, tgtO)
+                treatments, df_g, attrOrdinal, True, False, DAG, tgtO)
+            
+        # Filter 1: weed out treats w/negative CATE
+        treatmentCATEs = [CATE(
+                df_g, DAG, t, attrOrdinal, tgtO) for t in treatments]
+        treatments = [treatments[i] for i in range(len(treatments)) if treatmentCATEs[i] > 0]
 
         logging.info(
             f'Number of treatments at level {level}: {len(treatments)}')
         logging.debug(
             f'Sample of treatments: {treatments[:5] if len(treatments) > 5 else treatments}')
-
+        # Filter 2: impose fairness constraints
+        # Note: individual fairness constraint implies which treatment is to 
+        # exclude whereas group fairness constraint implies which treatment is
+        # preferred 
+        
         for treatment in treatments:
-            fairness_score = group_fairness(
-                treatment, df_g, DAG, attrOrdinal, tgtO, idx_protec)
-            cate = CATE(
-                df_g, DAG, treatment, attrOrdinal, tgtO)
-            protec_df = df_g.loc[df_g.index.intersection(idx_protec)]
-            protec_cate = CATE(
-                protec_df, DAG, treatment, attrOrdinal, tgtO)
+            cate_all = CATE(
+            df_g, DAG, treatment, attrOrdinal, tgtO)
+            cate_protec = 0
+            cate_unprotec = 0
+            df_protec = df_g.loc[df_g.index.intersection(idx_protec)]
+            df_unprotec = df_g.loc[df_g.index.difference(idx_protec)]
+            
+            if len(df_protec) != 0:
+                cate_protec = CATE(df_protec, DAG, treatment, attrOrdinal, tgtO)
+            if len(df_unprotec) != 0:
+                cate_unprotec = CATE(df_unprotec, DAG, treatment, attrOrdinal, tgtO)
 
+            logging.debug(f"CATE unprotected: {cate_unprotec:.4f}, CATE protected: {cate_protec:.4f}")
+            treat_benefit = benefit(cate_all, cate_protec, cate_unprotec, fair_constr)
+      
             # Combine fairness score, CATE, and protected CATE with more emphasis on protected CATE
-            score = fairness_score * cate * (protec_cate ** 2)
-
+            #TODO figure out what this means
+            # score = fairness_score * cate * (protec_cate ** 2)
+            score = treat_benefit 
             logging.debug(
-                f'Treatment: {treatment}, Fairness Score: {fairness_score:.4f}, CATE: {cate:.4f}, Protected CATE: {protec_cate:.4f}, Combined Score: {score:.4f}')
+                f'Treatment: {treatment}, Fairness Score: {treat_benefit:.4f}, CATE: {cate_all:.4f}, Combined Score: {score:.4f}')
 
-            if score > max_score and cate > 0 and protec_cate > 0:
+            if score > max_score and cate_all > 0 and cate_protec > 0:
                 max_score = score
                 best_treatment = treatment
-                best_cate = cate
-                best_protected_cate = protec_cate
+                best_cate = cate_all
+                best_cate_protec = cate_protec
                 logging.info(
                     f'New best treatment found at level {level}: {best_treatment}')
                 logging.info(
-                    f'New best score: {max_score:.4f}, CATE: {best_cate:.4f}, Protected CATE: {best_protected_cate:.4f}')
+                    f'New best score: {max_score:.4f}, CATE: {best_cate:.4f}')
 
         if level > 1 and max_score <= prev_max_score:
             logging.info(
@@ -180,7 +194,7 @@ def getTreatmentForEachGroup(group, shm_name: str, DAG_str: str, idx_protec: pd.
 
     logging.info(f'Finished processing group: {group}')
     logging.info(
-        f'Final best treatment: {best_treatment}, CATE: {best_cate:.4f}, Protected CATE: {best_protected_cate:.4f}, Combined Score: {max_score:.4f}')
+        f'Final best treatment: {best_treatment}, CATE: {best_cate:.4f}, Protected CATE: {best_cate_protec:.4f}, Combined Score: {max_score:.4f}')
     logging.info('#######################################')
     # Return protected CATE instead of overall CATE
     # TODO investigate the effect of removing 'covered': covered
@@ -192,10 +206,7 @@ def getTreatmentForEachGroup(group, shm_name: str, DAG_str: str, idx_protec: pd.
         'treatment': best_treatment,
         'utility': best_cate
     }
-def check(start):
-    end = time.time()
-    print (end - start)
-    return end
+
 
 
 def getRootTreatments(attrM: List[Dict], df: pd.DataFrame, attrOrdinal) -> List[Dict]:
@@ -214,7 +225,6 @@ def getRootTreatments(attrM: List[Dict], df: pd.DataFrame, attrOrdinal) -> List[
     uniqueVals = uniqueVal(df, attrM)
     # All possible values of all mutable attribute
     count = 0
-    start = time.time()
 
     # for all possible value of each attribute 
     for attr in uniqueVals:
@@ -336,94 +346,3 @@ def getTreatmentsInBounds(treatments_cate, bound, df_g, DAG, ordinal_atts, tgtO)
                     ans.append(ast.literal_eval(k))
     logging.debug(f"getTreatments output: ans={ans}")
     return ans
-
-
-# TODO insert programmable constraints here
-def getHighTreatments(df_g, group, tgtO, DAG, ordinal_atts, mutable_attr, idx_protec, fair_constraints=[], cover_constraints=[]):
-    """
-    Find the best treatment for a given group that maximizes fairness and effectiveness.
-
-    This function iteratively explores treatments of increasing complexity (up to 5 levels)
-    to find the one that yields the highest combined score of fairness and CATE.
-
-    Args:
-        df_g (pd.DataFrame): The dataframe for the specific group.
-        group (dict): The group definition.
-        target (str): The target variable name.
-        DAG (list): The causal graph represented as a list of edges.
-        ordinal_atts (dict): Dictionary of ordinal attributes and their ordered values.
-        mutable_attr_org (list): Original list of actionable/mutable attributes.
-        protected_group (set): Set of indices representing the protected group.
-
-    Returns:
-        tuple: A tuple containing:
-            - best_treatment (dict): The treatment with the highest combined score.
-            - best_cate (float): The CATE for the best treatment.
-
-    The function logs detailed information about its progress and decisions.
-    """
-    logging.info(f'Starting getHighTreatments for group: {group}')
-    logging.debug(f'Actionable attributes: {mutable_attr}')
-
-    max_score = float('-inf')
-    best_treatment = None
-    best_cate = 0
-    best_protected_cate = 0
-
-    for level in range(1, 6):  # Up to 5 treatment levels
-        logging.info(f'Processing treatment level {level}')
-
-        if level == 1:
-            treatments = getRootTreatments(
-                mutable_attr, df_g, ordinal_atts)
-            treatmentCATEs = [CATE(
-                df_g, DAG, t, ordinal_atts, tgtO) for t in treatments]
-            positive_treatments = [treatments[i] for i in range(treatments) if treatmentCATEs[i] > 0]
-            
-        else:
-            treatments = getLeafTreatments(
-                positive_treatments, df_g, ordinal_atts, True, False, DAG, tgtO)
-
-        logging.info(
-            f'Number of treatments at level {level}: {len(treatments)}')
-        logging.debug(
-            f'Sample of treatments: {treatments[:5] if len(treatments) > 5 else treatments}')
-
-        for treatment in treatments:
-            fairness_score = group_fairness(
-                treatment, df_g, DAG, ordinal_atts, tgtO, idx_protec)
-            cate = CATE(
-                df_g, DAG, treatment, ordinal_atts, tgtO)
-            protec_df = df_g[df_g.index.isin(idx_protec)]
-            protected_cate = CATE(
-                protec_df, DAG, treatment, ordinal_atts, tgtO)
-
-            # Combine fairness score, CATE, and protected CATE with more emphasis on protected CATE
-            score = fairness_score * cate * (protected_cate ** 2)
-
-            logging.debug(
-                f'Treatment: {treatment}, Fairness Score: {fairness_score:.4f}, CATE: {cate:.4f}, Protected CATE: {protected_cate:.4f}, Combined Score: {score:.4f}')
-
-            if score > max_score and cate > 0 and protected_cate > 0:
-                max_score = score
-                best_treatment = treatment
-                best_cate = cate
-                best_protected_cate = protected_cate
-                logging.info(
-                    f'New best treatment found at level {level}: {best_treatment}')
-                logging.info(
-                    f'New best score: {max_score:.4f}, CATE: {best_cate:.4f}, Protected CATE: {best_protected_cate:.4f}')
-
-        if level > 1 and max_score <= prev_max_score:
-            logging.info(
-                f'Stopping at level {level} as no better treatment found')
-            break
-
-        prev_max_score = max_score
-
-    logging.info(f'Finished processing group: {group}')
-    logging.info(
-        f'Final best treatment: {best_treatment}, CATE: {best_cate:.4f}, Protected CATE: {best_protected_cate:.4f}, Combined Score: {max_score:.4f}')
-    logging.info('#######################################')
-    # Return protected CATE instead of overall CATE
-    return (best_treatment, best_protected_cate)

@@ -57,38 +57,29 @@ def score_rule(rule: Prescription, solution: List[Prescription], covered: Set[in
 
 
 
-def group_fairness(treatment, df_g, DAG, attrOrdinal, tgtO, idx_protec, variant='SP'):
+def benefit(cate_all, cate_protec, cate_unprotec, fair_constr={'variant': 'SP'}):
     """
     Calculate the fairness score for a given treatment.
 
     Args:
-        treatment (dict): The treatment to evaluate.
-        df_g (pd.DataFrame): The group-specific dataframe.
-        DAG (list): The causal graph represented as a list of edges.
-        ordinal_atts (dict): Dictionary of ordinal attributes and their ordered values.
-        target (str): The target variable name.
-        protected_group (set): Set of indices representing the protected group.
 
     Returns:
         float: The calculated fairness score.
     """
-    cate_all = CATE(
-        df_g, DAG, treatment, attrOrdinal, tgtO)
-    df_protec = df_g.loc[df_g.index.intersection(idx_protec)]
-    df_unprotec = df_g.loc[df_g.index.difference(idx_protec)]
-    cate_protected = CATE(
-        df_protec, DAG, treatment, attrOrdinal, tgtO)
-    cate_unprotected = CATE(
-        df_unprotec, DAG, treatment, attrOrdinal, tgtO)
-
-    logging.debug(
-        f"CATE unprotected: {cate_unprotected:.4f}, CATE protected: {cate_protected:.4f}")
-    # TODO document this
-    # was cate_all / (cate_all - cat_prot)
-    # now cate_all / (cate_unprot - cate_prot)
-    if cate_protected - cate_unprotected >= -0.001:
-        return cate_all
-    return cate_all / abs(cate_unprotected - cate_protected)
+    if fair_constr == None:
+        fair_constr = {'variant': 'SP'}
+        
+    if fair_constr['variant'] == 'SP':
+        if cate_protec - cate_unprotec >= -0.001:
+            return cate_all
+        else:
+            return cate_all / abs(cate_unprotec - cate_protec)
+    elif fair_constr['variant'] == 'BGL': 
+        tau = fair_constr['tau']
+        if tau >= cate_protec:
+            return cate_all / (tau - cate_protec)
+        else:
+            return cate_all 
 
 # TODO overload for prescription type
 # def group_fairness(prescription: Prescription, df_g, DAG, attrOrdinal, tgtO, protected_group, variant='SP'):
