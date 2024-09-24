@@ -75,8 +75,7 @@ def getTreatmentForAllGroups(DAG, df, idx_protec: Set, groupPatterns, attrOrdina
     with multiprocessing.Pool(processes=os.cpu_count()-1) as pool:
         groupTreatList = pool.map(partialFn, groupPatterns)
 
-    # with ThreadPoolExecutor() as exec:
-    #     groupTreatList = exec.map(partialFn, groupPatterns)
+    shm.close()
 
 
     # Combine results into groups_dic
@@ -121,11 +120,13 @@ def getTreatmentForEachGroup(group, shm_name: str, DAG_str: str, idx_protec: pd.
     # drop grouping attributes
     df_g = df_g.drop(group.keys(), axis=1)
     logging.info(f'Starting getHighTreatments for group: {group}')
-    logging.debug(f'Actionable attributes: {attrM}')
-
+    logging.debug(f'Actionable attributes: {attrM}') 
+    
     max_score = float('-inf')
+
     best_treatment = None
     best_cate = 0
+    best_cate_protec = 0
 
     for level in range(1, 6):  # Up to 5 treatment levels
         logging.info(f'Processing treatment level {level}')
@@ -225,20 +226,16 @@ def getRootTreatments(attrM: List[Dict], df: pd.DataFrame, attrOrdinal) -> List[
     uniqueVals = uniqueVal(df, attrM)
     # All possible values of all mutable attribute
     count = 0
-
     # for all possible value of each attribute 
     for attr in uniqueVals:
         for val in uniqueVals[attr]:
-            treatment = {attr: val}
-            # TODO: experimental
-            # df['TempTreatment'] = df.apply(
-            #     lambda row: isTreatable(row, treatment, attrOrdinal), axis=1)
-            df.loc[:,'TempTreatment'] = df[attr] != val
-            valid = list(set(df['TempTreatment'].tolist()))
+            treatment = {attr: val} 
+            treatable = df[attr] != val
+            valid = list(set(treatable.tolist()))
             # Skip treatment where either all or none will be treated
             if len(valid) < 2:
                 continue
-            size = len(df[df['TempTreatment'] == 1])
+            size = len(df[treatable == 1])
             count = count+1
             # treatment group is too big or too small
             if size > 0.9*len(df) or size < 0.1*len(df):
@@ -295,11 +292,8 @@ def getCombTreatments(df_g, positives, treatments, attrOrdinal):
         multi_treat.update(comb[0])
         if len(multi_treat.keys()) == 2:
             # TODO: experimental
-  
-            # df_g['TempTreatment'] = df_g.apply(
-            #     lambda row: isTreatable(row, t, ordinal_atts), axis=1)
             df_g_copy = df_g.copy()
-            df_g_copy.loc[:,'TempTreatment'] = df_g_copy[treatments.keys()] != treatments.values() 
+            df_g_copy['TempTreatment'] = df_g_copy[treatments.keys()] != treatments.values() 
 
             valid = list(set(df_g_copy['TempTreatment'].tolist()))
             # no tuples in treatment group

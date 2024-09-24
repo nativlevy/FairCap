@@ -34,7 +34,7 @@ treatment effects (CATE), and solving optimization problems related to set cover
 
 THRESHOLD = 0.1
 
-def CATE(df: pd.DataFrame, DAG, treatments, attrOrdinal, tgtO):
+def CATE(df_g: pd.DataFrame, DAG, treatments, attrOrdinal, tgtO):
     """
     Calculate the Conditional Average Treatment Effect (CATE) for a given treatment.
 
@@ -48,7 +48,6 @@ def CATE(df: pd.DataFrame, DAG, treatments, attrOrdinal, tgtO):
     Returns:
         float: The calculated CATE value, or 0 if the calculation fails or is insignificant.
     """
-    
     ## --------------------- DAG Modification begins --------------------------
     # Add a new column named TempTreatment 
     # TODO make this looks more readable
@@ -56,11 +55,8 @@ def CATE(df: pd.DataFrame, DAG, treatments, attrOrdinal, tgtO):
     # TODO question: 1 if (all attributes != treatval) or
     # TODO question: 1 if (exists attributes != treatval) 
 
-    # df_g['TempTreatment'] = df_g.apply(
-    #     lambda row: isTreatable(row, treatment, attrOrdinal), axis=1
-    # Read more: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy 
-    df_g = df.copy()
-    df_g['TempTreatment'] = 1 * (df_g[treatments.keys()] != treatments.values())
+    df_g = df_g.copy()
+    df_g['TempTreatment'] = df_g[treatments.keys()] != treatments.values() 
     DAG_ = DAG_after_treatments(DAG, treatments, tgtO)
     causal_graph = DAG_.to_string()
     # remove graph name as dowhy doesn't support named graph string
@@ -74,9 +70,8 @@ def CATE(df: pd.DataFrame, DAG, treatments, attrOrdinal, tgtO):
         logging.debug(e)
         ATE = 0
         p_value = 0
-
+    
     logging.debug(f"Treatment: {treatments}, ATE: {ATE}, p_value: {p_value}")
-
     return ATE
 
 

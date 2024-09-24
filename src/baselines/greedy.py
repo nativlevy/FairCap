@@ -201,8 +201,9 @@ def getKRules(k_rules: int, group_treatment_dict, df: pd.DataFrame, idx_protec: 
             'coverage': len(rule.covered_indices),
             'protected_coverage': len(rule.covered_protected_indices)
         } for rule in rules], f, indent=4)
-
-    selected_rules = greedy_fair_prescription_rules(rules, idx_protec, unprotected_coverage_threshold,protected_coverage_threshold, k_rules, total_individuals, fairness_threshold)
+    # TODO Implement LP
+    # selected_rules = greedy_fair_prescription_rules(rules, idx_protec, unprotected_coverage_threshold,protected_coverage_threshold, k_rules, total_individuals, fairness_threshold)
+    selected_rules  = rules
 
     # Calculate metrics
     exp_util = expected_utility(selected_rules)
@@ -269,6 +270,7 @@ def main(config):
     # ------------------------- PARSING CONFIG ENDS  -------------------------
     # ------------------------ DATASET SETUP BEGINS -------------------------- 
     df, DAG =load_data(os.path.join(DATA_PATH, dataset_path, datatable_path), os.path.join(DATA_PATH, dataset_path, dag_path))
+    df['TempTreatment'] = 0
 
     # TODO Formalize DAG
     # V, E = DAG_.nodes(), list(map(lambda a: "%s -> %s" % a, DAG_.edges()))
@@ -306,7 +308,6 @@ def main(config):
     elapsed_time = time.time() - start_time 
     logging.warning(f"Elapsed time for treatment mining: {elapsed_time} seconds")
     # Create Rule objects
-    rules = [Prescription(g, t, df)]
     # Run experiments for different values of k = the number of rules
     results = []
     for k in range(MIX_K, MAX_K + 1):
