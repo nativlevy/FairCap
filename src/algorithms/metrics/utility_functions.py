@@ -56,7 +56,7 @@ def CATE(df_g: pd.DataFrame, DAG, treatments, attrOrdinal, tgtO):
     # TODO question: 1 if (exists attributes != treatval) 
 
     df_g = df_g.copy()
-    df_g['TempTreatment'] = df_g[treatments.keys()] != treatments.values() 
+    df_g['TempTreatment'] = (df_g[treatments.keys()] != treatments.values()).all(axis=1)
     DAG_ = DAG_after_treatments(DAG, treatments, tgtO)
     causal_graph = DAG_.to_string()
     # remove graph name as dowhy doesn't support named graph string

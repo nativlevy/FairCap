@@ -1,5 +1,4 @@
 import ast
-import copy
 from functools import partial
 from itertools import combinations
 import logging
@@ -127,10 +126,10 @@ def getTreatmentForEachGroup(group, shm_name: str, DAG_str: str, idx_protec: pd.
     best_treatment = None
     best_cate = 0
     best_cate_protec = 0
+    treatments = []
 
     for level in range(1, 6):  # Up to 5 treatment levels
         logging.info(f'Processing treatment level {level}')
-        treatments = []
         if level == 1:
             treatments = getRootTreatments(
                 attrM, df_g, attrOrdinal)
@@ -265,7 +264,7 @@ def getLeafTreatments(treatments: list[Dict], df_g: pd.DataFrame, ordinal_atts: 
     """
     logging.debug(
         f"getLeafTreatments input: treatments_cate={treatments}, high={high}, low={low}")
-    treatments = []
+  
 
     positives = getTreatmentsInBounds(
         treatments, 'positive', df_g, dag, ordinal_atts, tgtO)
@@ -288,12 +287,12 @@ def getCombTreatments(df_g, positives, treatments, attrOrdinal):
         list: Updated list of treatments including the new combined treatments.
     """
     for comb in combinations(positives, 2):
-        multi_treat = copy.deepcopy(comb[1])
+        multi_treat = deepcopy(comb[1])
         multi_treat.update(comb[0])
         if len(multi_treat.keys()) == 2:
             # TODO: experimental
             df_g_copy = df_g.copy()
-            df_g_copy['TempTreatment'] = df_g_copy[treatments.keys()] != treatments.values() 
+            df_g_copy['TempTreatment'] = (df_g_copy[multi_treat.keys()] != multi_treat.values()).all(axis=1)
 
             valid = list(set(df_g_copy['TempTreatment'].tolist()))
             # no tuples in treatment group
