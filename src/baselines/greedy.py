@@ -140,7 +140,7 @@ def greedy_fair_prescription_rules(rules: List[Prescription], protected_group: S
     return solution
 
 
-def getKRules(k_rules: int, group_treatment_dict, df: pd.DataFrame, idx_protec: Set[int], unprotected_coverage_threshold: float, protected_coverage_threshold: float, fairness_threshold: float, config: Dict) -> Dict:
+def getKRules(k_rules: int, group_treatment_dict, df: pd.DataFrame, idx_protec: Set[int], unprotected_coverage_threshold: float, protected_coverage_threshold: float, fairness_threshold: float, config: Dict, exec_time12) -> Dict:
     """
     Run an experiment for a specific number of rules (k).
 
@@ -214,7 +214,7 @@ def getKRules(k_rules: int, group_treatment_dict, df: pd.DataFrame, idx_protec: 
     protec_exp_util = expected_utility(
         [Prescription(r.condition, r.treatment, r.covered_protected_indices, r.covered_protected_indices, r.protected_utility, r.protected_utility) for r in selected_rules])
 
-    execution_time = time.time() - start_time 
+    exec_time3 = time.time() - start_time 
     logging.info(f"Experiment results for k={k_rules}:")
     logging.info(f"Expected utility: {exp_util:.4f}")
     logging.info(
@@ -225,7 +225,7 @@ def getKRules(k_rules: int, group_treatment_dict, df: pd.DataFrame, idx_protec: 
 
     return {
         'k': k_rules,
-        'execution_time': execution_time,
+        'execution_time': exec_time12 + exec_time3,
         'selected_rules': selected_rules,
         'expected_utility': exp_util,
         'protected_expected_utility': protec_exp_util,
@@ -296,8 +296,8 @@ def main(config):
     
     grouping_patterns = getConstrGroups(df, attrI, min_sup=APRIORI, constr=cvrg_constr)
 
-    elapsed_time = time.time() - start_time 
-    logging.warning(f"Elapsed time for group mining: {elapsed_time} seconds")
+    exec_time1 = time.time() - start_time 
+    logging.warning(f"Elapsed time for group mining: {exec_time1} seconds")
 
 
     start_time = time.time()
@@ -305,14 +305,14 @@ def main(config):
     # Get treatments for each grouping pattern
     logging.info("Step2: Getting candidate treatments for each grouping pattern")
     group_treatment_dict, _ = getTreatmentForAllGroups(DAG, df, idx_protec, grouping_patterns, {}, tgt, attrM)
-    elapsed_time = time.time() - start_time 
-    logging.warning(f"Elapsed time for treatment mining: {elapsed_time} seconds")
+    exec_time2 = time.time() - start_time 
+    logging.warning(f"Elapsed time for treatment mining: {exec_time2} seconds")
     # Create Rule objects
     # Run experiments for different values of k = the number of rules
     results = []
     for k in range(MIX_K, MAX_K + 1):
         # TODO make signature shorter 
-        result = getKRules(k, group_treatment_dict, df, idx_protec, unprotected_coverage_threshold, protected_coverage_threshold, fairness_threshold, config)
+        result = getKRules(k, group_treatment_dict, df, idx_protec, unprotected_coverage_threshold, protected_coverage_threshold, fairness_threshold, config, exec_time1 + exec_time2)
         results.append(result)
         logging.info(f"Completed experiment for k={k}")
 
