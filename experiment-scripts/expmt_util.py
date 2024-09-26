@@ -60,9 +60,7 @@ def run_single_local_exmpt(config):
     algo_name = config["_name"]
     Path(config["_output_path"]).mkdir(parents=True, exist_ok=True)
     # TODO hoist
-    with cProfile.Profile() as pr:
-        greedy.main(config)
-        pr.print_stats()
+    greedy.main(config)
 
     # elif algo_name == 'causumx':
     #     causumx.main(config)

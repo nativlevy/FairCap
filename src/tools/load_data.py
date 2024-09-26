@@ -26,6 +26,7 @@ def load_data(datatable_path: str, dag_path:str) -> Tuple[pd.DataFrame, Any]:
     df = df.drop(['Unnamed: 0'], axis=1, errors='ignore')
     logging.info(f"Loaded {len(df)} rows and {len(df.columns)} columns")
     DAG = pgv.AGraph(dag_path, directed=True)
-    return df, DAG
+    DAG_str = DAG.to_string().replace(DAG.get_name(), " ")
+    return df, DAG_str
 
 

@@ -1,11 +1,13 @@
 import ast
+import cProfile
 from functools import partial
 from itertools import combinations
 import logging
+import math
 import multiprocessing
 import pygraphviz as pgv
 from concurrent.futures import ThreadPoolExecutor
-from multiprocessing import shared_memory
+from multiprocessing import Manager, shared_memory
 import pickle
 import statistics
 import time
@@ -14,18 +16,40 @@ import os, sys
 from pathlib import Path
 import pandas as pd
 from pygraphviz import AGraph
+from sympy import Q
 from fairness import benefit
 from copy import deepcopy, copy
 from helpers import uniqueVal
-from utility_functions import CATE, isTreatable
+from utility_functions import CATE
 
 sys.path.append(os.path.join(Path(__file__).parent, 'metrics'))
 sys.path.append(os.path.join(Path(__file__).parent))
 from coverage import rule_coverage
 
+class LatticeVisitor:
+    def __init__(self, df_g, attrM, DAG_str, idx_protec, fair_constr):
+        self.df_g = df_g
+        self.attrM = attrM
+        self.DAG_str = DAG_str
+        self.idx_protec = idx_protec
+        self.threshold = fair_constr['threshold']
+        self.variant = fair_constr['variant']
+        self.best_treatment = None
+        self.best_cate = 0
+        self.best_cate_protec = 0
+    def visit_layer(nodes, level):
+        """
+     
+        """
+        pass
 
-# TODO better function name
-def getTreatmentForAllGroups(DAG, df, idx_protec: Set, groupPatterns, attrOrdinal, tgtO, attrM, fair_constr: Dict, cvrg_constr: Dict ):
+
+
+
+
+
+    
+def getTreatmentForAllGroups(DAG_str, df, idx_protec, groupPatterns, attrOrdinal, tgtO, attrM, fair_constr: Dict):
     """
     Get treatments for all group using a greedy approach.
 
@@ -37,8 +61,6 @@ def getTreatmentForAllGroups(DAG, df, idx_protec: Set, groupPatterns, attrOrdina
         attrOrdinal (dict): Dictionary of ordinal attributes and their ordered values.
         tgtO (str): The target variable name.
         attrM (list): List of mutable/actionable attributes.
-        fair_constr(Tuple[str, float]): fairness constraint
-        cvrg_constr(Tuple[str, float]): coverage constraint
 
     Returns:
         tuple: A dictionary of group treatments and the elapsed time.
@@ -59,24 +81,22 @@ def getTreatmentForAllGroups(DAG, df, idx_protec: Set, groupPatterns, attrOrdina
         6.123 (seconds)
     """
     start_time = time.time()
-
-    # pickle df for efficiency
-    pickled_df = pickle.dumps(df)
-    df_nbytes = len(pickled_df)
-    shm = shared_memory.SharedMemory(create=True, size=df_nbytes)
-    shm.buf[:df_nbytes] = pickled_df
-
-    # Create a partial function with fixed arguments
-    partialFn = partial(getTreatmentForEachGroup, shm_name=shm.name, DAG_str=DAG.to_string(), idx_protec=idx_protec, tgtO=tgtO, attrOrdinal=attrOrdinal, attrM=attrM, fair_constr=fair_constr, cvrg_constr=cvrg_constr)
-
+    # Shared data for all forked process
+    mgr = Manager()
+    ns = mgr.Namespace()
+    ns.df = df
+    ns.DAG_str = DAG_str
+    ns.idx_protec = idx_protec
+    ns.attrOrdinal = attrOrdinal
+    ns.tgtO = tgtO
+    ns.attrM = attrM
+    ns.fair_constr = fair_constr
+    
     # Use multiprocessing to process groups in parallel
-    multiprocessing.set_start_method('fork')
+    multiprocessing.set_start_method('fork', force="True")
     with multiprocessing.Pool(processes=os.cpu_count()-1) as pool:
-        groupTreatList = pool.map(partialFn, groupPatterns)
-
-    shm.close()
-
-
+        groupTreatList = pool.map(partial(getTreatmentForEachGroup, ns), \
+                                  groupPatterns)
     # Combine results into groups_dic
     groups_dic = {str(group): result for group, result in zip(groupPatterns, groupTreatList)}
 
@@ -89,30 +109,39 @@ def getTreatmentForAllGroups(DAG, df, idx_protec: Set, groupPatterns, attrOrdina
     return groups_dic, elapsed_time
 
 
-def getTreatmentForEachGroup(group, shm_name: str, DAG_str: str, idx_protec: pd.Index, tgtO: str, attrOrdinal: Dict, attrM: List[str], fair_constr: Dict, cvrg_constr: Dict):
+def getTreatmentForEachGroup(ns, group):
     
     """
     Process a single group pattern (Pg1 ^ Pg2 ^...) to find the best treatment.
-
-    Args:
-        group (dict): The group pattern.
-        df (pd.DataFrame): The input dataframe.
-        tgtO (str): The target variable name.
-        DAG: The causal graph represented as a list of edges.
-        attrOrdinal (dict): Dictionary of ordinal attributes and their ordered values.
-        attrM (list): List of actionable attributes.
-        idx_protec (): Set of indices representing the protected group.
-        fair_constr(Tuple[str, float]): fairness constraint
-        cvrg_constr(Tuple[str, float]): coverage constraint
+    Step 1. get all single treament
+    Step 2. For level 1-5
+        Get all possible combinations of treatment at the level,
+        Traverse through every combinations,
+        Discard the ones that:
+            1. Has less treatments than the level number
+            2. Doesn't yield positive CATE
+            3. Doesn't meet individual fairness (if any)
+        while traversing, mark the treatment with highest benefit
+        # TODO try retain top 1 in each metric
+        # Best cate
+        # Best protec cate
+        # Best unprotec cate 
+        return a List of nodes
+    Args: 
 
     Returns:
         dict: Information about the best treatment for the group.
     """
-    shm = shared_memory.SharedMemory(name=shm_name)
-    df = pickle.loads(shm.buf)
-    shm.close()
-    DAG = pgv.AGraph(DAG_str, strict=True) 
-    # Filtering tuples with grouping predicates
+    
+    df = ns.df.copy()
+    DAG_str = ns.DAG_str
+    idx_protec = ns.idx_protec
+    attrM = ns.attrM
+    tgtO = ns.tgtO
+    attrOrdinal = ns.attrOrdinal
+    fair_constr = ns.fair_constr
+ 
+    # Use grouping predicates to get subpopulation
     mask = (df[group.keys()] == group.values()).all(axis=1)
     df_g = df.loc[mask]
     covered = set(mask.tolist())
@@ -121,80 +150,83 @@ def getTreatmentForEachGroup(group, shm_name: str, DAG_str: str, idx_protec: pd.
     logging.info(f'Starting getHighTreatments for group: {group}')
     logging.debug(f'Actionable attributes: {attrM}') 
     
-    max_score = float('-inf')
-
+    best_benefit = float('-inf')
     best_treatment = None
     best_cate = 0
     best_cate_protec = 0
-    treatments = []
-
+    
+    treatments = getSingleTreatments(attrM, df_g, attrOrdinal)
     for level in range(1, 6):  # Up to 5 treatment levels
-        logging.info(f'Processing treatment level {level}')
-        if level == 1:
-            treatments = getRootTreatments(
-                attrM, df_g, attrOrdinal)
-            
-        else:
-            treatments = getLeafTreatments(
-                treatments, df_g, attrOrdinal, True, False, DAG, tgtO)
-            
-        # Filter 1: weed out treats w/negative CATE
-        treatmentCATEs = [CATE(
-                df_g, DAG, t, attrOrdinal, tgtO) for t in treatments]
-        treatments = [treatments[i] for i in range(len(treatments)) if treatmentCATEs[i] > 0]
+        start = time.time()
+        # get all combinations
+        allCombination = list(combinations(treatments, 2))
+        # get map each combination into a merged treatment
+        candidateTreatments = list(map(lambda c: {**c[0], **c[1]}, allCombination))
+        # Filter 1: discard combined treatments that treat too few or too many
+        candidateTreatments = filter(partial(isValidTreatment, df_g=df_g, level=level), candidateTreatments)        
+        logging.debug(f"Combine treatments={candidateTreatments} at level={level}")
 
-        logging.info(
-            f'Number of treatments at level {level}: {len(treatments)}')
-        logging.debug(
-            f'Sample of treatments: {treatments[:5] if len(treatments) > 5 else treatments}')
-        # Filter 2: impose fairness constraints
-        # Note: individual fairness constraint implies which treatment is to 
-        # exclude whereas group fairness constraint implies which treatment is
-        # preferred 
-        
+        selectedTreatments = []
         for treatment in treatments:
-            cate_all = CATE(
-            df_g, DAG, treatment, attrOrdinal, tgtO)
+            # Filter 2: discard treatments w/negative CATE
+            with cProfile.Profile() as pr:
+
+                cate_all = CATE(
+            df_g, DAG_str, treatment, attrOrdinal, tgtO)
+                pr.print_stats()
+            if cate_all <= 0:
+                continue
+            
+            # Filter 3: impose fairness constraints
             cate_protec = 0
             cate_unprotec = 0
-            df_protec = df_g.loc[df_g.index.intersection(idx_protec)]
-            df_unprotec = df_g.loc[df_g.index.difference(idx_protec)]
-            
-            if len(df_protec) != 0:
-                cate_protec = CATE(df_protec, DAG, treatment, attrOrdinal, tgtO)
-            if len(df_unprotec) != 0:
-                cate_unprotec = CATE(df_unprotec, DAG, treatment, attrOrdinal, tgtO)
+            if fair_constr != None:
+                threshold = fair_constr['threshold'] 
+                df_protec = df_g.loc[df_g.index.intersection(idx_protec)]
+                cate_protec = CATE(df_protec, DAG_str, treatment, attrOrdinal, tgtO)
+                # For SP constraints, discard treatments if the absolute
+                #   difference between protected and unprotected CATE 
+                #   exceeds some threshold epsilon
+                if fair_constr['variant'] == 'individual_sp':
+                    if math.abs(cate_protec-cate_unprotec) > threshold:
+                        continue  
 
-            logging.debug(f"CATE unprotected: {cate_unprotec:.4f}, CATE protected: {cate_protec:.4f}")
-            treat_benefit = benefit(cate_all, cate_protec, cate_unprotec, fair_constr)
-      
-            # Combine fairness score, CATE, and protected CATE with more emphasis on protected CATE
-            #TODO figure out what this means
-            # score = fairness_score * cate * (protec_cate ** 2)
-            score = treat_benefit 
-            logging.debug(
-                f'Treatment: {treatment}, Fairness Score: {treat_benefit:.4f}, CATE: {cate_all:.4f}, Combined Score: {score:.4f}')
+                # For BGL constraints, we discard treatments if 
+                #   protected CATE does not meet some threshold epsilon 
+                if fair_constr['variant'] == 'individual_bgl':
+                    if cate_protec < threshold:
+                        continue
+            # Passing all requirements, save the node in the lattice
+            selectedTreatments.append(treatment)
 
-            if score > max_score and cate_all > 0 and cate_protec > 0:
-                max_score = score
+            # We only need to compute unprotected CATE is we have Group SP fairness constraint
+            if fair_constr['variant'] == 'group_sp':
+                df_unprotec = df_g.loc[df_g.index.difference(idx_protec)]
+                cate_unprotec = CATE(df_unprotec, DAG_str, treatment, attrOrdinal, tgtO)
+            # Finally, we compute the benefit.
+            candidate_benefit = benefit(cate_all, cate_protec, cate_unprotec, fair_constr)
+            if candidate_benefit > best_benefit and cate_all > 0 and cate_protec > 0:
+                best_benefit = candidate_benefit
                 best_treatment = treatment
                 best_cate = cate_all
                 best_cate_protec = cate_protec
                 logging.info(
                     f'New best treatment found at level {level}: {best_treatment}')
                 logging.info(
-                    f'New best score: {max_score:.4f}, CATE: {best_cate:.4f}')
+                    f'New best score: {best_benefit:.4f}, CATE: {best_cate:.4f}')
 
-        if level > 1 and max_score <= prev_max_score:
+        print('level '+level + ": ", (time.time() - start))
+
+        if level > 1 and best_benefit <= prev_best_benefit:
             logging.info(
                 f'Stopping at level {level} as no better treatment found')
             break
 
-        prev_max_score = max_score
+        prev_best_benefit = best_benefit
 
     logging.info(f'Finished processing group: {group}')
     logging.info(
-        f'Final best treatment: {best_treatment}, CATE: {best_cate:.4f}, Protected CATE: {best_cate_protec:.4f}, Combined Score: {max_score:.4f}')
+        f'Final best treatment: {best_treatment}, CATE: {best_cate:.4f}, Protected CATE: {best_cate_protec:.4f}, Combined Score: {best_benefit:.4f}')
     logging.info('#######################################')
     # Return protected CATE instead of overall CATE
     # TODO investigate the effect of removing 'covered': covered
@@ -207,9 +239,30 @@ def getTreatmentForEachGroup(group, shm_name: str, DAG_str: str, idx_protec: pd.
         'utility': best_cate
     }
 
+def isValidTreatment(df_g, newTreatment, level):
+    """ 
+        A helper function for filtering new combine treatment
+        Ensure that:
+        1. Number of treatment predicates > level
+        2. |Treatment group| < 90% of the subpopulation
+        3. |Treatment group| > 10% of the subpopulation
+    """
+    if len(newTreatment.keys()) >= level:
+        treatable = (df_g[newTreatment.keys()] != newTreatment.values()).all(axis=1)
+        valid = list(set(treatable.tolist()))
+        # no tuples in treatment group
+        if len(valid) < 2:
+            return False
+        size = len(df_g[treatable == 1])
+        # treatment group is too big or too small
+        if size > 0.9 * len(df_g) or size < 0.1 * len(df_g):
+            return False
+        return True
+
+  
 
 
-def getRootTreatments(attrM: List[Dict], df: pd.DataFrame, attrOrdinal) -> List[Dict]:
+def getSingleTreatments(attrM: List[Dict], df: pd.DataFrame, attrOrdinal=None) -> List[Dict]:
     """
     Generate level 1 treatments (single attribute-value pairs).
 
@@ -246,10 +299,10 @@ def getRootTreatments(attrM: List[Dict], df: pd.DataFrame, attrOrdinal) -> List[
 
 
 
-def getLeafTreatments(treatments: list[Dict], df_g: pd.DataFrame, ordinal_atts: Dict, high:bool, low: bool, dag, tgtO: str):
+def getLeafTreatments(treatments: list[Dict], df_g: pd.DataFrame, ordinal_atts: Dict, level, high:bool, low: bool):
     """
     Generate next level treatments based on the current treatments and their effects.
-
+    N.b. No guarantees on positive CATE or constraints
     Args:
         treatments_cate (dict): Dictionary of treatments and their effects.
         df_g (pd.DataFrame): The input dataframe.
@@ -264,47 +317,38 @@ def getLeafTreatments(treatments: list[Dict], df_g: pd.DataFrame, ordinal_atts: 
     """
     logging.debug(
         f"getLeafTreatments input: treatments_cate={treatments}, high={high}, low={low}")
-  
 
-    positives = getTreatmentsInBounds(
-        treatments, 'positive', df_g, dag, ordinal_atts, tgtO)
-    treatments = getCombTreatments(df_g, positives, treatments, ordinal_atts)
-    logging.debug(f"getLeafTreatments output: treatments={treatments}")
-    return treatments
-
-
-def getCombTreatments(df_g, positives, treatments, attrOrdinal):
-    """
-    Generate combined treatments from positive treatments.
-
-    Args:
-        df_g (pd.DataFrame): The input dataframe.
-        positives (list): List of positive treatments.
-        treatments (list): List to store the combined treatments.
-        attrOrdinal (dict): Dictionary of ordinal attributes and their ordered values.
-
-    Returns:
-        list: Updated list of treatments including the new combined treatments.
-    """
-    for comb in combinations(positives, 2):
-        multi_treat = deepcopy(comb[1])
-        multi_treat.update(comb[0])
-        if len(multi_treat.keys()) == 2:
-            # TODO: experimental
-            df_g_copy = df_g.copy()
-            df_g_copy['TempTreatment'] = (df_g_copy[multi_treat.keys()] != multi_treat.values()).all(axis=1)
-
-            valid = list(set(df_g_copy['TempTreatment'].tolist()))
+    def isValidTreatment(newTreatment):
+        """ 
+            A helper function for filtering new combine treatment
+            Ensure that:
+            1. Number of treatment predicates > level
+            2. |Treatment group| < 90% of the subpopulation
+            3. |Treatment group| > 10% of the subpopulation
+        """
+        if len(newTreatment.keys()) >= level:
+            treatable = (df_g[newTreatment.keys()] != newTreatment.values()).all(axis=1)
+            valid = list(set(treatable.tolist()))
             # no tuples in treatment group
             if len(valid) < 2:
-                continue
-            size = len(df_g_copy[df_g_copy['TempTreatment'] == 1])
+                return False
+            size = len(df_g[treatable == 1])
             # treatment group is too big or too small
-            if size > 0.9 * len(df_g_copy) or size < 0.1 * len(df_g_copy):
-                continue
-            treatments.append(multi_treat)
+            if size > 0.9 * len(df_g) or size < 0.1 * len(df_g):
+                return False
+            return True
+        
+    # get all combinations
+    allCombination = list(combinations(treatments, 2))
+    # get map each combination into a merged treatment
+    combinedTreatments = list(map(lambda t1, t2: {**t1, **t2}, allCombination))
+    # filter out invalid combined treatments
+    combinedTreatments = filter(isValidTreatment, combinedTreatments)        
 
-    return treatments
+    logging.debug(f"getLeafTreatments output: treatments={combinedTreatments}")
+    return combinedTreatments
+
+
 
 
 
@@ -339,3 +383,4 @@ def getTreatmentsInBounds(treatments_cate, bound, df_g, DAG, ordinal_atts, tgtO)
                     ans.append(ast.literal_eval(k))
     logging.debug(f"getTreatments output: ans={ans}")
     return ans
+

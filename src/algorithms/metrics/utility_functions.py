@@ -19,6 +19,7 @@ from itertools import chain, combinations
 import random
 from dowhy import CausalModel
 import warnings
+import pygraphviz as pgv
 
 from prescription import Prescription
 warnings.filterwarnings('ignore')
@@ -33,14 +34,13 @@ treatment effects (CATE), and solving optimization problems related to set cover
 """
 
 THRESHOLD = 0.1
-
-def CATE(df_g: pd.DataFrame, DAG, treatments, attrOrdinal, tgtO):
+   
+        
+def CATE(df_g, DAG_str, treatments, attrOrdinal, tgtO):
     """
     Calculate the Conditional Average Treatment Effect (CATE) for a given treatment.
 
     Args:
-        df_g (pd.DataFrame): The input dataframe.
-        DAG (list): The causal graph represented as a list of edges.
         treatment (dict): The treatment to evaluate.
         attrOrdinal (dict): Dictionary of ordinal attributes and their ordered values.
         tgtO (str): The target variable name.
@@ -48,65 +48,46 @@ def CATE(df_g: pd.DataFrame, DAG, treatments, attrOrdinal, tgtO):
     Returns:
         float: The calculated CATE value, or 0 if the calculation fails or is insignificant.
     """
-    ## --------------------- DAG Modification begins --------------------------
+    ## ------------------- DAG Modification begins -------------------------
     # Add a new column named TempTreatment 
     # TODO make this looks more readable
     # TODO experimental: 
     # TODO question: 1 if (all attributes != treatval) or
     # TODO question: 1 if (exists attributes != treatval) 
-
-    df_g = df_g.copy()
+    if len(df_g) == 0:
+        return 0
     df_g['TempTreatment'] = (df_g[treatments.keys()] != treatments.values()).all(axis=1)
-    DAG_ = DAG_after_treatments(DAG, treatments, tgtO)
-    causal_graph = DAG_.to_string()
-    # remove graph name as dowhy doesn't support named graph string
-    causal_graph = causal_graph.replace(DAG_.get_name(), "") 
-    ## --------------------- DAG Modification ends ---------------------------
-    try:   
-        ATE, p_value = estimateATE(graph=causal_graph, df=df_g, T ='TempTreatment', O=tgtO)
-        if p_value > THRESHOLD:
-            ATE = 0
-    except Exception as e:
-        logging.debug(e)
-        ATE = 0
-        p_value = 0
+    DAG_str = DAG_after_treatments(DAG_str, treatments, tgtO)
     
-    logging.debug(f"Treatment: {treatments}, ATE: {ATE}, p_value: {p_value}")
-    return ATE
-
-
-def estimateATE(graph, df, T, O):
-    """
-    Estimate the Average Treatment Effect (ATE) using the CausalModel from DoWhy.
-
-    Args:
-        causal_graph (str): The causal graph in DOT format.
-        df (pd.DataFrame): The input dataframe.
-        T (str): The name of the treatment variable.
-        O (str): The name of the outcome variable.
-
-    Returns:
-        tuple: A tuple containing the estimated ATE value and its p-value.
-    """
-    # Filter for required records
-    df_filtered = df[(df[T] == 0) | (df[T] == 1)]
-    graph_ = graph.replace("\n", " ")
+    # remove graph name as dowhy doesn't support named graph string
+    ## --------------------- DAG Modification ends -------------------------
+    df_filtered = df_g[(df_g['TempTreatment'] == 0)|(df_g['TempTreatment'] == 1)]
     model = CausalModel(
         data=df_filtered,
-        graph=graph_,
-        treatment=T,
-        outcome=O)
+        graph=DAG_str,
+        treatment='TempTreatment',
+        outcome=tgtO)
 
-    estimands = model.identify_effect(proceed_when_unidentifiable = False)
+    estimands = model.identify_effect()
     with MutePrint():
-        causal_estimate_reg = model.estimate_effect(estimands,
+        causal_estm_reg = model.estimate_effect(estimands,
                                                     method_name="backdoor.linear_regression",
                                                     target_units="ate",
                                                     effect_modifiers=[],
                                                     test_significance=True)
-    if causal_estimate_reg.value==0:
-        return 0, 0
-    return causal_estimate_reg.value, causal_estimate_reg.test_stat_significance()['p_value']
+    ATE = causal_estm_reg.value
+    if ATE ==0:
+        return 0
+    p_value = causal_estm_reg.test_stat_significance()['p_value'] 
+    if p_value > THRESHOLD:
+        logging.debug(f"Treatment: {treatments}, ATE: {ATE}, p_value: {p_value}") 
+        return 0
+    
+    else:
+        logging.debug(f"Treatment: {treatments}, ATE: {ATE}, p_value: {p_value}")
+        return ATE
+
+
 
 
 def expected_utility(rules: List[Prescription]) -> float:
@@ -166,7 +147,7 @@ def isTreatable(record, treatments, attrOrdinal):
 
 
 # TODO: make this more readable
-def DAG_after_treatments(DAG, treats: Dict, tgtO:str):
+def DAG_after_treatments(DAG_str, treats: Dict, tgtO:str):
     """
     Modify the causal graph (DAG) to incorporate the treatment variable.
 
@@ -177,7 +158,7 @@ def DAG_after_treatments(DAG, treats: Dict, tgtO:str):
     Returns:
         list: The modified causal graph with the treatment variable incorporated.
     """
-    newDAG = DAG.copy()
+    DAG = pgv.AGraph(DAG_str)
  
     # For all attributes treat, 
     # replace edge `treat -> dep`  to `temp -> dep`
@@ -187,12 +168,14 @@ def DAG_after_treatments(DAG, treats: Dict, tgtO:str):
     outEdges = DAG.out_edges(treats.keys())
     newOutEdges = set(map(lambda tup: ('TempTreatment', tup[1]), outEdges))
     # remove edges associated with treat nodes
-    newDAG.remove_nodes_from(treated_nodes) 
-    newDAG.add_nodes_from(treated_nodes)
+    DAG.remove_nodes_from(treated_nodes) 
+    DAG.add_nodes_from(treated_nodes)
 
-    newDAG.add_edges_from(newOutEdges) # add new nodes
-    if not newDAG.has_edge('TempTreatment', tgtO):
-        newDAG.add_edge('TempTreatment', tgtO)
-    return newDAG
+    DAG.add_edges_from(newOutEdges) # add new nodes
+    if not DAG.has_edge('TempTreatment', tgtO):
+        DAG.add_edge('TempTreatment', tgtO)
+    DAG_str = DAG.to_string()
+    DAG_str = DAG_str.replace("\n", " ")
+    return DAG_str
 
 

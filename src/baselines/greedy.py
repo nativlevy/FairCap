@@ -262,7 +262,7 @@ def main(config):
     attrM = config.get('_mutable_attributes')
     attrP = config.get('_protected_attributes')
     valP = config.get('_protected_values')
-    tgt =  config.get('_target_outcome')
+    tgtO =  config.get('_target_outcome')
     cvrg_constr = config.get('_coverage_constraint', None)
     fair_constr = config.get('_fairness_constraint', None)
 
@@ -270,7 +270,7 @@ def main(config):
 
     # ------------------------- PARSING CONFIG ENDS  -------------------------
     # ------------------------ DATASET SETUP BEGINS -------------------------- 
-    df, DAG =load_data(os.path.join(DATA_PATH, dataset_path, datatable_path), os.path.join(DATA_PATH, dataset_path, dag_path))
+    df, DAG_str =load_data(os.path.join(DATA_PATH, dataset_path, datatable_path), os.path.join(DATA_PATH, dataset_path, dag_path))
     df['TempTreatment'] = 0
     # Define protected group
     protected_group = set(
@@ -286,7 +286,7 @@ def main(config):
     start_time = time.time()
     # Step 1. Grouping pattern mining
     
-    grouping_patterns = getConstrGroups(df, attrI, min_sup=APRIORI, constr=cvrg_constr)
+    groupPatterns = getConstrGroups(df, attrI, min_sup=APRIORI, constr=cvrg_constr)
 
     exec_time1 = time.time() - start_time 
     logging.warning(f"Elapsed time for group mining: {exec_time1} seconds")
@@ -296,7 +296,7 @@ def main(config):
     # Step 2. Treatment mining using greedy
     # Get treatments for each grouping pattern
     logging.info("Step2: Getting candidate treatments for each grouping pattern")
-    group_treatment_dict, _ = getTreatmentForAllGroups(DAG, df, idx_protec, grouping_patterns, {}, tgt, attrM, fair_constr=fair_constr, cvrg_constr=cvrg_constr)
+    group_treatment_dict, _ = getTreatmentForAllGroups(DAG_str, df, idx_protec, groupPatterns, {}, tgtO, attrM, fair_constr=fair_constr)
     exec_time2 = time.time() - start_time 
     logging.warning(f"Elapsed time for treatment mining: {exec_time2} seconds")
     # Create Rule objects

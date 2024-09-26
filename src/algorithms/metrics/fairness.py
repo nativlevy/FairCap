@@ -67,24 +67,23 @@ def benefit(cate_all, cate_protec, cate_unprotec, fair_constr=None):
         float: The calculated fairness score.
     """
  
-        
-    if fair_constr == None or fair_constr['variant'] != 'group_bgl':
-        fair_constr = {
-            'variant': 'group_sp',
-            'threshold': 0.05,
-        } 
+    # TODO confirm: if no fair_constr, do we perform greedy on CATE? 
+    # TODO If it's individual SP, do we use group SP for greedy anyway?
+    if fair_constr == None:
+        return cate_all 
     if fair_constr['variant'] == 'group_bgl': 
         threshold = fair_constr['threshold']
         if threshold >= cate_protec:
             return cate_all / (threshold - cate_protec)
         else:
             return cate_all 
-    else: # treat as group SP
+    elif fair_constr['variant'] != 'group_sp':
         if cate_protec - cate_unprotec >= fair_constr['threshold']:
             return cate_all
         else:
             return cate_all / abs(cate_unprotec - cate_protec)
-      
+    else:
+        return cate_all
 
 
 # TODO overload for prescription type
