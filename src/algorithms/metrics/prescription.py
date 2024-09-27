@@ -98,7 +98,7 @@ class PrescriptionSet:
             rules_covering_t = [r for r in self.getRules() if t in r.covered_idx_protected]
             min_utility = min(r.utility for r in rules_covering_t)
             total_utility += min_utility
-        return total_utility, total_protected_utility 
+        return total_utility/len(self.covered_idx), total_protected_utility/len(self.covered_idx_protected)
     def getExpectedUtility(self):
         return self.expected_utility
     def getProtectedExpectedUtility(self):

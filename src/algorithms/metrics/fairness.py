@@ -82,6 +82,7 @@ def benefit(cate_all, cate_protec, cate_unprotec, fair_constr=None):
         else:
             return cate_all / abs(cate_unprotec - cate_protec)
     else:
+        # TODO confirm benefit definition under other constaints
         return cate_all
 
 

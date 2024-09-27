@@ -279,6 +279,7 @@ def main(config):
     # Step 1. Grouping pattern mining
     
     groupPatterns = getConstrGroups(df, attrI, min_sup=APRIORI, constr=cvrg_constr)
+    # TODO Testing
     groupPatterns = [groupPatterns[i] for i in range(5)] 
 
     exec_time1 = time.time() - start_time 
@@ -303,8 +304,8 @@ def main(config):
 
     # Write results to CSV
     with open(os.path.join(config['_output_path'], 'experiment_results_greedy.csv'), 'w+', newline='') as csvfile:
-        fieldnames = ['k', 'execution_time', 'expected_utility', 'protected_expected_utility', 'coverage',
-                      'protected_coverage', 'selected_rules']
+        fieldnames = ['k', 'execution_time', 'expected_utility', 'protected_expected_utility', 'coverage_rate',
+                      'protected_coverage_rate', 'selected_rules']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         k = MIN_K - 1
         writer.writeheader()
@@ -322,8 +323,8 @@ def main(config):
                 'treatment': rx.getTreatment(),
                 'utility': rx.getUtility(),
                 'protected_utility': rx.getProtectedUtility(),
-                'coverage': rx.getCoverage(),
-                'protected_coverage': rx.getProtectedCoverage()
+                'coverage': rx.getCoverage()/len(df),
+                'protected_coverage': rx.getProtectedCoverage()/len(idx_protec)
             } for rx in prescriptions])
 
             writer.writerow({
@@ -331,8 +332,8 @@ def main(config):
                 'execution_time': ttl_exec_time,
                 'expected_utility': rxSet.getExpectedUtility(),    
                 'protected_expected_utility': rxSet.getProtectedExpectedUtility(),
-                'coverage': rxSet.getCoverage(),
-                'protected_coverage': rxSet.getProtectedCoverage(),
+                'coverage_rate': rxSet.getCoverage() / len(df),
+                'protected_coverage_rate': rxSet.getProtectedCoverage() / len(idx_protec),
                 'selected_rules': selected_rules_json
             })
 

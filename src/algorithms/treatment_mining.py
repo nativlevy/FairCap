@@ -181,8 +181,6 @@ def getTreatmentForEachGroup(ns, group):
             cate_unprotec = 0
             if fair_constr != None:
                 threshold = fair_constr['threshold'] 
-                df_protec = df_g.loc[df_g.index.intersection(idx_protec)]
-                cate_protec = CATE(df_protec, DAG_str, treatment, attrOrdinal, tgtO)
                 # For SP constraints, discard treatments if the absolute
                 #   difference between protected and unprotected CATE 
                 #   exceeds some threshold epsilon
@@ -197,13 +195,10 @@ def getTreatmentForEachGroup(ns, group):
                         continue
             # Passing all requirements, save the node in the lattice
             selectedTreatments.append(treatment)
-
-            # We only need to compute unprotected CATE is we have Group SP fairness constraint
-            if fair_constr != None and fair_constr['variant'] == 'group_sp':
-                df_unprotec = df_g.loc[df_g.index.difference(idx_protec)]
-                cate_unprotec = CATE(df_unprotec, DAG_str, treatment, attrOrdinal, tgtO)
-            # Finally, we compute the benefit.
+            df_protec = df_g.loc[df_g.index.intersection(idx_protec)]
+            cate_protec = CATE(df_protec, DAG_str, treatment, attrOrdinal, tgtO)
             candidate_benefit = benefit(cate_all, cate_protec, cate_unprotec, fair_constr)
+                
             if candidate_benefit > best_benefit and cate_all > 0 and cate_protec >= 0:
                 best_benefit = candidate_benefit
                 best_treatment = treatment
