@@ -5,6 +5,7 @@ from itertools import combinations
 import logging
 import math
 import multiprocessing
+import timeit
 import pygraphviz as pgv
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Manager, shared_memory
@@ -98,15 +99,15 @@ def getTreatmentForAllGroups(DAG_str, df, idx_protec, groupPatterns, attrOrdinal
         groupTreatList = pool.map(partial(getTreatmentForEachGroup, ns), \
                                   groupPatterns)
     # Combine results into groups_dic
-    groups_dic = {str(group): result for group, result in zip(groupPatterns, groupTreatList)}
+    group_treat_dic = {str(group): result for group, result in zip(groupPatterns, groupTreatList)}
 
     elapsed_time = time.time() - start_time
     # Log summary statistics for utilities
-    utilities = [result['utility'] for result in groups_dic.values()]
+    utilities = [result['utility'] for result in group_treat_dic.values()]
     logging.info(f"Utility statistics: min={min(utilities):.4f}, max={max(utilities):.4f}, "
                  f"mean={statistics.mean(utilities):.4f}, median={statistics.median(utilities):.4f}")
 
-    return groups_dic, elapsed_time
+    return group_treat_dic, elapsed_time
 
 
 def getTreatmentForEachGroup(ns, group):
@@ -169,11 +170,9 @@ def getTreatmentForEachGroup(ns, group):
         selectedTreatments = []
         for treatment in treatments:
             # Filter 2: discard treatments w/negative CATE
-            with cProfile.Profile() as pr:
-
-                cate_all = CATE(
-            df_g, DAG_str, treatment, attrOrdinal, tgtO)
-                pr.print_stats()
+ 
+            cate_all = CATE(
+            df_g, DAG_str, treatment, attrOrdinal, tgtO) 
             if cate_all <= 0:
                 continue
             
@@ -200,7 +199,7 @@ def getTreatmentForEachGroup(ns, group):
             selectedTreatments.append(treatment)
 
             # We only need to compute unprotected CATE is we have Group SP fairness constraint
-            if fair_constr['variant'] == 'group_sp':
+            if fair_constr != None and fair_constr['variant'] == 'group_sp':
                 df_unprotec = df_g.loc[df_g.index.difference(idx_protec)]
                 cate_unprotec = CATE(df_unprotec, DAG_str, treatment, attrOrdinal, tgtO)
             # Finally, we compute the benefit.
@@ -215,8 +214,6 @@ def getTreatmentForEachGroup(ns, group):
                 logging.info(
                     f'New best score: {best_benefit:.4f}, CATE: {best_cate:.4f}')
 
-        print('level '+level + ": ", (time.time() - start))
-
         if level > 1 and best_benefit <= prev_best_benefit:
             logging.info(
                 f'Stopping at level {level} as no better treatment found')
@@ -228,15 +225,12 @@ def getTreatmentForEachGroup(ns, group):
     logging.info(
         f'Final best treatment: {best_treatment}, CATE: {best_cate:.4f}, Protected CATE: {best_cate_protec:.4f}, Combined Score: {best_benefit:.4f}')
     logging.info('#######################################')
-    # Return protected CATE instead of overall CATE
-    # TODO investigate the effect of removing 'covered': covered
-    covered_indices = set(df_g.index)
+    covered_idx = set(df_g.index)
     return {
-        'group_size': len(df_g),
-        'covered_indices': covered_indices,
-        'covered': covered,
+        'covered_idx': covered_idx,
         'treatment': best_treatment,
-        'utility': best_cate
+        'utility': best_cate,
+        'protected_utility': best_cate_protec
     }
 
 def isValidTreatment(df_g, newTreatment, level):

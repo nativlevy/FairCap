@@ -10,7 +10,7 @@ from prescription import Prescription
 def group_coverage(rules: List[Prescription]) -> int:
     covered = set()
     for p in rules: 
-        covered.update(p.covered_indices)
+        covered.update(p.covered_idx)
     return len(covered)
 
 def protected_group_coverage(rules: List[Prescription]) -> int:
@@ -33,7 +33,7 @@ def protected_group_coverage(df: pd.DataFrame, groups: List[Dict], protected_ind
     return len(covered)  
 
 def rule_coverage(rule: Prescription) -> int:
-    return len(rule.covered_indices)
+    return len(rule.covered_idx)
 
 # Grouping only TODO: confirm with Brit
 def rule_coverage(df: pd.DataFrame, rule: Dict) -> int:

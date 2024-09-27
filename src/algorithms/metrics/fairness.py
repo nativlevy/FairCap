@@ -2,11 +2,11 @@ import logging
 from typing import List, Set
 from prescription import Prescription
 
-from utility_functions import CATE, expected_utility
+from utility_functions import CATE, expected_utilities
 
 
 def score_rule(rule: Prescription, solution: List[Prescription], covered: Set[int], covered_protected: Set[int],
-               protected_group: Set[int],
+               idx_protec,
                unprotected_coverage_threshold: float, protec_cvrg_th: float) -> float:
     """
     Calculate the score for a given rule based on various factors.
@@ -23,25 +23,25 @@ def score_rule(rule: Prescription, solution: List[Prescription], covered: Set[in
     Returns:
         float: The calculated score for the rule.
     """
-    new_covered = rule.covered_indices - covered
+    new_covered = rule.covered_idx - covered
     new_covered_protec = rule.covered_protected_indices - covered_protected
     logging.debug(
         f"Scoring rule: new_covered={len(new_covered)}, new_covered_protected={len(new_covered_protec)}")
 
-    if len(rule.covered_indices) == 0:
+    if len(rule.covered_idx) == 0:
         logging.warning("Rule covers no individuals, returning -inf score")
         return float('-inf')
 
     # Calculate expected utility with the new rule added to the solution
     new_solution = solution + [rule]
-    exp_util = expected_utility(new_solution)
+    exp_util, protec_exp_util = expected_utilities(new_solution, idx_protec)
 
     # Calculate coverage factors for both protected and unprotected groups
-    protec_cvrg_factor = (len(new_covered_protec) / len(protected_group)) / \
+    protec_cvrg_factor = (len(new_covered_protec) / len(idx_protec)) / \
         protec_cvrg_th if protec_cvrg_th > 0 else 1
     unprotec_cvrg_factor = \
         (len(new_covered - new_covered_protec) / \
-          (len(rule.covered_indices - protected_group))) /\
+          (len(rule.covered_idx - idx_protec))) /\
             unprotected_coverage_threshold if unprotected_coverage_threshold > 0 else 1
 
     # Use the minimum of the two coverage factors
@@ -50,7 +50,7 @@ def score_rule(rule: Prescription, solution: List[Prescription], covered: Set[in
 
     score = rule.utility * coverage_factor
 
-    logging.debug(f"Rule score: {score:.4f} (expected_utility: {exp_util:.4f}, "
+    logging.debug(f"Rule score: {score:.4f} (expected utility: {exp_util:.4f}, expected protected utility: {protec_exp_util:.4f}, "
                   f"utility: {rule.utility:.4f}, coverage_factor: {coverage_factor:.4f}")
 
     return score

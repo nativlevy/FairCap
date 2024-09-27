@@ -18,7 +18,7 @@ sys.path.append(os.path.join(SRC_PATH, 'algorithms'))
 sys.path.append(os.path.join(SRC_PATH, 'algorithms', 'metrics'))
 from group_mining import getConstrGroups, getGroups
 from treatment_mining import getTreatmentForAllGroups
-from utility_functions import expected_utility
+from utility_functions import expected_utilities
 from fairness import score_rule
 
 from load_data import load_data
@@ -89,7 +89,7 @@ def greedy_fair_prescription_rules(rules: List[Prescription], protected_group: S
             break
 
         solution.append(best_rule)
-        covered.update(best_rule.covered_indices)
+        covered.update(best_rule.covered_idx)
         covered_protected.update(best_rule.covered_protected_indices)
         total_utility += best_rule.utility
         protected_utility += best_rule.protected_utility
@@ -122,7 +122,7 @@ def greedy_fair_prescription_rules(rules: List[Prescription], protected_group: S
             break
 
         solution.append(best_rule)
-        covered.update(best_rule.covered_indices)
+        covered.update(best_rule.covered_idx)
         covered_protected.update(best_rule.covered_protected_indices)
         total_utility += best_rule.utility
         protected_utility += best_rule.protected_utility
@@ -160,22 +160,24 @@ def getKRules(k_rules: int, group_treatment_dict, df: pd.DataFrame, idx_protec: 
         Dict: A dictionary containing the results of the experiment.
     """
     start_time = time.time()
-    rules = []
-    for group, data in group_treatment_dict.items():
+    rules: List[Prescription] = []
+    for group, treat_data in group_treatment_dict.items():
         condition = eval(group)
-        treatment = data['treatment']
-        covered_indices = data['covered_indices']
-        covered_protected_indices = covered_indices.intersection(
-            idx_protec)
-        utility = data['utility']
+        treatment = treat_data['treatment']
+        covered_idx = treat_data['covered_idx']
+        covered_idx_protec = covered_idx.intersection(idx_protec)
+        utility = treat_data['utility']
 
         # Calculate protected_utility based on the proportion of protected individuals covered
-        protected_proportion = len(covered_protected_indices) / \
-            len(covered_indices) if len(covered_indices) > 0 else 0
-        protec_utility = utility * protected_proportion
+        # TODO confirm
+        # protected_proportion = len(covered_idx_protec) / \
+        #     len(covered_idx) if len(covered_idx) > 0 else 0
+        # protec_utility = utility * protected_proportion
+        protected_utility = treat_data['protected_utility']
+ 
 
-        rules.append(Prescription(condition, treatment, covered_indices,
-                     covered_protected_indices, utility, protec_utility))
+        rules.append(Prescription(condition, treatment, covered_idx,
+                     covered_idx_protec, utility, protected_utility))
 
     logging.info(f"Created {len(rules)} Rule objects")
 
@@ -198,21 +200,19 @@ def getKRules(k_rules: int, group_treatment_dict, df: pd.DataFrame, idx_protec: 
             'treatment': rule.treatment,
             'utility': rule.utility,
             'protected_utility': rule.protected_utility,
-            'coverage': len(rule.covered_indices),
-            'protected_coverage': len(rule.covered_protected_indices)
+            'coverage': len(rule.covered_idx),
+            'protected_coverage': len(rule.covered_idx_protected)
         } for rule in rules], f, indent=4)
     # TODO Implement LP
     # selected_rules = greedy_fair_prescription_rules(rules, idx_protec, unprotected_coverage_threshold,protected_coverage_threshold, k_rules, total_individuals, fairness_threshold)
     selected_rules  = rules
 
     # Calculate metrics
-    exp_util = expected_utility(selected_rules)
+    exp_util, protec_exp_util = expected_utilities(selected_rules, idx_protec)
     total_coverage = set().union(
-        *[rule.covered_indices for rule in selected_rules])
+        *[rule.covered_idx for rule in selected_rules])
     total_protected_coverage = set().union(
         *[rule.covered_protected_indices for rule in selected_rules])
-    protec_exp_util = expected_utility(
-        [Prescription(r.condition, r.treatment, r.covered_protected_indices, r.covered_protected_indices, r.protected_utility, r.protected_utility) for r in selected_rules])
 
     exec_time3 = time.time() - start_time 
     logging.info(f"Experiment results for k={k_rules}:")
@@ -287,6 +287,7 @@ def main(config):
     # Step 1. Grouping pattern mining
     
     groupPatterns = getConstrGroups(df, attrI, min_sup=APRIORI, constr=cvrg_constr)
+    groupPatterns = [groupPatterns[i] for i in range(5)] 
 
     exec_time1 = time.time() - start_time 
     logging.warning(f"Elapsed time for group mining: {exec_time1} seconds")
@@ -322,7 +323,7 @@ def main(config):
                 'treatment': rule.treatment,
                 'utility': rule.utility,
                 'protected_utility': rule.protected_utility,
-                'coverage': len(rule.covered_indices),
+                'coverage': len(rule.covered_idx),
                 'protected_coverage': len(rule.covered_protected_indices)
             } for rule in result['selected_rules']])
 
