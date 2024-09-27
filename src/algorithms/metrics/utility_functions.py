@@ -90,40 +90,6 @@ def CATE(df_g, DAG_str, treatments, attrOrdinal, tgtO):
 
 
 
-def expected_utilities(rules: List[Prescription], idx_protec) -> float:
-    """
-    Calculate the expected utility of a set of rules.
-
-    Args:
-        rules (List[Rule]): List of rules to calculate the expected utility for.
-
-    Returns:
-        float: The expected utility and expected protected utility.
-    """
-    # TODO double check old implementation
-    cvrg = set()
-    cvrg_protected = set(idx_protec)
-    for rule in rules:
-        cvrg.update(rule.covered_idx)
-
-    if not cvrg:
-        return 0.0, 0.0
-
-    cvrg_protected.update(cvrg)
-    total_utility = 0.0
-    total_protected_utility = 0.0
-    for t in cvrg:
-        rules_covering_t = [r for r in rules if t in r.covered_idx]
-        min_utility = min(r.utility for r in rules_covering_t)
-        total_utility += min_utility
-    if not cvrg_protected:
-        return total_utility / len(cvrg), 0.0
-    for t in cvrg_protected:
-        rules_covering_t = [r for r in rules if t in r.covered_idx]
-        min_utility = min(r.utility for r in rules_covering_t)
-        total_utility += min_utility
-  
-    return total_utility, total_protected_utility 
 
 
 def isTreatable(record, treatments, attrOrdinal):

@@ -21,6 +21,7 @@ from sympy import Q
 from fairness import benefit
 from copy import deepcopy, copy
 from helpers import uniqueVal
+from prescription import Prescription
 from utility_functions import CATE
 
 sys.path.append(os.path.join(Path(__file__).parent, 'metrics'))
@@ -96,18 +97,17 @@ def getTreatmentForAllGroups(DAG_str, df, idx_protec, groupPatterns, attrOrdinal
     # Use multiprocessing to process groups in parallel
     multiprocessing.set_start_method('fork', force="True")
     with multiprocessing.Pool(processes=os.cpu_count()-1) as pool:
-        groupTreatList = pool.map(partial(getTreatmentForEachGroup, ns), \
+        candidateRx = pool.map(partial(getTreatmentForEachGroup, ns), \
                                   groupPatterns)
-    # Combine results into groups_dic
-    group_treat_dic = {str(group): result for group, result in zip(groupPatterns, groupTreatList)}
+    # # Combine results into groups_dic
+    # group_treat_dic = {str(group): result for group, result in zip(groupPatterns, groupTreatList)}
 
-    elapsed_time = time.time() - start_time
     # Log summary statistics for utilities
-    utilities = [result['utility'] for result in group_treat_dic.values()]
+    utilities = [rx.utility for rx in candidateRx]
     logging.info(f"Utility statistics: min={min(utilities):.4f}, max={max(utilities):.4f}, "
                  f"mean={statistics.mean(utilities):.4f}, median={statistics.median(utilities):.4f}")
-
-    return group_treat_dic, elapsed_time
+    elapsed_time = time.time() - start_time
+    return candidateRx, elapsed_time
 
 
 def getTreatmentForEachGroup(ns, group):
@@ -226,12 +226,8 @@ def getTreatmentForEachGroup(ns, group):
         f'Final best treatment: {best_treatment}, CATE: {best_cate:.4f}, Protected CATE: {best_cate_protec:.4f}, Combined Score: {best_benefit:.4f}')
     logging.info('#######################################')
     covered_idx = set(df_g.index)
-    return {
-        'covered_idx': covered_idx,
-        'treatment': best_treatment,
-        'utility': best_cate,
-        'protected_utility': best_cate_protec
-    }
+    covered_idx_protected = set(idx_protec) & covered_idx 
+    return Prescription(group, treatment=best_treatment, covered_idx=covered_idx, covered_idx_protected=covered_idx_protected, utility=best_cate, protected_utility=best_cate_protec)
 
 def isValidTreatment(df_g, newTreatment, level):
     """ 

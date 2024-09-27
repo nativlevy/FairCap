@@ -1,3 +1,4 @@
+from heapq import nlargest
 import logging
 import os
 import sys
@@ -18,12 +19,11 @@ sys.path.append(os.path.join(SRC_PATH, 'algorithms'))
 sys.path.append(os.path.join(SRC_PATH, 'algorithms', 'metrics'))
 from group_mining import getConstrGroups, getGroups
 from treatment_mining import getTreatmentForAllGroups
-from utility_functions import expected_utilities
 from fairness import score_rule
 
 from load_data import load_data
-from prescription import Prescription
-
+from prescription import Prescription, PrescriptionSet
+import prescription
 
 # from utility.logging_util import init_logger
 
@@ -140,7 +140,7 @@ def greedy_fair_prescription_rules(rules: List[Prescription], protected_group: S
     return solution
 
 
-def getKRules(k_rules: int, group_treatment_dict, df: pd.DataFrame, idx_protec: Set[int], unprotected_coverage_threshold: float, protected_coverage_threshold: float, fairness_threshold: float, config: Dict, exec_time12) -> Dict:
+def selectKRules(k: int, candidateRx, df: pd.DataFrame, idx_protec: Set[int], config: Dict, cvrg_constr, fair_constr, exec_time12) -> Dict:
     """
     Run an experiment for a specific number of rules (k).
 
@@ -161,23 +161,32 @@ def getKRules(k_rules: int, group_treatment_dict, df: pd.DataFrame, idx_protec: 
     """
     start_time = time.time()
     rules: List[Prescription] = []
-    for group, treat_data in group_treatment_dict.items():
-        condition = eval(group)
-        treatment = treat_data['treatment']
-        covered_idx = treat_data['covered_idx']
-        covered_idx_protec = covered_idx.intersection(idx_protec)
-        utility = treat_data['utility']
+    greedy_metrics = None
+    # If NEITHER group coverage and group fairness coverage exists,
+    # we run greedy based on utility because all constraints have been met
+    # in previous steps
+    if cvrg_constr == None or 'rule' in cvrg_constr['variant']:
+        rules = nlargest(k, candidateRx, key=lambda rx1, rx2: (rx1.utility() - rx2.utility))    
+    elif fair_constr == None or 'individual' in fair_constr['variant']:
+        rules = nlargest(k, candidateRx, key=lambda rx1, rx2: (rx1.utility() - rx2.utility))
+    # else:
+    # for group, treat_data in group_treatment_dict.items():
+    #     condition = eval(group)
+    #     treatment = treat_data['treatment']
+    #     covered_idx = treat_data['covered_idx']
+    #     covered_idx_protec = covered_idx.intersection(idx_protec)
+    #     utility = treat_data['utility']
 
-        # Calculate protected_utility based on the proportion of protected individuals covered
-        # TODO confirm
-        # protected_proportion = len(covered_idx_protec) / \
-        #     len(covered_idx) if len(covered_idx) > 0 else 0
-        # protec_utility = utility * protected_proportion
-        protected_utility = treat_data['protected_utility']
+    #     # Calculate protected_utility based on the proportion of protected individuals covered
+    #     # TODO confirm
+    #     # protected_proportion = len(covered_idx_protec) / \
+    #     #     len(covered_idx) if len(covered_idx) > 0 else 0
+    #     # protec_utility = utility * protected_proportion
+    #     protected_utility = treat_data['protected_utility']
  
 
-        rules.append(Prescription(condition, treatment, covered_idx,
-                     covered_idx_protec, utility, protected_utility))
+    #     rules.append(Prescription(condition, treatment, covered_idx,
+    #                  covered_idx_protec, utility, protected_utility))
 
     logging.info(f"Created {len(rules)} Rule objects")
 
@@ -187,11 +196,7 @@ def getKRules(k_rules: int, group_treatment_dict, df: pd.DataFrame, idx_protec: 
                  f"max={max(all_utilities):.4f}, mean={statistics.mean(all_utilities):.4f}, "
                  f"median={statistics.median(all_utilities):.4f}")
 
-    # Run greedy algorithm
-    total_individuals = len(df)
-    logging.info(f"Running greedy algorithm with unprotected coverage threshold {unprotected_coverage_threshold}, "
-                 f"protected coverage threshold {protected_coverage_threshold}, "
-                 f"{k_rules} rules, and fairness threshold {fairness_threshold}")
+
 
     # save all rules to an output file
     with open(os.path.join(config['_output_path'], 'rules_greedy.json'), 'w+') as f:
@@ -204,33 +209,28 @@ def getKRules(k_rules: int, group_treatment_dict, df: pd.DataFrame, idx_protec: 
             'protected_coverage': len(rule.covered_idx_protected)
         } for rule in rules], f, indent=4)
     # TODO Implement LP
-    # selected_rules = greedy_fair_prescription_rules(rules, idx_protec, unprotected_coverage_threshold,protected_coverage_threshold, k_rules, total_individuals, fairness_threshold)
-    selected_rules  = rules
 
+    finalizedKRules = rules
     # Calculate metrics
-    exp_util, protec_exp_util = expected_utilities(selected_rules, idx_protec)
-    total_coverage = set().union(
-        *[rule.covered_idx for rule in selected_rules])
-    total_protected_coverage = set().union(
-        *[rule.covered_protected_indices for rule in selected_rules])
+    rxSet = PrescriptionSet(finalizedKRules, idx_protec)
 
     exec_time3 = time.time() - start_time 
-    logging.info(f"Experiment results for k={k_rules}:")
-    logging.info(f"Expected utility: {exp_util:.4f}")
+    logging.info(f"Experiment results for k={k}:")
+    logging.info(f"Expected utility: {rxSet.expected_utility:.4f}")
     logging.info(
-        f"Protected expected utility: {protec_exp_util:.4f}")
-    logging.info(f"Coverage: {len(total_coverage) / len(df):.2%}")
+        f"Protected expected utility: {rxSet.protected_expected_utility:.4f}")
+    logging.info(f"Coverage: {len(rxSet.covered_idx):.2%}")
     logging.info(
-        f"Protected coverage: {len(total_protected_coverage) / len(idx_protec):.2%}")
+        f"Protected coverage: {len(rxSet.covered_idx_protected()):.2%}")
 
     return {
-        'k': k_rules,
+        'k': k,
         'execution_time': exec_time12 + exec_time3,
-        'selected_rules': selected_rules,
-        'expected_utility': exp_util,
-        'protected_expected_utility': protec_exp_util,
-        'coverage': len(total_coverage) / len(df),
-        'protected_coverage': len(total_protected_coverage) / len(idx_protec)
+        'selected_rules': rxSet.to_dict(),
+        'expected_utility': rxSet.expected_utility,
+        'protected_expected_utility': rxSet.protected_expected_utility,
+        'coverage': len(rxSet.covered_idx)/len(df),
+        'protected_coverage': len(rxSet.covered_idx_protected) / len(idx_protec)
     }
 
 
@@ -297,7 +297,7 @@ def main(config):
     # Step 2. Treatment mining using greedy
     # Get treatments for each grouping pattern
     logging.info("Step2: Getting candidate treatments for each grouping pattern")
-    group_treatment_dict, _ = getTreatmentForAllGroups(DAG_str, df, idx_protec, groupPatterns, {}, tgtO, attrM, fair_constr=fair_constr)
+    candidateRx, _ = getTreatmentForAllGroups(DAG_str, df, idx_protec, groupPatterns, {}, tgtO, attrM, fair_constr=fair_constr)
     exec_time2 = time.time() - start_time 
     logging.warning(f"Elapsed time for treatment mining: {exec_time2} seconds")
     # Create Rule objects
@@ -305,8 +305,8 @@ def main(config):
     results = []
     for k in range(MIX_K, MAX_K + 1):
         # TODO make signature shorter 
-        result = getKRules(k, group_treatment_dict, df, idx_protec, unprotected_coverage_threshold, protected_coverage_threshold, fairness_threshold, config, exec_time1 + exec_time2)
-        results.append(result)
+        kRules = selectKRules(k, candidateRx, df, idx_protec, config, cvrg_constr, fair_constr, exec_time1 + exec_time2)
+        results.append(kRules)
         logging.info(f"Completed experiment for k={k}")
 
     # Write results to CSV
@@ -316,7 +316,7 @@ def main(config):
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         writer.writeheader()
-        for result in results:
+        for kRules in results:
             # Convert selected_rules to a JSON string
             selected_rules_json = json.dumps([{
                 'condition': rule.condition,
@@ -325,29 +325,29 @@ def main(config):
                 'protected_utility': rule.protected_utility,
                 'coverage': len(rule.covered_idx),
                 'protected_coverage': len(rule.covered_protected_indices)
-            } for rule in result['selected_rules']])
+            } for rule in kRules['selected_rules']])
 
             writer.writerow({
-                'k': result['k'],
-                'execution_time': result['execution_time'],
-                'expected_utility': result['expected_utility'],
-                'protected_expected_utility': result['protected_expected_utility'],
-                'coverage': result['coverage'],
-                'protected_coverage': result['protected_coverage'],
+                'k': kRules['k'],
+                'execution_time': kRules['execution_time'],
+                'expected_utility': kRules['expected_utility'],
+                'protected_expected_utility': kRules['protected_expected_utility'],
+                'coverage': kRules['coverage'],
+                'protected_coverage': kRules['protected_coverage'],
                 'selected_rules': selected_rules_json
             })
 
     logging.info("Results written to experiment_results_greedy.csv")
 
     # Log detailed results for each k
-    for result in results:
-        logging.info(f"\nDetailed results for k={result['k']}:")
-        logging.info(f"Execution time: {result['execution_time']:.2f} seconds")
-        logging.info(f"Expected utility: {result['expected_utility']:.4f}")
+    for kRules in results:
+        logging.info(f"\nDetailed results for k={kRules['k']}:")
+        logging.info(f"Execution time: {kRules['execution_time']:.2f} seconds")
+        logging.info(f"Expected utility: {kRules['expected_utility']:.4f}")
         logging.info(
-            f"Protected expected utility: {result['protected_expected_utility']:.4f}")
-        logging.info(f"Coverage: {result['coverage']:.2%}")
-        logging.info(f"Protected coverage: {result['protected_coverage']:.2%}")
+            f"Protected expected utility: {kRules['protected_expected_utility']:.4f}")
+        logging.info(f"Coverage: {kRules['coverage']:.2%}")
+        logging.info(f"Protected coverage: {kRules['protected_coverage']:.2%}")
 
 
 if __name__ == "__main__":

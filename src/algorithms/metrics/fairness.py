@@ -2,7 +2,6 @@ import logging
 from typing import List, Set
 from prescription import Prescription
 
-from utility_functions import CATE, expected_utilities
 
 
 def score_rule(rule: Prescription, solution: List[Prescription], covered: Set[int], covered_protected: Set[int],
