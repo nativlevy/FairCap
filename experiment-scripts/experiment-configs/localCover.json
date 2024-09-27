@@ -1,0 +1,29 @@
+{
+  "_is_remote": false,
+  "_k": [
+    4,
+    4
+  ],
+  "_models": [
+    {
+      "_name": "greedy",
+      "_start": "greedy.py"
+    },
+    {
+      "_name": "greedy[group_coverage]",
+      "_start": "greedy.py",
+      "_coverage_constraint": {
+        "variant": "group",
+        "threshold": 0.5
+      }
+    },
+    {
+      "_name": "greedy[rule_coverage]",
+      "_start": "greedy.py",
+      "_coverage_constraint": {
+        "variant": "rule",
+        "threshold": 0.5
+      }
+    }
+  ]
+}

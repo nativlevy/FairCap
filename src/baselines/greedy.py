@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 import pandas as pd
-from typing import List, Set, Dict
+from typing import List, Set, Dict, Tuple
 
 import time
 import csv
@@ -140,7 +140,7 @@ def greedy_fair_prescription_rules(rules: List[Prescription], protected_group: S
     return solution
 
 
-def selectKRules(k: int, candidateRx, df: pd.DataFrame, idx_protec: Set[int], config: Dict, cvrg_constr, fair_constr, exec_time12) -> Dict:
+def selectKRules(k: int, candidateRx, df: pd.DataFrame, idx_protec: Set[int], config: Dict, cvrg_constr, fair_constr, exec_time12) -> Tuple[PrescriptionSet, float]:
     """
     Run an experiment for a specific number of rules (k).
 
@@ -161,14 +161,13 @@ def selectKRules(k: int, candidateRx, df: pd.DataFrame, idx_protec: Set[int], co
     """
     start_time = time.time()
     rules: List[Prescription] = []
-    greedy_metrics = None
     # If NEITHER group coverage and group fairness coverage exists,
     # we run greedy based on utility because all constraints have been met
     # in previous steps
     if cvrg_constr == None or 'rule' in cvrg_constr['variant']:
-        rules = nlargest(k, candidateRx, key=lambda rx1, rx2: (rx1.utility() - rx2.utility))    
+        rules = nlargest(k, candidateRx, key=lambda rx: rx.utility)    
     elif fair_constr == None or 'individual' in fair_constr['variant']:
-        rules = nlargest(k, candidateRx, key=lambda rx1, rx2: (rx1.utility() - rx2.utility))
+        rules = nlargest(k, candidateRx, key=lambda rx: rx.utility)
     # else:
     # for group, treat_data in group_treatment_dict.items():
     #     condition = eval(group)
@@ -221,17 +220,10 @@ def selectKRules(k: int, candidateRx, df: pd.DataFrame, idx_protec: Set[int], co
         f"Protected expected utility: {rxSet.protected_expected_utility:.4f}")
     logging.info(f"Coverage: {len(rxSet.covered_idx):.2%}")
     logging.info(
-        f"Protected coverage: {len(rxSet.covered_idx_protected()):.2%}")
+        f"Protected coverage: {len(rxSet.covered_idx_protected):.2%}")
 
-    return {
-        'k': k,
-        'execution_time': exec_time12 + exec_time3,
-        'selected_rules': rxSet.to_dict(),
-        'expected_utility': rxSet.expected_utility,
-        'protected_expected_utility': rxSet.protected_expected_utility,
-        'coverage': len(rxSet.covered_idx)/len(df),
-        'protected_coverage': len(rxSet.covered_idx_protected) / len(idx_protec)
-    }
+    return rxSet, exec_time12 + exec_time3
+ 
 
 
 def main_cmd(config_str):
@@ -266,7 +258,7 @@ def main(config):
     cvrg_constr = config.get('_coverage_constraint', None)
     fair_constr = config.get('_fairness_constraint', None)
 
-    MIX_K, MAX_K = config.get('_k', [4,4])
+    MIN_K, MAX_K = config.get('_k', [4,4])
 
     # ------------------------- PARSING CONFIG ENDS  -------------------------
     # ------------------------ DATASET SETUP BEGINS -------------------------- 
@@ -303,10 +295,10 @@ def main(config):
     # Create Rule objects
     # Run experiments for different values of k = the number of rules
     results = []
-    for k in range(MIX_K, MAX_K + 1):
+    for k in range(MIN_K, MAX_K + 1):
         # TODO make signature shorter 
-        kRules = selectKRules(k, candidateRx, df, idx_protec, config, cvrg_constr, fair_constr, exec_time1 + exec_time2)
-        results.append(kRules)
+        kRules_and_time= selectKRules(k, candidateRx, df, idx_protec, config, cvrg_constr, fair_constr, exec_time1 + exec_time2)
+        results.append(kRules_and_time)
         logging.info(f"Completed experiment for k={k}")
 
     # Write results to CSV
@@ -314,40 +306,52 @@ def main(config):
         fieldnames = ['k', 'execution_time', 'expected_utility', 'protected_expected_utility', 'coverage',
                       'protected_coverage', 'selected_rules']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-
+        k = MIN_K - 1
         writer.writeheader()
-        for kRules in results:
+        for kRules_and_time in results:
+            k += 1
+            rxSet: PrescriptionSet = kRules_and_time[0]
+            if len(rxSet.getRules()) == 0:
+                logging.warn(f"0 rules found when k={k}")
+                continue
+            ttl_exec_time: float = kRules_and_time[1] 
             # Convert selected_rules to a JSON string
+            prescriptions: List[Prescription] = rxSet.getRules()
             selected_rules_json = json.dumps([{
-                'condition': rule.condition,
-                'treatment': rule.treatment,
-                'utility': rule.utility,
-                'protected_utility': rule.protected_utility,
-                'coverage': len(rule.covered_idx),
-                'protected_coverage': len(rule.covered_protected_indices)
-            } for rule in kRules['selected_rules']])
+                'group': rx.getGroup(),
+                'treatment': rx.getTreatment(),
+                'utility': rx.getUtility(),
+                'protected_utility': rx.getProtectedUtility(),
+                'coverage': rx.getCoverage(),
+                'protected_coverage': rx.getProtectedCoverage()
+            } for rx in prescriptions])
 
             writer.writerow({
-                'k': kRules['k'],
-                'execution_time': kRules['execution_time'],
-                'expected_utility': kRules['expected_utility'],
-                'protected_expected_utility': kRules['protected_expected_utility'],
-                'coverage': kRules['coverage'],
-                'protected_coverage': kRules['protected_coverage'],
+                'k': k,
+                'execution_time': ttl_exec_time,
+                'expected_utility': rxSet.getExpectedUtility(),    
+                'protected_expected_utility': rxSet.getProtectedExpectedUtility(),
+                'coverage': rxSet.getCoverage(),
+                'protected_coverage': rxSet.getProtectedCoverage(),
                 'selected_rules': selected_rules_json
             })
 
     logging.info("Results written to experiment_results_greedy.csv")
-
     # Log detailed results for each k
-    for kRules in results:
-        logging.info(f"\nDetailed results for k={kRules['k']}:")
-        logging.info(f"Execution time: {kRules['execution_time']:.2f} seconds")
-        logging.info(f"Expected utility: {kRules['expected_utility']:.4f}")
+    k = MIN_K - 1
+    for kRules_and_time in results:
+        k += 1
+        rxSet: PrescriptionSet = kRules_and_time[0]
+        if len(rxSet.getRules()) == 0:
+            continue
+        ttl_exec_time: float = kRules_and_time[1] 
+        logging.info(f"\nDetailed results for k={k}:")
+        logging.info(f"Execution time: {ttl_exec_time=:.2f} seconds")
+        logging.info(f"Expected utility: {rxSet.getExpectedUtility():.4f}")
         logging.info(
-            f"Protected expected utility: {kRules['protected_expected_utility']:.4f}")
-        logging.info(f"Coverage: {kRules['coverage']:.2%}")
-        logging.info(f"Protected coverage: {kRules['protected_coverage']:.2%}")
+            f"Protected expected utility: {rxSet.getProtectedExpectedUtility():.4f}")
+        logging.info(f"Coverage: {rxSet.getCoverage():.2%}")
+        logging.info(f"Protected coverage: {rxSet.getProtectedCoverage():.2%}")
 
 
 if __name__ == "__main__":

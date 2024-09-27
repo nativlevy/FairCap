@@ -187,7 +187,7 @@ def getTreatmentForEachGroup(ns, group):
                 #   difference between protected and unprotected CATE 
                 #   exceeds some threshold epsilon
                 if fair_constr['variant'] == 'individual_sp':
-                    if math.abs(cate_protec-cate_unprotec) > threshold:
+                    if abs(cate_protec-cate_unprotec) > threshold:
                         continue  
 
                 # For BGL constraints, we discard treatments if 
@@ -204,7 +204,7 @@ def getTreatmentForEachGroup(ns, group):
                 cate_unprotec = CATE(df_unprotec, DAG_str, treatment, attrOrdinal, tgtO)
             # Finally, we compute the benefit.
             candidate_benefit = benefit(cate_all, cate_protec, cate_unprotec, fair_constr)
-            if candidate_benefit > best_benefit and cate_all > 0 and cate_protec > 0:
+            if candidate_benefit > best_benefit and cate_all > 0 and cate_protec >= 0:
                 best_benefit = candidate_benefit
                 best_treatment = treatment
                 best_cate = cate_all
