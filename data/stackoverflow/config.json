@@ -12,8 +12,11 @@
     "Dependents",
     "RaceEthnicity"
   ],
-  "_protected_attributes": ["RaceEthnicity"],
-  "_protected_values": ["White or of European descent"],
+  "_protected_attributes": "RaceEthnicity",
+  "_protected_values": [
+    "White or of European descent",
+    false
+  ],
   "_mutable_attributes": [
     "Exercise",
     "HoursComputer",
