@@ -283,6 +283,7 @@ def main(config):
     # Step 1. Grouping pattern mining
     
     # groupPatterns = getConstrGroups(df, attrI, min_sup=APRIORI, constr=cvrg_constr)
+    # groupPatterns = getConstrGroups(df, attrI, min_sup=APRIORI, constr=cvrg_constr)
     # TODO Testing
     groupPatterns = [{'Gender': 'Male'}] 
 

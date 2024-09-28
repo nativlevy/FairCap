@@ -23,33 +23,11 @@ from copy import deepcopy, copy
 from helpers import uniqueVal
 from prescription import Prescription
 from utility_functions import CATE
+import platform
 
 sys.path.append(os.path.join(Path(__file__).parent, 'metrics'))
 sys.path.append(os.path.join(Path(__file__).parent))
 from coverage import rule_coverage
-
-class LatticeVisitor:
-    def __init__(self, df_g, attrM, DAG_str, idx_protec, fair_constr):
-        self.df_g = df_g
-        self.attrM = attrM
-        self.DAG_str = DAG_str
-        self.idx_protec = idx_protec
-        self.threshold = fair_constr['threshold']
-        self.variant = fair_constr['variant']
-        self.best_treatment = None
-        self.best_cate = 0
-        self.best_cate_protec = 0
-    def visit_layer(nodes, level):
-        """
-     
-        """
-        pass
-
-
-
-
-
-
     
 def getTreatmentForAllGroups(DAG_str, df, idx_protec, groupPatterns, attrOrdinal, tgtO, attrM, fair_constr: Dict):
     """
@@ -95,8 +73,12 @@ def getTreatmentForAllGroups(DAG_str, df, idx_protec, groupPatterns, attrOrdinal
     ns.fair_constr = fair_constr
     
     # Use multiprocessing to process groups in parallel
+    numProc=os.cpu_count()-1
+    if 'i386' in platform.platform():
+       # If running on old mac, use single core.
+       numProc = 1
     multiprocessing.set_start_method('fork', force="True")
-    with multiprocessing.Pool(processes=os.cpu_count()-1) as pool:
+    with multiprocessing.Pool(processes=numProc) as pool:
         candidateRx = pool.map(partial(getTreatmentForEachGroup, ns), \
                                   groupPatterns)
     # # Combine results into groups_dic
@@ -165,6 +147,7 @@ def getTreatmentForEachGroup(ns, group):
         # get map each combination into a merged treatment
         candidateTreatments = list(map(lambda c: {**c[0], **c[1]}, allCombination))
         # Filter 1: discard combined treatments that treat too few or too many
+        candidateTreatments = filter(partial(isValidTreatment, df_g, level), candidateTreatments)        
         candidateTreatments = filter(partial(isValidTreatment, df_g, level), candidateTreatments)        
         logging.debug(f"Combine treatments={candidateTreatments} at level={level}")
 
