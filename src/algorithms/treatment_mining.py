@@ -147,14 +147,12 @@ def getTreatmentForEachGroup(ns, group):
         # get map each combination into a merged treatment
         candidateTreatments = list(map(lambda c: {**c[0], **c[1]}, allCombination))
         # Filter 1: discard combined treatments that treat too few or too many
-        candidateTreatments = filter(partial(isValidTreatment, df_g, level), candidateTreatments)        
-        candidateTreatments = filter(partial(isValidTreatment, df_g, level), candidateTreatments)        
+        candidateTreatments = filter(partial(isValidTreatment, df_g, level), candidateTreatments)            
         logging.debug(f"Combine treatments={candidateTreatments} at level={level}")
 
         selectedTreatments = []
         for treatment in candidateTreatments:
             # Filter 2: discard treatments w/negative CATE
- 
             cate_all = CATE(
             df_g, DAG_str, treatment, attrOrdinal, tgtO) 
             if cate_all <= 0:
