@@ -56,7 +56,7 @@ def CATE(df_g, DAG_str, treatments, attrOrdinal, tgtO):
     # TODO question: 1 if (exists attributes != treatval) 
     if len(df_g) == 0:
         return 0
-    df_g['TempTreatment'] = (df_g[treatments.keys()] != treatments.values()).all(axis=1)
+    df_g['TempTreatment'] = (df_g[treatments.keys()] == treatments.values()).all(axis=1) * 1
     DAG_str = DAG_after_treatments(DAG_str, treatments, tgtO)
     
     # remove graph name as dowhy doesn't support named graph string
