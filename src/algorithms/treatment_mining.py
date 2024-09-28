@@ -18,6 +18,7 @@ from pathlib import Path
 import pandas as pd
 from pygraphviz import AGraph
 from sympy import Q
+from StopWatch import StopWatch
 from fairness import benefit
 from copy import deepcopy, copy
 from helpers import uniqueVal
@@ -141,62 +142,63 @@ def getTreatmentForEachGroup(ns, group):
     candidateTreatments = getSingleTreatments(attrM, df_g, attrOrdinal)
     prev_best_benefit = 0
     for level in range(1, 6):  # Up to 5 treatment levels
-        start = time.time()
-        # get all combinations
-        allCombination = list(combinations(candidateTreatments, 2))
-        # get map each combination into a merged treatment
-        candidateTreatments = list(map(lambda c: {**c[0], **c[1]}, allCombination))
-        # Filter 1: discard combined treatments that treat too few or too many
-        candidateTreatments = filter(partial(isValidTreatment, df_g, level), candidateTreatments)            
-        logging.debug(f"Combine treatments={candidateTreatments} at level={level}")
+        with StopWatch([level, group]):
+            start = time.time()
+            # get all combinations
+            allCombination = list(combinations(candidateTreatments, 2))
+            # get map each combination into a merged treatment
+            candidateTreatments = list(map(lambda c: {**c[0], **c[1]}, allCombination))
+            # Filter 1: discard combined treatments that treat too few or too many
+            candidateTreatments = [t for t in candidateTreatments if isValidTreatment(df_g, level, t)]           
+            logging.debug(f"Combine treatments={candidateTreatments} at level={level}")
 
-        selectedTreatments = []
-        for treatment in candidateTreatments:
-            # Filter 2: discard treatments w/negative CATE
-            cate_all = CATE(
-            df_g, DAG_str, treatment, attrOrdinal, tgtO) 
-            if cate_all <= 0:
-                continue
-            
-            # Filter 3: impose fairness constraints
-            cate_protec = 0
-            cate_unprotec = 0
-            if fair_constr != None:
-                threshold = fair_constr['threshold'] 
-                # For SP constraints, discard treatments if the absolute
-                #   difference between protected and unprotected CATE 
-                #   exceeds some threshold epsilon
-                if fair_constr['variant'] == 'individual_sp':
-                    if abs(cate_protec-cate_unprotec) > threshold:
-                        continue  
-
-                # For BGL constraints, we discard treatments if 
-                #   protected CATE does not meet some threshold epsilon 
-                if fair_constr['variant'] == 'individual_bgl':
-                    if cate_protec < threshold:
-                        continue
-            # Passing all requirements, save the node in the lattice
-            selectedTreatments.append(treatment)
-            df_protec = df_g.loc[df_g.index.intersection(idx_protec)]
-            cate_protec = CATE(df_protec, DAG_str, treatment, attrOrdinal, tgtO)
-            candidate_benefit = benefit(cate_all, cate_protec, cate_unprotec, fair_constr)
+            selectedTreatments = []
+            for treatment in candidateTreatments:
+                # Filter 2: discard treatments w/negative CATE
+                cate_all = CATE(
+                df_g, DAG_str, treatment, attrOrdinal, tgtO) 
+                if cate_all <= 0:
+                    continue
                 
-            if candidate_benefit > best_benefit and cate_all > 0 and cate_protec >= 0:
-                best_benefit = candidate_benefit
-                best_treatment = treatment
-                best_cate = cate_all
-                best_cate_protec = cate_protec
-                logging.info(
-                    f'New best treatment found at level {level}: {best_treatment}')
-                logging.info(
-                    f'New best score: {best_benefit:.4f}, CATE: {best_cate:.4f}')
+                # Filter 3: impose fairness constraints
+                cate_protec = 0
+                cate_unprotec = 0
+                if fair_constr != None:
+                    threshold = fair_constr['threshold'] 
+                    # For SP constraints, discard treatments if the absolute
+                    #   difference between protected and unprotected CATE 
+                    #   exceeds some threshold epsilon
+                    if fair_constr['variant'] == 'individual_sp':
+                        if abs(cate_protec-cate_unprotec) > threshold:
+                            continue  
 
-        if level > 1 and best_benefit <= prev_best_benefit:
-            logging.info(
-                f'Stopping at level {level} as no better treatment found')
-            break
-        candidateTreatments = selectedTreatments
-        prev_best_benefit = best_benefit
+                    # For BGL constraints, we discard treatments if 
+                    #   protected CATE does not meet some threshold epsilon 
+                    if fair_constr['variant'] == 'individual_bgl':
+                        if cate_protec < threshold:
+                            continue
+                # Passing all requirements, save the node in the lattice
+                selectedTreatments.append(treatment)
+                df_protec = df_g.loc[df_g.index.intersection(idx_protec)]
+                cate_protec = CATE(df_protec, DAG_str, treatment, attrOrdinal, tgtO)
+                candidate_benefit = benefit(cate_all, cate_protec, cate_unprotec, fair_constr)
+                    
+                if candidate_benefit > best_benefit and cate_all > 0 and cate_protec >= 0:
+                    best_benefit = candidate_benefit
+                    best_treatment = treatment
+                    best_cate = cate_all
+                    best_cate_protec = cate_protec
+                    logging.info(
+                        f'New best treatment found at level {level}: {best_treatment}')
+                    logging.info(
+                        f'New best score: {best_benefit:.4f}, CATE: {best_cate:.4f}')
+
+            if level > 1 and best_benefit <= prev_best_benefit:
+                logging.info(
+                    f'Stopping at level {level} as no better treatment found')
+                break
+            candidateTreatments = selectedTreatments
+            prev_best_benefit = best_benefit
 
     logging.info(f'Finished processing group: {group}')
     logging.info(
