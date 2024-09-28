@@ -253,7 +253,8 @@ def main(config):
     attrI = config.get('_immutable_attributes')
     attrM = config.get('_mutable_attributes')
     attrP = config.get('_protected_attributes')
-    valP = config.get('_protected_values')
+    # TODO extend to support multiple protected value
+    valP, asProtected = config.get('_protected_values')
     tgtO =  config.get('_target_outcome')
     cvrg_constr = config.get('_coverage_constraint', None)
     fair_constr = config.get('_fairness_constraint', None)
@@ -265,12 +266,15 @@ def main(config):
     df, DAG_str =load_data(os.path.join(DATA_PATH, dataset_path, datatable_path), os.path.join(DATA_PATH, dataset_path, dag_path))
     df['TempTreatment'] = 0
     # Define protected group
-    protected_group = set(
-        df[df[attrP] != valP].index)
-    df_protec = df[(df[attrP] == valP).all(axis=1)]
+    
+    df_protec = None
+    if asProtected:
+        df_protec = df[(df[attrP] == valP)]
+    df_protec = df[(df[attrP] != valP)]
+
     idx_protec: Set = set(df_protec.index)
     logging.info(
-        f"Protected group size: {len(protected_group)} out of {len(df)} total")
+        f"Protected group size: {len(idx_protec)} out of {len(df)} total")
     # ------------------------ DATASET SETUP ENDS ----------------------------
 
 
@@ -278,9 +282,9 @@ def main(config):
     start_time = time.time()
     # Step 1. Grouping pattern mining
     
-    groupPatterns = getConstrGroups(df, attrI, min_sup=APRIORI, constr=cvrg_constr)
+    # groupPatterns = getConstrGroups(df, attrI, min_sup=APRIORI, constr=cvrg_constr)
     # TODO Testing
-    groupPatterns = [groupPatterns[i] for i in range(5)] 
+    groupPatterns = [{'Gender': 'Male'}] 
 
     exec_time1 = time.time() - start_time 
     logging.warning(f"Elapsed time for group mining: {exec_time1} seconds")
