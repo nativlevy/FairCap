@@ -278,10 +278,10 @@ def main(config):
     start_time = time.time()
     # Step 1. Grouping pattern mining
     
-    groupPatterns = getConstrGroups(df, attrI, min_sup=APRIORI, constr=cvrg_constr)
+    # groupPatterns = getConstrGroups(df, attrI, min_sup=APRIORI, constr=cvrg_constr)
     # TODO Testing
-    groupPatterns = [groupPatterns[i] for i in range(5)] 
-
+    # groupPatterns = [groupPatterns[i] for i in range(5)] 
+    groupPatterns = [{'Gender': 'Male'}]
     exec_time1 = time.time() - start_time 
     logging.warning(f"Elapsed time for group mining: {exec_time1} seconds")
 

@@ -23,6 +23,7 @@ from copy import deepcopy, copy
 from helpers import uniqueVal
 from prescription import Prescription
 from utility_functions import CATE
+import platform
 
 sys.path.append(os.path.join(Path(__file__).parent, 'metrics'))
 sys.path.append(os.path.join(Path(__file__).parent))
@@ -95,8 +96,12 @@ def getTreatmentForAllGroups(DAG_str, df, idx_protec, groupPatterns, attrOrdinal
     ns.fair_constr = fair_constr
     
     # Use multiprocessing to process groups in parallel
+    numProc=os.cpu_count()-1
+    if 'i386' in platform.platform():
+       # If running on old mac, use single core.
+       numProc = 1
     multiprocessing.set_start_method('fork', force="True")
-    with multiprocessing.Pool(processes=os.cpu_count()-1) as pool:
+    with multiprocessing.Pool(processes=numProc) as pool:
         candidateRx = pool.map(partial(getTreatmentForEachGroup, ns), \
                                   groupPatterns)
     # # Combine results into groups_dic
@@ -156,19 +161,19 @@ def getTreatmentForEachGroup(ns, group):
     best_cate = 0
     best_cate_protec = 0
     
-    treatments = getSingleTreatments(attrM, df_g, attrOrdinal)
+    selectedTreatments = getSingleTreatments(attrM, df_g, attrOrdinal)
     for level in range(1, 6):  # Up to 5 treatment levels
         start = time.time()
         # get all combinations
-        allCombination = list(combinations(treatments, 2))
+        allCombination = list(combinations(selectedTreatments, 2))
         # get map each combination into a merged treatment
         candidateTreatments = list(map(lambda c: {**c[0], **c[1]}, allCombination))
         # Filter 1: discard combined treatments that treat too few or too many
-        candidateTreatments = filter(partial(isValidTreatment, df_g=df_g, level=level), candidateTreatments)        
+        candidateTreatments = filter(partial(isValidTreatment, df_g, level), candidateTreatments)        
         logging.debug(f"Combine treatments={candidateTreatments} at level={level}")
 
         selectedTreatments = []
-        for treatment in treatments:
+        for treatment in candidateTreatments:
             # Filter 2: discard treatments w/negative CATE
  
             cate_all = CATE(
@@ -213,7 +218,6 @@ def getTreatmentForEachGroup(ns, group):
             logging.info(
                 f'Stopping at level {level} as no better treatment found')
             break
-
         prev_best_benefit = best_benefit
 
     logging.info(f'Finished processing group: {group}')
@@ -224,7 +228,7 @@ def getTreatmentForEachGroup(ns, group):
     covered_idx_protected = set(idx_protec) & covered_idx 
     return Prescription(group, treatment=best_treatment, covered_idx=covered_idx, covered_idx_protected=covered_idx_protected, utility=best_cate, protected_utility=best_cate_protec)
 
-def isValidTreatment(df_g, newTreatment, level):
+def isValidTreatment(df_g, level, newTreatment):
     """ 
         A helper function for filtering new combine treatment
         Ensure that:
@@ -335,37 +339,4 @@ def getLeafTreatments(treatments: list[Dict], df_g: pd.DataFrame, ordinal_atts: 
 
 
 
-
-
-def getTreatmentsInBounds(treatments_cate, bound, df_g, DAG, ordinal_atts, tgtO):
-    """
-    Get treatments based on their effects and a specified bound.
-
-    Args:
-        treatments_cate (dict or list): Treatments and their effects.
-        bound (str): The bound type ('positive' or 'negative').
-        df_g (pd.DataFrame): The input dataframe.
-        DAG (list): The causal graph represented as a list of edges.
-        ordinal_atts (dict): Dictionary of ordinal attributes and their ordered values.
-        target (str): The target variable name.
-
-    Returns:
-        list: A list of treatments meeting the specified criteria.
-    """
-    logging.debug(
-        f"getTreatments input: treatments_cate={treatments_cate}, bound={bound}")
-    ans = []
-    if isinstance(treatments_cate, list):
-        for treatment in treatments_cate:
-            if bound == 'positive':
-                if CATE(df_g, DAG, treatment, ordinal_atts, tgtO) > 0:
-                    ans.append(treatment)
-    else:
-        # TODO HUH
-        for k, v in treatments_cate.items():
-            if bound == 'positive':
-                if v > 0:
-                    ans.append(ast.literal_eval(k))
-    logging.debug(f"getTreatments output: ans={ans}")
-    return ans
 
