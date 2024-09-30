@@ -141,7 +141,7 @@ def getTreatmentForEachGroup(ns, group):
     
     candidateTreatments = getSingleTreatments(attrM, df_g, attrOrdinal)
     prev_best_benefit = 0
-    for level in range(1, 6):  # Up to 5 treatment levels
+    for level in range(2, 5):  # Up to 5 treatment levels
         with StopWatch([level, group]):
             start = time.time()
             # get all combinations
@@ -159,7 +159,7 @@ def getTreatmentForEachGroup(ns, group):
                 df_g, DAG_str, treatment, attrOrdinal, tgtO) 
                 if cate_all <= 0:
                     continue
-                
+
                 # Filter 3: impose fairness constraints
                 cate_protec = 0
                 cate_unprotec = 0
@@ -183,7 +183,7 @@ def getTreatmentForEachGroup(ns, group):
                 cate_protec = CATE(df_protec, DAG_str, treatment, attrOrdinal, tgtO)
                 candidate_benefit = benefit(cate_all, cate_protec, cate_unprotec, fair_constr)
                     
-                if candidate_benefit > best_benefit and cate_all > 0 and cate_protec >= 0:
+                if candidate_benefit > best_benefit and cate_all > 0 and cate_protec > 0:
                     best_benefit = candidate_benefit
                     best_treatment = treatment
                     best_cate = cate_all
@@ -216,8 +216,10 @@ def isValidTreatment(df_g, level, newTreatment):
         2. |Treatment group| < 90% of the subpopulation
         3. |Treatment group| > 10% of the subpopulation
     """
-    if len(newTreatment.keys()) >= level:
-        treatable = (df_g[newTreatment.keys()] != newTreatment.values()).all(axis=1)
+    if len(newTreatment.keys()) == level:
+        keys = list(newTreatment.keys())
+        vals = list(newTreatment.values())
+        treatable = (df_g[keys] != vals).all(axis=1)
         valid = list(set(treatable.tolist()))
         # no tuples in treatment group
         if len(valid) < 2:
