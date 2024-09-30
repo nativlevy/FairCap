@@ -32,6 +32,30 @@
         "variant": "individual_sp",
         "threshold": 10500
       }
+    },
+    {
+      "_name": "greedy[group_coverage+indvidual_sp]",
+      "_start": "greedy.py",
+      "_coverage_constraint": {
+        "variant": "group",
+        "threshold": 0.5
+      },
+      "_fairness_constraint": {
+        "variant": "individual_sp",
+        "threshold": 10500
+      }
+    },
+    {
+      "_name": "greedy[rule_coverage+indvidual_sp]",
+      "_start": "greedy.py",
+      "_coverage_constraint": {
+        "variant": "rule",
+        "threshold": 0.5
+      },
+      "_fairness_constraint": {
+        "variant": "individual_sp",
+        "threshold": 10500
+      }
     }
   ]
 }
