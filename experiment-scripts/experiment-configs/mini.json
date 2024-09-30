@@ -1,14 +1,37 @@
 {
   "_is_remote": false,
-  "_k": 1,
+  "_k": [
+    3,
+    3
+  ],
   "_models": [
     {
       "_name": "greedy",
       "_start": "greedy.py"
     },
     {
-      "_name": "causumx",
-      "_start": "causumx.py"
+      "_name": "greedy[group_coverage]",
+      "_start": "greedy.py",
+      "_coverage_constraint": {
+        "variant": "group",
+        "threshold": 0.7
+      }
+    },
+    {
+      "_name": "greedy[rule_coverage]",
+      "_start": "greedy.py",
+      "_coverage_constraint": {
+        "variant": "rule",
+        "threshold": 0.7
+      }
+    },
+    {
+      "_name": "greedy[indvidual_sp]",
+      "_start": "greedy.py",
+      "_fairness_constraint": {
+        "variant": "individual_sp",
+        "threshold": 10000
+      }
     }
   ]
 }
