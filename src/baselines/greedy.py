@@ -165,16 +165,13 @@ def selectKRules(k: int, candidateRx, df: pd.DataFrame, idx_protec: Set[int], co
     # we run greedy based on utility because all constraints have been met
     # in previous steps
     if cvrg_constr == None or 'rule' in cvrg_constr['variant']:
-        rules = nlargest(k, candidateRx, key=lambda rx: rx.utility)    
+        rules = nlargest(k, candidateRx, key=lambda rx: rx.utility) 
+    elif cvrg_constr != None and 'group' in cvrg_constr['variant']: 
+        rules = nlargest(k, candidateRx, key=lambda rx: len(rx.covered_idx)+len(rx.covered_idx))
+
     elif fair_constr == None or 'individual' in fair_constr['variant']:
         rules = nlargest(k, candidateRx, key=lambda rx: rx.utility)
-    # else:
-    # for group, treat_data in group_treatment_dict.items():
-    #     condition = eval(group)
-    #     treatment = treat_data['treatment']
-    #     covered_idx = treat_data['covered_idx']
-    #     covered_idx_protec = covered_idx.intersection(idx_protec)
-    #     utility = treat_data['utility']
+   
 
     #     # Calculate protected_utility based on the proportion of protected individuals covered
     #     # TODO confirm
@@ -202,8 +199,8 @@ def selectKRules(k: int, candidateRx, df: pd.DataFrame, idx_protec: Set[int], co
         json.dump([{
             'condition': rule.condition,
             'treatment': rule.treatment,
-            'utility': rule.utility,
-            'protected_utility': rule.protected_utility,
+            'utility': round(rule.utility),
+            'protected_utility': round(rule.protected_utility),
             'coverage': len(rule.covered_idx),
             'protected_coverage': len(rule.covered_idx_protected)
         } for rule in rules], f, indent=4)
@@ -260,6 +257,8 @@ def main(config):
     fair_constr = config.get('_fairness_constraint', None)
 
     MIN_K, MAX_K = config.get('_k', [4,4])
+    # Remove protected attributes from immutable attributes
+    attrI.remove(attrP) 
 
     # ------------------------- PARSING CONFIG ENDS  -------------------------
     # ------------------------ DATASET SETUP BEGINS -------------------------- 
@@ -298,6 +297,17 @@ def main(config):
     logging.warning(f"Elapsed time for treatment mining: {exec_time2} seconds")
     # Create Rule objects
     # Run experiments for different values of k = the number of rules
+
+    # Save all rules found so far
+    with open(os.path.join(config['_output_path'], 'rules_greedy_all.json'), 'w+') as f:
+        json.dump([{
+            'condition': rule.condition,
+            'treatment': rule.treatment,
+            'utility': round(rule.utility),
+            'protected_utility': round(rule.protected_utility),
+            'coverage': len(rule.covered_idx),
+            'protected_coverage': len(rule.covered_idx_protected)
+        } for rule in candidateRx], f, indent=4)
     results = []
     for k in range(MIN_K, MAX_K + 1):
         # TODO make signature shorter 
@@ -326,8 +336,8 @@ def main(config):
                 'treatment': rx.getTreatment(),
                 'utility': rx.getUtility(),
                 'protected_utility': rx.getProtectedUtility(),
-                'coverage': rx.getCoverage()/len(df),
-                'protected_coverage': rx.getProtectedCoverage()/len(idx_protec)
+                'coverage': round(rx.getCoverage()/len(df) * 100, 2),
+                'protected_coverage': round(rx.getProtectedCoverage()/len(idx_protec) *100, 2)
             } for rx in prescriptions])
 
             writer.writerow({
@@ -335,8 +345,8 @@ def main(config):
                 'execution_time': ttl_exec_time,
                 'expected_utility': rxSet.getExpectedUtility(),    
                 'protected_expected_utility': rxSet.getProtectedExpectedUtility(),
-                'coverage_rate': rxSet.getCoverage() / len(df),
-                'protected_coverage_rate': rxSet.getProtectedCoverage() / len(idx_protec),
+                'coverage_rate': round(rxSet.getCoverage() / len(df) * 100, 2),
+                'protected_coverage_rate': round(rxSet.getProtectedCoverage() / len(idx_protec) * 100, 2),
                 'selected_rules': selected_rules_json
             })
 

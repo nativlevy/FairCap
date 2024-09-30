@@ -41,12 +41,12 @@ class Prescription:
     def getUtility(self) -> float:
         if self.utility == None:
             return -1.0
-        return self.utility
+        return round(self.utility, 2)
     
     def getProtectedUtility(self) -> float:
         if self.protected_utility == None:
             return -1.0
-        return self.protected_utility
+        return round(self.protected_utility, 2)
     def getCoveredIdx(self):
         return self.covered_idx
     
@@ -100,9 +100,9 @@ class PrescriptionSet:
             total_protected_utility += min_utility
         return total_utility/len(self.covered_idx), total_protected_utility/len(self.covered_idx_protected)
     def getExpectedUtility(self):
-        return self.expected_utility
+        return round(self.expected_utility, 2)
     def getProtectedExpectedUtility(self):
-        return self.protected_expected_utility 
+        return round(self.protected_expected_utility )
     def getCoveredIdx(self):
         return self.covered_idx
     def getCoveredIdxProtected(self):
