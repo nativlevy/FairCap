@@ -141,7 +141,7 @@ def getTreatmentForEachGroup(ns, group):
     
     candidateTreatments = getSingleTreatments(attrM, df_g, attrOrdinal)
     prev_best_benefit = 0
-    for level in range(2, 5):  # Up to 5 treatment levels
+    for level in range(2, 4):  # Up to 5 treatment levels
         with StopWatch([level, group]):
             start = time.time()
             # get all combinations
