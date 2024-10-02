@@ -96,7 +96,7 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
         threshold = cvrg_constr['threshold'] 
         threshold_p = cvrg_constr['threshold_p'] 
         solver.add(Sum([Or([t[i][j] for j in range(l)]) for i in range(m)]) > threshold * m)
-        solver.add(Sum([Or([t[i][j] for j in range(l)]) for i in idx_protected]) > threshold_p * m)
+        solver.add(Sum([Or([t[i][j] for j in range(l)]) for i in idx_protected]) > threshold_p * mp)
 
     # Constraint 4;
     # Group fairness (if any)
