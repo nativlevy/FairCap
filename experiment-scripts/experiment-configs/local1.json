@@ -14,7 +14,8 @@
       "_start": "greedy.py",
       "_coverage_constraint": {
         "variant": "group",
-        "threshold": 0.5
+        "threshold": 0.5,
+        "threshold_p": 0.5
       }
     }
   ]

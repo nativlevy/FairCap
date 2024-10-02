@@ -25,7 +25,8 @@
       "_start": "greedy.py",
       "_coverage_constraint": {
         "variant": "group",
-        "threshold": 0.5
+        "threshold": 0.5,
+        "threshold_p": 0.5
       }
     },
     {
@@ -33,7 +34,8 @@
       "_start": "greedy.py",
       "_coverage_constraint": {
         "variant": "rule",
-        "threshold": 0.5
+        "threshold": 0.5,
+        "threshold_p": 0.5
       }
     },
     {
@@ -49,7 +51,8 @@
       "_start": "greedy.py",
       "_coverage_constraint": {
         "variant": "group",
-        "threshold": 0.5
+        "threshold": 0.5,
+        "threshold_p": 0.5
       },
       "_fairness_constraint": {
         "variant": "individual_sp",
@@ -57,11 +60,12 @@
       }
     },
     {
-      "_name": "greedy[rule_coverage+indvidual_sp]",
+    "_name": "greedy[rule_coverage+indvidual_sp]",
       "_start": "greedy.py",
       "_coverage_constraint": {
         "variant": "rule",
-        "threshold": 0.5
+        "threshold": 0.5,
+        "threshold_p": 0.5
       },
       "_fairness_constraint": {
         "variant": "individual_sp",

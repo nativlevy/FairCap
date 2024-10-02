@@ -14,7 +14,6 @@ from exmpt_config import PROJECT_PATH, Config
 sys.path.append(os.path.join(PROJECT_PATH, 'src/baselines'))
 sys.path.append(os.path.join(PROJECT_PATH, 'src/baselines/common'))
 import greedy  # NOQA
-import causumx  # NOQA
 
 
 
