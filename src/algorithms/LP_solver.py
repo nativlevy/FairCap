@@ -47,7 +47,7 @@ def minUtil(rxSet, idx):
     return leastEffectiveRx.getUtility() 
     
 
-def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1=1, l2=50000):
+def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1=1, l2=100000):
     """
     Objective: max[]
     Constains on
@@ -72,9 +72,6 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
 
     w = [rxCandidates[j].utility - l2 for j in range(l)]
     # Scale the utilities by their protected/unprotected size
-    w_p_scl = [rxCandidates[j].utility/mp for j in range(l)] 
-    w_u_scl = [rxCandidates[j].utility/mu for j in range(l)] 
-
 
     # Maximize the sum of weights while penalizing size of the set
     solver.maximize(Sum([g[j] * w[j] for j in range(l)]))
@@ -83,13 +80,12 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
     # For all i, j: t[i][j] <= g[j] 
     # Equivalent to 
     for i in range(m):
-        solver.add([Implies(t[i][j], g[j]) for j in range(l)])
+        solver.add([Implies(t[i][j], i in rxCandidates[j].covered_idx and g[j]) for j in range(l)])
 
     # Constraint 2a;
     # For all j: g[j] <= Sum t[i][j]
     # Equivalent to g[j] => OR(t[i]) 
-    solver.add([Implies(g[j], Or([t[i][j] for i in range(m)])) for j in range(l)]) 
-
+    solver.add([Implies(g[j], Or([i in rxCandidates[j].covered_idx and t[i][j] for i in range(m)])) for j in range(l)]) 
     # Constraint 2b;
     # For all i: sum (t[i][j]) <= 1
     solver.add([Sum([t[i][j] for j in range(l)]) <= 1 for i in range(m)])  
@@ -99,16 +95,17 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
     if cvrg_constr != None and 'group' in cvrg_constr['variant']:
         threshold = cvrg_constr['threshold'] 
         threshold_p = cvrg_constr['threshold_p'] 
-        solver.add(Sum([Or([t[i][j] for j in range(l)]) for i in range(m)]) < threshold * m)
-        solver.add(Sum([Or([t[i][j] for j in range(l)]) for i in idx_protected]) < threshold_p * m)
+        solver.add(Sum([Or([t[i][j] for j in range(l)]) for i in range(m)]) > threshold * m)
+        solver.add(Sum([Or([t[i][j] for j in range(l)]) for i in idx_protected]) > threshold_p * m)
 
     # Constraint 4;
     # Group fairness (if any)
     if fair_constr != None:
         threshold = fair_constr['threshold'] 
         if 'group_sp' in fair_constr['variant']:
-            solver.add(Abs( 
-                Sum([Sum([t[i][j] * (w_p_scl[j] if i in idx_protected else w_u_scl[j]) for i in range (l)])  for j in range(l)]))  < threshold)
+            exp_util_p = Sum([Sum([t[i][j] * w[j] for i in idx_protected]) for j in range(l)]) / Sum([Sum(t[i]) for i in idx_protected])
+            exp_util_u = Sum([Sum([t[i][j] * w[j] for i in idx_unprotected]) for j in range(l)]) / Sum([Sum(t[i]) for i in idx_unprotected])
+            solver.add(Abs(exp_util_p - exp_util_u)  < threshold)
             
     with StopWatch("Solving"):
         # Check for satisfiability and retrieve the optimal solution
@@ -122,7 +119,6 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
             return []
     
 
-import pandas as pd
 
 def main():
     with open("/Users/bcyl/FairPrescriptionRules/output/10-01/20:36/greedy/rules_greedy_all.json") as f:
@@ -148,4 +144,3 @@ def main():
         LP_solver(rxCandidates, set(df.index), idx_protected, cvrg_constr, None)
     return
 
-main()
