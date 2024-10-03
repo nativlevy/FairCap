@@ -61,7 +61,6 @@ def getTreatmentForAllGroups(DAG_str, df, idx_protec, groupPatterns, attrOrdinal
         },
         6.123 (seconds)
     """
-    start_time = time.time()
     # Shared data for all forked process
     mgr = Manager()
     ns = mgr.Namespace()
@@ -79,22 +78,21 @@ def getTreatmentForAllGroups(DAG_str, df, idx_protec, groupPatterns, attrOrdinal
        # If running on old mac, use single core.
        numProc = 1
     multiprocessing.set_start_method('fork', force="True")
+    rxCandidates = []
     with multiprocessing.Pool(processes=numProc) as pool:
-        candidateRx = pool.map(partial(getTreatmentForEachGroup, ns), \
+        rxCandidates = pool.map(partial(getTreatmentForEachGroup, ns), \
                                   groupPatterns)
     # # Combine results into groups_dic
     # group_treat_dic = {str(group): result for group, result in zip(groupPatterns, groupTreatList)}
 
     # Log summary statistics for utilities
-    utilities = [rx.utility for rx in candidateRx]
+    utilities = [rx.utility for rx in rxCandidates]
     logging.info(f"Utility statistics: min={min(utilities):.4f}, max={max(utilities):.4f}, "
                  f"mean={statistics.mean(utilities):.4f}, median={statistics.median(utilities):.4f}")
-    elapsed_time = time.time() - start_time
-    return candidateRx, elapsed_time
+    return rxCandidates 
 
 
-def getTreatmentForEachGroup(ns, group):
-    
+def getTreatmentForEachGroup(ns, group) -> Prescription:
     """
     Process a single group pattern (Pg1 ^ Pg2 ^...) to find the best treatment.
     Step 1. get all single treament
