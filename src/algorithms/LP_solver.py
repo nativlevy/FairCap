@@ -58,7 +58,6 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
     Returns:
         list: A list of selected set names that satisfy the constraints and maximize the objective.
     """
-    # For each tuple, find the min (TODO) rule
     solver = Optimize()
     m = len(idx_all)
     l = len(rxCandidates)
@@ -103,11 +102,10 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
     if fair_constr != None:
         threshold = fair_constr['threshold'] 
         if 'group_sp' in fair_constr['variant']:
-            num_p =  Sum([Sum(t[i]) for i in idx_unprotected])
-
-            ttl_util_p = Sum([Sum([t[i][j] * w[j] for i in idx_protected]) for j in range(l)])
+            num_p = Sum([Sum(t[i]) for i in idx_unprotected])
+            ttl_util_p = Sum([Sum([If(t[i][j], w[j], 0) for i in idx_protected]) for j in range(l)])
             num_u =  Sum([Sum(t[i]) for i in idx_unprotected])
-            ttl_util_u = Sum([Sum([t[i][j] * w[j] for i in idx_unprotected]) for j in range(l)])
+            ttl_util_u = Sum([Sum([If(t[i][j], w[j], 0) for i in idx_unprotected]) for j in range(l)])
             solver.add(Abs(ttl_util_p * num_u  - ttl_util_u * num_p)  < threshold * num_p * num_u)
             
     with StopWatch("Solving"):
