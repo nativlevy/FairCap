@@ -19,7 +19,7 @@
             "program": "~/FairPrescriptionRules/experiment-scripts/run_experiment.py",
             "console": "integratedTerminal",
             "args": [
-                "stackoverflow/mini.json",
+                "stackoverflow/500.json",
                 "local1.json"
             ],
             "justMyCode": false

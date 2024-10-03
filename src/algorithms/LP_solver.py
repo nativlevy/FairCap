@@ -103,9 +103,12 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
     if fair_constr != None:
         threshold = fair_constr['threshold'] 
         if 'group_sp' in fair_constr['variant']:
-            exp_util_p = Sum([Sum([t[i][j] * w[j] for i in idx_protected]) for j in range(l)]) / Sum([Sum(t[i]) for i in idx_protected])
-            exp_util_u = Sum([Sum([t[i][j] * w[j] for i in idx_unprotected]) for j in range(l)]) / Sum([Sum(t[i]) for i in idx_unprotected])
-            solver.add(Abs(exp_util_p - exp_util_u)  < threshold)
+            num_p =  Sum([Sum(t[i]) for i in idx_unprotected])
+
+            ttl_util_p = Sum([Sum([t[i][j] * w[j] for i in idx_protected]) for j in range(l)])
+            num_u =  Sum([Sum(t[i]) for i in idx_unprotected])
+            ttl_util_u = Sum([Sum([t[i][j] * w[j] for i in idx_unprotected]) for j in range(l)])
+            solver.add(Abs(ttl_util_p * num_u  - ttl_util_u * num_p)  < threshold * num_p * num_u)
             
     with StopWatch("Solving"):
         # Check for satisfiability and retrieve the optimal solution
