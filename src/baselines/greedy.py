@@ -20,6 +20,7 @@ sys.path.append(os.path.join(SRC_PATH, 'algorithms', 'metrics'))
 from group_mining import getConstrGroups, getGroups
 from treatment_mining import getTreatmentForAllGroups
 from fairness import score_rule
+from LP_solver import LP_solver
 
 from load_data import load_data
 from prescription import Prescription, PrescriptionSet
@@ -30,114 +31,6 @@ import prescription
 sys.path.append(os.path.join(Path(__file__).parent, 'common'))
 from consts import APRIORI, MIX_K, MAX_K, DATA_PATH, PROJECT_PATH, unprotected_coverage_threshold, protected_coverage_threshold, fairness_threshold  # NOQA
 
-
-
-# TODO maybe reuse for LPsolution 
-def greedy_fair_prescription_rules(rules: List[Prescription], protected_group: Set[int],
-                                   unprotected_coverage_threshold: float, protected_coverage_threshold: float,
-                                   max_rules: int, total_individuals: int, fairness_threshold: float) -> List[Prescription]:
-    """
-    Greedy algorithm to select fair prescription rules.
-
-    Args:
-        rules (List[Rule]): List of all possible rules.
-        protected_group (Set[int]): Set of indices in the protected group.
-        unprotected_coverage_threshold (float): Threshold for unprotected group coverage.
-        protected_coverage_threshold (float): Threshold for protected group coverage.
-        max_rules (int): Maximum number of rules to select.
-        total_individuals (int): Total number of individuals in the dataset.
-        fairness_threshold (float): Threshold for fairness constraint.
-
-    Returns:
-        List[Rule]: Selected rules that maximize utility while satisfying fairness constraints.
-    """
-    solution = []
-    covered = set()
-    covered_protected = set()
-    total_utility = 0
-    protected_utility = 0
-
-    unprotected_count = total_individuals - len(protected_group)
-    logging.info(f"Starting greedy algorithm with {len(rules)} rules, "
-                 f"{len(protected_group)} protected individuals, "
-                 f"{unprotected_count} unprotected individuals, "
-                 f"protected coverage threshold {protected_coverage_threshold}, "
-                 f"unprotected coverage threshold {unprotected_coverage_threshold}, "
-                 f"and max {max_rules} rules")
-
-    # Log initial utility statistics
-    initial_utilities = [rule.utility for rule in rules]
-    logging.info(f"Initial utility statistics: min={min(initial_utilities):.4f}, "
-                 f"max={max(initial_utilities):.4f}, mean={statistics.mean(initial_utilities):.4f}, "
-                 f"median={statistics.median(initial_utilities):.4f}")
-
-    while len(solution) < max_rules:
-        best_rule = None
-        best_score = float('-inf')
-
-        for rule in rules:
-            if rule not in solution:
-                score = score_rule(rule, solution, covered, covered_protected,
-                                   protected_group,
-                                   unprotected_coverage_threshold, protected_coverage_threshold)
-                if score > best_score:
-                    best_score = score
-                    best_rule = rule
-
-        if best_rule is None:
-            logging.info("No more rules can improve the solution, stopping")
-            break
-
-        solution.append(best_rule)
-        covered.update(best_rule.covered_idx)
-        covered_protected.update(best_rule.covered_protected_indices)
-        total_utility += best_rule.utility
-        protected_utility += best_rule.protected_utility
-
-        logging.info(f"Added rule {len(solution)}: score={best_score:.4f}, "
-                     f"total_covered={len(covered)}, protected_covered={len(covered_protected)}, "
-                     f"total_utility={total_utility:.4f}, protected_utility={protected_utility:.4f}")
-
-        # Check if coverage thresholds are met
-        if (len(covered) >= unprotected_coverage_threshold * total_individuals and
-                len(covered_protected) >= protected_coverage_threshold * len(protected_group)):
-            logging.info(
-                "Coverage thresholds met, focusing on protected group")
-            break
-
-    # After meeting coverage thresholds, focus on improving utility for the protected group
-    while len(solution) < max_rules:
-        best_rule = None
-        best_protected_utility = float('-inf')
-
-        for rule in rules:
-            if rule not in solution:
-                if rule.protected_utility > best_protected_utility:
-                    best_protected_utility = rule.protected_utility
-                    best_rule = rule
-
-        if best_rule is None:
-            logging.info(
-                "No more rules can improve protected utility, stopping")
-            break
-
-        solution.append(best_rule)
-        covered.update(best_rule.covered_idx)
-        covered_protected.update(best_rule.covered_protected_indices)
-        total_utility += best_rule.utility
-        protected_utility += best_rule.protected_utility
-
-        logging.info(f"Added protected-utility-improving rule {len(solution)}: protected_utility={best_protected_utility:.4f}, "
-                     f"total_covered={len(covered)}, protected_covered={len(covered_protected)}, "
-                     f"total_utility={total_utility:.4f}, protected_utility={protected_utility:.4f}")
-
-    # Log final utility statistics for selected rules
-    final_utilities = [rule.utility for rule in solution]
-    logging.info(f"Final utility statistics: min={min(final_utilities):.4f}, "
-                 f"max={max(final_utilities):.4f}, mean={statistics.mean(final_utilities):.4f}, "
-                 f"median={statistics.median(final_utilities):.4f}")
-
-    return solution
 
 
 def selectKRules(k: int, candidateRx, df: pd.DataFrame, idx_protec: Set[int], config: Dict, cvrg_constr, fair_constr, exec_time12) -> Tuple[PrescriptionSet, float]:
@@ -222,7 +115,6 @@ def selectKRules(k: int, candidateRx, df: pd.DataFrame, idx_protec: Set[int], co
     return rxSet, exec_time12 + exec_time3
  
 
-
 def main_cmd(config_str):
     config = json.loads(config_str)
     os.makedirs(config['_output_path'], exist_ok=True)
@@ -269,13 +161,12 @@ def main(config):
     df_protec = None
     if asProtected:
         df_protec = df[(df[attrP] == valP)]
-    df_protec = df[(df[attrP] != valP)]
-
-    idx_protec: Set = set(df_protec.index)
+    else:
+        df_protec = df[(df[attrP] != valP)]
+    idx_protected: Set = set(df_protec.index)
     logging.info(
-        f"Protected group size: {len(idx_protec)} out of {len(df)} total")
+        f"Protected group size: {len(idx_protected)} out of {len(df)} total")
     # ------------------------ DATASET SETUP ENDS ----------------------------
-
 
 
     start_time = time.time()
@@ -292,80 +183,50 @@ def main(config):
     # Step 2. Treatment mining using greedy
     # Get treatments for each grouping pattern
     logging.info("Step2: Getting candidate treatments for each grouping pattern")
-    candidateRx, _ = getTreatmentForAllGroups(DAG_str, df, idx_protec, groupPatterns, {}, tgtO, attrM, fair_constr=fair_constr)
+    rxCandidates:list[Prescription] = getTreatmentForAllGroups(DAG_str, df, idx_protected, groupPatterns, {}, tgtO, attrM, fair_constr=fair_constr)
     exec_time2 = time.time() - start_time 
     logging.warning(f"Elapsed time for treatment mining: {exec_time2} seconds")
-    # Create Rule objects
-    # Run experiments for different values of k = the number of rules
-
     # Save all rules found so far
     with open(os.path.join(config['_output_path'], 'rules_greedy_all.json'), 'w+') as f:
         json.dump([{
             'condition': rule.condition,
             'treatment': rule.treatment,
-            'utility': round(rule.utility),
-            'protected_utility': round(rule.protected_utility),
-            'coverage': len(rule.covered_idx),
-            'protected_coverage': len(rule.covered_idx_protected)
-        } for rule in candidateRx], f, indent=4)
-    results = []
-    for k in range(MIN_K, MAX_K + 1):
-        # TODO make signature shorter 
-        kRules_and_time= selectKRules(k, candidateRx, df, idx_protec, config, cvrg_constr, fair_constr, exec_time1 + exec_time2)
-        results.append(kRules_and_time)
-        logging.info(f"Completed experiment for k={k}")
-
-    # Write results to CSV
+            'utility': rule.utility,
+            'protected_utility': rule.protected_utility,
+            'coverage': list(rule.covered_idx),
+            'protected_coverage': list(rule.covered_idx_protected)
+        } for rule in rxCandidates], f, indent=4)
+    start_time = time.time() 
+    rxCandidates = LP_solver(rxCandidates, set(df.index), idx_protected, cvrg_constr, fair_constr)
+    exec_time3 = time.time() - start_time
+    rxSet = PrescriptionSet(rxCandidates, idx_protected)
     with open(os.path.join(config['_output_path'], 'experiment_results_greedy.csv'), 'w+', newline='') as csvfile:
         fieldnames = ['k', 'execution_time', 'expected_utility', 'protected_expected_utility', 'coverage_rate',
-                      'protected_coverage_rate', 'selected_rules']
+                      'protected_coverage_rate']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        k = MIN_K - 1
+        k = len(rxCandidates)
         writer.writeheader()
-        for kRules_and_time in results:
-            k += 1
-            rxSet: PrescriptionSet = kRules_and_time[0]
-            if len(rxSet.getRules()) == 0:
-                logging.warn(f"0 rules found when k={k}")
-                continue
-            ttl_exec_time: float = kRules_and_time[1] 
-            # Convert selected_rules to a JSON string
-            prescriptions: List[Prescription] = rxSet.getRules()
-            selected_rules_json = json.dumps([{
-                'group': rx.getGroup(),
-                'treatment': rx.getTreatment(),
-                'utility': rx.getUtility(),
-                'protected_utility': rx.getProtectedUtility(),
-                'coverage': round(rx.getCoverage()/len(df) * 100, 2),
-                'protected_coverage': round(rx.getProtectedCoverage()/len(idx_protec) *100, 2)
-            } for rx in prescriptions])
+        writer.writerow({
+            'k': k,
+            'execution_time': exec_time3,
+            'expected_utility': rxSet.getExpectedUtility(),    
+            'protected_expected_utility': rxSet.getProtectedExpectedUtility(),
+            'coverage_rate': round(rxSet.getCoverage() / len(df) * 100, 2),
+            'protected_coverage_rate': round(rxSet.getProtectedCoverage() / len(idx_protected) * 100, 2),
+        })
 
-            writer.writerow({
-                'k': k,
-                'execution_time': ttl_exec_time,
-                'expected_utility': rxSet.getExpectedUtility(),    
-                'protected_expected_utility': rxSet.getProtectedExpectedUtility(),
-                'coverage_rate': round(rxSet.getCoverage() / len(df) * 100, 2),
-                'protected_coverage_rate': round(rxSet.getProtectedCoverage() / len(idx_protec) * 100, 2),
-                'selected_rules': selected_rules_json
-            })
-
+    # Convert selected_rules to a JSON string
+    with open(os.path.join(config['_output_path'], 'rules_greedy_selected.json'), 'w+') as f:
+        json.dump([{
+        'condition': rx.getGroup(),
+        'treatment': rx.getTreatment(),
+        'utility': rx.getUtility(),
+        'protected_utility': rx.getProtectedUtility(),
+        'coverage_rate': round(rx.getCoverage()/len(df) * 100, 2),
+        'protected_coverage_rate': round(rx.getProtectedCoverage()/len(idx_protected) *100, 2)
+    } for rx in rxCandidates], f, indent=4)
     logging.info("Results written to experiment_results_greedy.csv")
-    # Log detailed results for each k
-    k = MIN_K - 1
-    for kRules_and_time in results:
-        k += 1
-        rxSet: PrescriptionSet = kRules_and_time[0]
-        if len(rxSet.getRules()) == 0:
-            continue
-        ttl_exec_time: float = kRules_and_time[1] 
-        logging.info(f"\nDetailed results for k={k}:")
-        logging.info(f"Execution time: {ttl_exec_time=:.2f} seconds")
-        logging.info(f"Expected utility: {rxSet.getExpectedUtility():.4f}")
-        logging.info(
-            f"Protected expected utility: {rxSet.getProtectedExpectedUtility():.4f}")
-        logging.info(f"Coverage: {rxSet.getCoverage():.2%}")
-        logging.info(f"Protected coverage: {rxSet.getProtectedCoverage():.2%}")
+   
 
 
 if __name__ == "__main__":
