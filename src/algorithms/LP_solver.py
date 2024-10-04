@@ -59,6 +59,10 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
         list: A list of selected set names that satisfy the constraints and maximize the objective.
     """
     # TODO add soft constraint
+    set_param('sat.lookahead_simplify', True) 
+    set_param("parallel.enable", True)
+    set_param('parallel.threads.max', 10000)
+
     # Sort Rx candidates so that low utility rules are selected first.
     # Assuming that each individual always choose the worse treatment
     rxCandidates.sort(reverse=True, key=lambda rx: rx.utility)
@@ -109,7 +113,7 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
             ttl_util_p = Sum([Sum([If(t[i][j], w[j], 0) for i in idx_protected]) for j in range(l)])
             num_u =  Sum([Sum(t[i]) for i in idx_unprotected])
             ttl_util_u = Sum([Sum([If(t[i][j], w[j], 0) for i in idx_unprotected]) for j in range(l)])
-            solver.add(Abs(ttl_util_p * num_u  - ttl_util_u * num_p)  < threshold * num_p * num_u)
+            solver.add(Abs(ttl_util_p / num_p  - ttl_util_u * num_u)  < threshold)
             
     # Check for satisfiability and retrieve the optimal solution
     if solver.check() == sat:
