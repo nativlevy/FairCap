@@ -16,37 +16,10 @@ sys.path.append(os.path.join(Path(__file__).parent, 'metrics'))
 
 from StopWatch import StopWatch
 from prescription import Prescription
+set_param('sat.lookahead_simplify', True) 
+set_param("parallel.enable", True)
+set_param('parallel.threads.max', 10000)
 
-def util_obj():
-    pass
-
-def size_objc(isSelected, k):
-    return Sum(list(isSelected)) <= k
-
-
-    
-
-def group_fairness_constr(candidateRx, idx_all, idx_protec, variant, threshold) -> z3.z3.BoolRef:
-    # return a Z3 constraint
-    if 'sp' in variant or 'bgl' in variant:
-        partialMinUtil = functools.partial(minUtil, candidateRx)
-        minUtils = {}
-        with multiprocessing.Pool() as pool:
-            minUtils = dict(zip(idx_all, pool.map(partialMinUtil, idx_all)))
-        minProtectedUtils = {idx: minUtil for idx, minUtil in minUtils.items() if idx in idx_protec}
-        if 'sp' in variant:
-            return  
-        
-    else:   
-        raise ArgumentError(f"Unsupported fairness variant: {variant}")
-    
-
- 
-def minUtil(rxSet, idx):
-    applicableRxSet = list(filter(lambda rx: idx in rx.covered, rxSet))
-    leastEffectiveRx = min(applicableRxSet, key=lambda rx: rx.utility) 
-    return leastEffectiveRx.getUtility() 
-    
 
 def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1=1, l2=200000):
     """
@@ -60,9 +33,7 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
         list: A list of selected set names that satisfy the constraints and maximize the objective.
     """
     # TODO add soft constraint
-    set_param('sat.lookahead_simplify', True) 
-    set_param("parallel.enable", True)
-    set_param('parallel.threads.max', 10000)
+
 
     # Sort Rx candidates so that low utility rules are selected first.
     # Assuming that each individual always choose the worse treatment
