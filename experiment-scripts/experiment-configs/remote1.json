@@ -20,7 +20,7 @@
       },
       "_fairness_constraint": {
         "variant": "group_sp",
-        "threshold": 100500
+        "threshold": 10000
       }
     }
   ]

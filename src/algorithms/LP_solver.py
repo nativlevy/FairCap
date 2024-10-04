@@ -6,6 +6,7 @@ from pathlib import Path
 import pstats
 from typing import Dict, List
 from attr import dataclass
+from scipy import optimize
 from z3 import *
 import multiprocessing
 import os
@@ -81,7 +82,11 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
     # Scale the utilities by their protected/unprotected size
 
     # Maximize the sum of weights while penalizing size of the set
-    solver.maximize(Sum([g[j] * w[j] for j in range(l)]))
+    objective = Sum([g[j] * w[j] for j in range(l)])
+
+    solver.maximize(objective)
+    solver.add(objective < 1000000)
+    solver.add(objective > 0)
     
     # Constraint 1;
     # For all i, j: t[i][j] <= g[j] 
@@ -101,7 +106,7 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
     if cvrg_constr != None and 'group' in cvrg_constr['variant']:
         threshold = cvrg_constr['threshold'] 
         threshold_p = cvrg_constr['threshold_p'] 
-        solver.add(PbGe([(Or([t[i][j] for j in range(l)]), 1) for i in idx_all], int(threshold_p * mp)))
+        solver.add(PbGe([(Or([t[i][j] for j in range(l)]), 1) for i in idx_all], int(threshold * (mp + mu))))
         solver.add(PbGe([(Or([t[i][j] for j in range(l)]), 1) for i in idx_protected], int(threshold_p * mp)))
 
     # Constraint 4;
