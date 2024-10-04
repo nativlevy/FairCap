@@ -47,7 +47,7 @@ def minUtil(rxSet, idx):
     return leastEffectiveRx.getUtility() 
     
 
-def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1=1, l2=100000):
+def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1=1, l2=200000):
     """
     Objective: max[]
     Constains on
