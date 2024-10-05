@@ -20,7 +20,7 @@ sys.path.append(os.path.join(SRC_PATH, 'algorithms', 'metrics'))
 from group_mining import getConstrGroups, getGroups
 from treatment_mining import getTreatmentForAllGroups
 from fairness import score_rule
-from LP_solver import LP_solver
+from LP_solver import LP_solver, LP_solver_k
 
 from load_data import load_data
 from prescription import Prescription, PrescriptionSet
@@ -197,8 +197,9 @@ def main(config):
             'protected_coverage': list(rule.covered_idx_protected)
         } for rule in rxCandidates], f, indent=4)
     start_time = time.time() 
-    rxCandidates = LP_solver(rxCandidates, set(df.index), idx_protected, cvrg_constr, fair_constr)
+    rxCandidates = LP_solver_k(rxCandidates, set(df.index), idx_protected, cvrg_constr, fair_constr, 20)
     exec_time3 = time.time() - start_time
+    logging.warning(f"Elapsed time for LP: {exec_time3} seconds")
     rxSet = PrescriptionSet(rxCandidates, idx_protected)
     with open(os.path.join(config['_output_path'], 'experiment_results_greedy.csv'), 'w+', newline='') as csvfile:
         fieldnames = ['k', 'execution_time', 'expected_utility', 'protected_expected_utility', 'coverage_rate',

@@ -216,7 +216,7 @@ def isValidTreatment(df_g, level, newTreatment):
     if len(newTreatment.keys()) == level:
         keys = list(newTreatment.keys())
         vals = list(newTreatment.values())
-        treatable = (df_g[keys] != vals).all(axis=1)
+        treatable = (df_g[keys] != vals).any(axis=1)
         valid = list(set(treatable.tolist()))
         # no tuples in treatment group
         if len(valid) < 2:
