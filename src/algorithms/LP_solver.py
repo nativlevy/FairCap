@@ -104,7 +104,8 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
         return []
 
 def covering_rule(rxCandidates:List[Prescription], tuple_idx):
-    return [rx for rx in rxCandidates if tuple_idx in rx.covered_idx]    
+    print(f"{tuple_idx}: {[rx.covered_idx for rx in rxCandidates if tuple_idx in rx.covered_idx] }")
+    return set([j for j, rx in enumerate(rxCandidates) if tuple_idx in rx.covered_idx])  
 
 def LP_solver_k(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, k, l1=1, l2=200000):
     """
@@ -137,16 +138,16 @@ def LP_solver_k(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, 
     # g[j] => rule j is selected
     g: List[z3.z3.BoolRef]= [Bool(f"g{j}") for j in range(l)]
     # t[i][j] => t[i] is covered by and takes rule j as Rx
-    t: List[List[z3.z3.BoolRef]]= [[Bool(f"t{i}_{j}") for j in range(l)] for i in range(m)]
+    t: List[List[z3.z3.BoolRef]]= [[Bool(f"t{i}_{j}") for j in range(l)] for i in idx_all]
 
     w = [rxCandidates[j].utility for j in range(l)]
     # Scale the utilities by their protected/unprotected size
 
     # Constraint 0: Limit rule set size to k
-    solver.add(PbLe([(g[j], 1) for j in range(l)], k))
+    solver.add(PbEq([(g[j], 1) for j in range(l)], k))
 
     with multiprocessing.Pool() as pool:
-        idx_to_rule = pool.map(functools.partial(covering_rule, rxCandidates), range(m))
+        idx_to_rule = pool.map(functools.partial(covering_rule, rxCandidates), idx_all)
 
     # Constraint 1;
     # For all i, j: t[i][j] <= g[j] 

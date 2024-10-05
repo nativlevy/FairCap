@@ -15,7 +15,16 @@
   "_models": [
     {
       "_name": "greedy[group_coverage+indvidual_sp]",
-      "_start": "greedy.py"
+      "_start": "greedy.py",
+      "_coverage_constraint": {
+        "variant": "group",
+        "threshold": 0.5,
+        "threshold_p": 0.5
+      },
+      "_fairness_constraint": {
+        "variant": "group_sp",
+        "threshold": 10500
+      }
     }
   ]
 }
