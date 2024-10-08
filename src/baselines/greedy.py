@@ -197,7 +197,7 @@ def main(config):
             'protected_coverage': list(rule.covered_idx_protected)
         } for rule in rxCandidates], f, indent=4)
     start_time = time.time() 
-    rxCandidates = LP_solver_k(rxCandidates, set(df.index), idx_protected, cvrg_constr, fair_constr, 20)
+    rxCandidates = LP_solver_k(rxCandidates, set(df.index), idx_protected, cvrg_constr, fair_constr, 10)
     exec_time3 = time.time() - start_time
     logging.warning(f"Elapsed time for LP: {exec_time3} seconds")
     rxSet = PrescriptionSet(rxCandidates, idx_protected)

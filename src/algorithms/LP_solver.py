@@ -16,9 +16,8 @@ sys.path.append(os.path.join(Path(__file__).parent, 'metrics'))
 
 from StopWatch import StopWatch
 from prescription import Prescription
-set_param('sat.lookahead_simplify', True) 
-set_param("parallel.enable", True)
-set_param('parallel.threads.max', 10000)
+z3.set_param("parallel.enable", "true")
+z3.set_param('parallel.threads.max', 10000)
 
 
 def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1=1, l2=200000):
@@ -50,12 +49,12 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
     g: List[z3.z3.BoolRef]= [Bool(f"g{j}") for j in range (l)]
     # t[i][j] => t[i] is covered by and takes rule j as Rx
     t: List[List[z3.z3.BoolRef]]= [[Bool(f"t{i}_{j}") for j in range(l)] for i in range(m)]
-
-    w = [rxCandidates[j].utility - l2 for j in range(l)]
+    ttl_util = sum([rxCandidates[j].utility for j in range(l)])
+    w = [rxCandidates[j].utility / ttl_util for j in range(l)]
     # Scale the utilities by their protected/unprotected size
 
     # Maximize the sum of weights while penalizing size of the set
-    objective = Sum([g[j] * w[j] for j in range(l)])
+    objective = Sum([If(g[j], w[j], 0) for j in range(l)])
 
     solver.maximize(objective)
     solver.add(objective < 1000000)
@@ -91,7 +90,7 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
             ttl_util_p = Sum([Sum([If(t[i][j], w[j], 0) for i in idx_protected]) for j in range(l)])
             num_u =  Sum([Sum(t[i]) for i in idx_unprotected])
             ttl_util_u = Sum([Sum([If(t[i][j], w[j], 0) for i in idx_unprotected]) for j in range(l)])
-            solver.add(Abs(ttl_util_p / num_p  - ttl_util_u * num_u)  < threshold)
+            solver.add(Abs(ttl_util_p / num_p  - ttl_util_u / num_u)  < threshold)
             
     # Check for satisfiability and retrieve the optimal solution
     if solver.check() == sat:
@@ -104,7 +103,6 @@ def LP_solver(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, l1
         return []
 
 def covering_rule(rxCandidates:List[Prescription], tuple_idx):
-    print(f"{tuple_idx}: {[rx.covered_idx for rx in rxCandidates if tuple_idx in rx.covered_idx] }")
     return set([j for j, rx in enumerate(rxCandidates) if tuple_idx in rx.covered_idx])  
 
 def LP_solver_k(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, k, l1=1, l2=200000):
@@ -148,7 +146,7 @@ def LP_solver_k(rxCandidates, idx_all, idx_protected, cvrg_constr, fair_constr, 
 
     with multiprocessing.Pool() as pool:
         idx_to_rule = pool.map(functools.partial(covering_rule, rxCandidates), idx_all)
-
+    print(idx_to_rule)
     # Constraint 1;
     # For all i, j: t[i][j] <= g[j] 
     # Equivalent to t[i][j] -> i in rx[j].covered and g[j]  

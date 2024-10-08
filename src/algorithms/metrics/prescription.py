@@ -1,7 +1,6 @@
 from re import L
 from typing import Dict, List, Set
 
-from pydantic import InstanceOf
 
 class Prescription:
     """
@@ -29,7 +28,12 @@ class Prescription:
         self.covered_idx_protected = covered_idx_protected
         self.utility = utility
         self.protected_utility = protected_utility
-
+        self.name = self.make_name()
+    def make_name(self):
+        name = ""
+        for k, v in self.condition.items():
+            name += f"{k.replace(' ', '_')}:{v.replace(' ', '_')};"
+        return name 
     def getCondition(self):
         return self.condition
     def getGroup(self):
@@ -88,16 +92,16 @@ class PrescriptionSet:
         total_utility = 0.0
         for t in self.covered_idx:
             rules_covering_t = [r for r in self.getRules() if t in r.covered_idx]
-            min_utility = min(r.utility for r in rules_covering_t)
-            total_utility += min_utility
+            max_utility = max(r.utility for r in rules_covering_t)
+            total_utility += max_utility
         
         if len(self.covered_idx_protected) == 0:
             return total_utility / len(self.covered_idx), 0.0
         total_protected_utility = 0.0
         for t in self.covered_idx_protected:
             rules_covering_t = [r for r in self.getRules() if t in r.covered_idx_protected]
-            min_utility = min(r.utility for r in rules_covering_t)
-            total_protected_utility += min_utility
+            max_utility = max(r.utility for r in rules_covering_t)
+            total_protected_utility += max_utility
         return total_utility/len(self.covered_idx), total_protected_utility/len(self.covered_idx_protected)
     def getExpectedUtility(self):
         return round(self.expected_utility, 2)

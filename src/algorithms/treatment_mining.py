@@ -89,6 +89,9 @@ def getTreatmentForAllGroups(DAG_str, df, idx_protec, groupPatterns, attrOrdinal
     utilities = [rx.utility for rx in rxCandidates]
     logging.info(f"Utility statistics: min={min(utilities):.4f}, max={max(utilities):.4f}, "
                  f"mean={statistics.mean(utilities):.4f}, median={statistics.median(utilities):.4f}")
+    # Weed out rx that doesn't offer treatment
+    rxCandidates = list(filter(lambda rx: rx.treatment != None, rxCandidates)) 
+    logging.warn(f"effective grouping rate {len(rxCandidates) / len(utilities)}") 
     return rxCandidates 
 
 

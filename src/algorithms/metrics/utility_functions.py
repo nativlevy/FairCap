@@ -117,7 +117,7 @@ def isTreatable(record, treatments, attrOrdinal):
         else:
             # In case ordinal_attr not defined
             # treatment value == current value => no effect on this tuple 
-            if not record[treat_attr] == treatments[treat_attr]:
+            if record[treat_attr] != treatments[treat_attr]:
                 return 0
     return 1
 
