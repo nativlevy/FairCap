@@ -1,1 +1,6 @@
-python ../experiment-scripts/run_remote_experiment.py stackoverflow/config.json ../experiment-scripts/experiment-configs/remote_full.json
+#!/usr/bin/bash
+python ../experiment-scripts/run_experiment.py ../data/stackoverflow/config.json remote_full.json
+
+
+
+
