@@ -13,18 +13,18 @@ import statistics
 import concurrent
 
 
+
 SRC_PATH = Path(__file__).parent.parent 
 sys.path.append(os.path.join(SRC_PATH, 'tools'))
 sys.path.append(os.path.join(SRC_PATH, 'algorithms'))
 sys.path.append(os.path.join(SRC_PATH, 'algorithms', 'metrics'))
 from group_mining import getConstrGroups, getGroups
 from treatment_mining import getTreatmentForAllGroups
-from fairness import score_rule
+from rule_selection import k_selection
 from LP_solver import LP_solver, LP_solver_k
 
 from load_data import load_data
-from prescription import Prescription, PrescriptionSet
-import prescription
+from prescription import Prescription, PrescriptionList
 
 # from utility.logging_util import init_logger
 
@@ -33,7 +33,7 @@ from consts import APRIORI, MIX_K, MAX_K, DATA_PATH, PROJECT_PATH, unprotected_c
 
 
 
-def selectKRules(k: int, candidateRx, df: pd.DataFrame, idx_protec: Set[int], config: Dict, cvrg_constr, fair_constr, exec_time12) -> Tuple[PrescriptionSet, float]:
+def selectKRules(k: int, candidateRx, df: pd.DataFrame, idx_protec: Set[int], config: Dict, cvrg_constr, fair_constr, exec_time12) -> Tuple[PrescriptionList, float]:
     """
     Run an experiment for a specific number of rules (k).
 
@@ -93,24 +93,24 @@ def selectKRules(k: int, candidateRx, df: pd.DataFrame, idx_protec: Set[int], co
             'condition': rule.condition,
             'treatment': rule.treatment,
             'utility': round(rule.utility),
-            'protected_utility': round(rule.protected_utility),
+            'protected_utility': round(rule.utility_p),
             'coverage': len(rule.covered_idx),
-            'protected_coverage': len(rule.covered_idx_protected)
+            'protected_coverage': len(rule.covered_idx_p)
         } for rule in rules], f, indent=4)
     # TODO Implement LP
 
     finalizedKRules = rules
     # Calculate metrics
-    rxSet = PrescriptionSet(finalizedKRules, idx_protec)
+    rxSet = PrescriptionList(finalizedKRules, set(df.index), idx_protec)
 
     exec_time3 = time.time() - start_time 
     logging.info(f"Experiment results for k={k}:")
     logging.info(f"Expected utility: {rxSet.expected_utility:.4f}")
     logging.info(
-        f"Protected expected utility: {rxSet.protected_expected_utility:.4f}")
+        f"Protected expected utility: {rxSet.expected_utility_p:.4f}")
     logging.info(f"Coverage: {len(rxSet.covered_idx):.2%}")
     logging.info(
-        f"Protected coverage: {len(rxSet.covered_idx_protected):.2%}")
+        f"Protected coverage: {len(rxSet.covered_idx_p):.2%}")
 
     return rxSet, exec_time12 + exec_time3
  
@@ -163,16 +163,16 @@ def main(config):
         df_protec = df[(df[attrP] == valP)]
     else:
         df_protec = df[(df[attrP] != valP)]
-    idx_protected: Set = set(df_protec.index)
+    idx_p: Set = set(df_protec.index)
     logging.info(
-        f"Protected group size: {len(idx_protected)} out of {len(df)} total")
+        f"Protected group size: {len(idx_p)} out of {len(df)} total")
     # ------------------------ DATASET SETUP ENDS ----------------------------
 
 
     start_time = time.time()
     # Step 1. Grouping pattern mining
     
-    groupPatterns = getConstrGroups(df, attrI, min_sup=APRIORI, constr=cvrg_constr)
+    groupPatterns = getConstrGroups(df, idx_p, attrI, min_sup=APRIORI, cvrg_constr=cvrg_constr)
     # TODO Testing
 
     exec_time1 = time.time() - start_time 
@@ -183,7 +183,7 @@ def main(config):
     # Step 2. Treatment mining using greedy
     # Get treatments for each grouping pattern
     logging.info("Step2: Getting candidate treatments for each grouping pattern")
-    rxCandidates:list[Prescription] = getTreatmentForAllGroups(DAG_str, df, idx_protected, groupPatterns, {}, tgtO, attrM, fair_constr=fair_constr)
+    rxCandidates:list[Prescription] = getTreatmentForAllGroups(DAG_str, df, idx_p, groupPatterns, {}, tgtO, attrM, fair_constr=fair_constr)
     exec_time2 = time.time() - start_time 
     logging.warning(f"Elapsed time for treatment mining: {exec_time2} seconds")
     # Save all rules found so far
@@ -192,29 +192,29 @@ def main(config):
             'condition': rule.condition,
             'treatment': rule.treatment,
             'utility': rule.utility,
-            'protected_utility': rule.protected_utility,
+            'protected_utility': rule.utility_p,
             'coverage': list(rule.covered_idx),
-            'protected_coverage': list(rule.covered_idx_protected)
+            'protected_coverage': list(rule.covered_idx_p)
         } for rule in rxCandidates], f, indent=4)
-    start_time = time.time() 
-    rxCandidates = LP_solver_k(rxCandidates, set(df.index), idx_protected, cvrg_constr, fair_constr, 10)
+    # rxCandidates = LP_solver_k(rxCandidates, set(df.index), idx_p, cvrg_constr, fair_constr, 10)
+    start_time = time.time()
+    rxSelected, kResults = k_selection(10, set(df.index), idx_p, rxCandidates, cvrg_constr, fair_constr) 
     exec_time3 = time.time() - start_time
-    logging.warning(f"Elapsed time for LP: {exec_time3} seconds")
-    rxSet = PrescriptionSet(rxCandidates, idx_protected)
+    logging.warning(f"Elapsed time for Selection: {exec_time3} seconds")
     with open(os.path.join(config['_output_path'], 'experiment_results_greedy.csv'), 'w+', newline='') as csvfile:
         fieldnames = ['k', 'execution_time', 'expected_utility', 'protected_expected_utility', 'coverage_rate',
                       'protected_coverage_rate']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        k = len(rxCandidates)
         writer.writeheader()
-        writer.writerow({
-            'k': k,
-            'execution_time': exec_time3,
-            'expected_utility': rxSet.getExpectedUtility(),    
-            'protected_expected_utility': rxSet.getProtectedExpectedUtility(),
-            'coverage_rate': round(rxSet.getCoverage() / len(df) * 100, 2),
-            'protected_coverage_rate': round(rxSet.getProtectedCoverage() / len(idx_protected) * 100, 2),
-        })
+        for result in kResults:
+            writer.writerow({
+                'k': result["k"],
+                'execution_time': exec_time1 + exec_time2 + result['execution_time'],
+                'expected_utility': result['expected_utility'],    
+                'protected_expected_utility': result['protected_expected_utility'],
+                'coverage_rate': result['coverage_rate'],
+                'protected_coverage_rate': result['protected_coverage_rate'] 
+            })
 
     # Convert selected_rules to a JSON string
     with open(os.path.join(config['_output_path'], 'rules_greedy_selected.json'), 'w+') as f:
@@ -224,8 +224,8 @@ def main(config):
         'utility': rx.getUtility(),
         'protected_utility': rx.getProtectedUtility(),
         'coverage_rate': round(rx.getCoverage()/len(df) * 100, 2),
-        'protected_coverage_rate': round(rx.getProtectedCoverage()/len(idx_protected) *100, 2)
-    } for rx in rxCandidates], f, indent=4)
+        'protected_coverage_rate': round(rx.getProtectedCoverage()/len(idx_p) *100, 2)
+    } for rx in rxSelected.rules], f, indent=4)
     logging.info("Results written to experiment_results_greedy.csv")
    
 

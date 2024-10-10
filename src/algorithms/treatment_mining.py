@@ -1,5 +1,6 @@
 import ast
 import cProfile
+from ctypes import util
 from functools import partial
 from itertools import combinations
 import logging
@@ -82,8 +83,6 @@ def getTreatmentForAllGroups(DAG_str, df, idx_protec, groupPatterns, attrOrdinal
     with multiprocessing.Pool(processes=numProc) as pool:
         rxCandidates = pool.map(partial(getTreatmentForEachGroup, ns), \
                                   groupPatterns)
-    # # Combine results into groups_dic
-    # group_treat_dic = {str(group): result for group, result in zip(groupPatterns, groupTreatList)}
 
     # Log summary statistics for utilities
     utilities = [rx.utility for rx in rxCandidates]
@@ -205,8 +204,8 @@ def getTreatmentForEachGroup(ns, group) -> Prescription:
         f'Final best treatment: {best_treatment}, CATE: {best_cate:.4f}, Protected CATE: {best_cate_protec:.4f}, Combined Score: {best_benefit:.4f}')
     logging.info('#######################################')
     covered_idx = set(df_g.index)
-    covered_idx_protected = set(idx_protec) & covered_idx 
-    return Prescription(group, treatment=best_treatment, covered_idx=covered_idx, covered_idx_protected=covered_idx_protected, utility=best_cate, protected_utility=best_cate_protec)
+    covered_idx_p = set(idx_protec) & covered_idx 
+    return Prescription(condition=group, treatment=best_treatment, covered_idx=covered_idx, covered_idx_p=covered_idx_p, utility=best_cate, utility_p=best_cate_protec)
 
 def isValidTreatment(df_g, level, newTreatment):
     """ 
@@ -229,9 +228,6 @@ def isValidTreatment(df_g, level, newTreatment):
         if size > 0.9 * len(df_g) or size < 0.1 * len(df_g):
             return False
         return True
-
-  
-
 
 def getSingleTreatments(attrM: List[Dict], df: pd.DataFrame, attrOrdinal=None) -> List[Dict]:
     """

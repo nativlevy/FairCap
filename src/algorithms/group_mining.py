@@ -1,6 +1,6 @@
 from functools import partial
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, List, Set, Tuple
 import os, sys
 from pathlib import Path
 import pandas as pd
@@ -40,7 +40,7 @@ def getGroups(df: pd.DataFrame, attrI: List[str], min_sup: float) -> List[dict]:
     
     return grouping_patterns
 
-def getConstrGroups(df: pd.DataFrame, attrI: List[str], min_sup: float, constr: Dict = None) -> List[dict]:
+def getConstrGroups(df: pd.DataFrame, idx_p: Set[int], attrI: List[str], min_sup: float, cvrg_constr: Dict = None) -> List[dict]:
     """
     Same as `getConstrGroups` except that constraints are applied
     Generate all possible grouping patterns using Apriori algorithm.
@@ -60,23 +60,24 @@ def getConstrGroups(df: pd.DataFrame, attrI: List[str], min_sup: float, constr: 
     """
     group_patterns = getGroups(df, attrI, min_sup)
     # Default: no constraint
-    if constr == None:
+    if cvrg_constr == None:
         logging.info(f"No constraint applied on grouping patterns")
         return group_patterns
     # Group Constraint: same as default at this stage
-    if constr['variant'] == 'group': 
+    if cvrg_constr['variant'] == 'group': 
         logging.info(f"Group constraint applied on grouping patterns (no group patterns are discarded at this stage)")
         return group_patterns
     
     # Rule Constraint: group should cover at least x% of rows in the dataset
-    min_th = constr['threshold'] 
+    threshold = cvrg_constr['threshold'] 
+    threshold_p = cvrg_constr['threshold'] 
     logging.info(f"Initial grouping patterns: {len(group_patterns)}")
-    partialFn = partial(rule_coverage, df)
+    partialFn = partial(rule_coverage, df, idx_p)
     rule_cvrg = list(map(partialFn, group_patterns))
 
     group_patterns_filtered = []
     for i in range(len(rule_cvrg)):
-        if rule_cvrg[i] /len(df) > min_th:
+        if rule_cvrg[i][0] /len(df) > threshold and rule_cvrg[i][1] > threshold_p:
             group_patterns_filtered.append(group_patterns[i])
 
     # Sort filtered patterns by length (shorter first) and then by coverage size (larger first)

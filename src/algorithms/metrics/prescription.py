@@ -1,3 +1,4 @@
+import copy
 from re import L
 from typing import Dict, List, Set
 
@@ -19,15 +20,17 @@ class Prescription:
     def __init__(self, condition: Dict, 
             treatment: Dict, 
             covered_idx: Set[int],
-            covered_idx_protected: Set[int], 
+            covered_idx_p: Set[int], 
             utility: float, 
-            protected_utility: float):
+            utility_p: float):
         self.condition = condition
         self.treatment = treatment
         self.covered_idx = covered_idx
-        self.covered_idx_protected = covered_idx_protected
+        self.covered_idx_p = covered_idx_p
+        self.covered_idx_u = covered_idx - covered_idx_p 
+
         self.utility = utility
-        self.protected_utility = protected_utility
+        self.utility_p = utility_p
         self.name = self.make_name()
     def make_name(self):
         name = ""
@@ -48,16 +51,16 @@ class Prescription:
         return round(self.utility, 2)
     
     def getProtectedUtility(self) -> float:
-        if self.protected_utility == None:
+        if self.utility_p == None:
             return -1.0
-        return round(self.protected_utility, 2)
+        return round(self.utility_p, 2)
     def getCoveredIdx(self):
         return self.covered_idx
     
     def getCoverage(self):
         return len(self.covered_idx)
     def getProtectedCoverage(self):
-        return len(self.covered_idx_protected)
+        return len(self.covered_idx_p)
     def compare(self, obj):
         if not isinstance(obj, Prescription):
             return -1
@@ -66,60 +69,121 @@ class Prescription:
     
  
 
-class PrescriptionSet:
-    def __init__(self, rules: List[Prescription], idx_protec):
+class PrescriptionList:
+    def __init__(self, rules: List[Prescription], idx_all, idx_p):
         self.rules = rules
-        self.idx_protec = set(idx_protec)
-        self.covered_idx = set().union(*[rule.covered_idx for rule in self.rules])
-        self.covered_idx_protected = self.covered_idx & self.idx_protec 
-        expected_utilities = self.expected_utilities()
-        self.expected_utility, self.protected_expected_utility = expected_utilities 
+        self.idx_all = set(idx_all)
+        self.idx_p = set(idx_p)
+        self.idx_u = idx_all - self.idx_p
+
+        if rules:
+            self.covered_idx = set().union(*[rule.covered_idx for rule in self.rules])
+            self.covered_idx_p = self.covered_idx & self.idx_p 
+            self.covered_idx_u = self.covered_idx - self.idx_p 
+
+            self.expected_utility_u, self.expected_utility_p = self.calculate_expected_utilities()
+            # Prevent float overflow
+            self.expected_utility = \
+                self.expected_utility_u * (len(idx_all - idx_p) / len(idx_all)) \
+            +   self.expected_utility_p * (len(idx_p) / len(idx_all)) 
+        else:
+            self.covered_idx = set()
+            self.covered_idx_p = set() 
+            self.covered_idx_u = set()
+            self.expected_utility_u = 0
+            self.expected_utility_p = 0
+            self.expected_utility = 0
+
     def getRules(self) -> List[Prescription]: 
         return self.rules
-    def expected_utilities(self) -> float:
+    def calculate_expected_utilities(self) -> float:
         """
-        Calculate the expected utility of a set of rules.
+        Calculate the expected utilities of a set of rules.
 
-        Args:
-            rules (List[Rule]): List of rules to calculate the expected utility for.
 
         Returns:
-            float: The expected utility and expected protected utility.
+            float: The unprotected expected utility and protected expected utility.
         """
-        # TODO double check old implementation
         if len(self.covered_idx) == 0:
             return 0.0, 0.0
-        total_utility = 0.0
-        for t in self.covered_idx:
-            rules_covering_t = [r for r in self.getRules() if t in r.covered_idx]
-            max_utility = max(r.utility for r in rules_covering_t)
-            total_utility += max_utility
         
-        if len(self.covered_idx_protected) == 0:
-            return total_utility / len(self.covered_idx), 0.0
-        total_protected_utility = 0.0
-        for t in self.covered_idx_protected:
-            rules_covering_t = [r for r in self.getRules() if t in r.covered_idx_protected]
-            max_utility = max(r.utility for r in rules_covering_t)
-            total_protected_utility += max_utility
-        return total_utility/len(self.covered_idx), total_protected_utility/len(self.covered_idx_protected)
+        exp_utility_u = 0.0
+        for t in self.covered_idx_u:
+            rules_covering_t = [r for r in self.getRules() if t in r.covered_idx_u]
+            min_utility = min(r.utility for r in rules_covering_t)
+            exp_utility_u += min_utility / len(self.idx_u)
+            # covered_idx_u != [] => idx_u != [] 
+     
+        exp_utility_p = 0.0
+        for t in self.covered_idx_p:
+            rules_covering_t = [r for r in self.getRules() if t in r.covered_idx_p]
+            min_utility = min(r.utility for r in rules_covering_t)
+            exp_utility_p += min_utility / len(self.idx_p)
+        return exp_utility_u, exp_utility_p
+
     def getExpectedUtility(self):
         return round(self.expected_utility, 2)
     def getProtectedExpectedUtility(self):
-        return round(self.protected_expected_utility )
+        return round(self.expected_utility_p, 2)
+    def getUnrotectedExpectedUtility(self):
+        return round(self.expected_utility_u, 2)
     def getCoveredIdx(self):
         return self.covered_idx
     def getCoveredIdxProtected(self):
-        return self.covered_idx_protected 
+        return self.covered_idx_p 
     def getCoverage(self):
         return len(self.covered_idx)
     def getProtectedCoverage(self):
-        return len(self.covered_idx_protected) 
+        return len(self.covered_idx_p) 
+    
+    def getCoverageRate(self):
+        return len(self.covered_idx) / len(self.idx_all)
+    def getProtectedCoverageRate(self):
+        return len(self.covered_idx_p) / len(self.idx_p)
+    
     def toDict(self):
         rxDict = {}
         for r in self.getRules():
             rxDict[str(r.condition)] = r.treatment
-        return rxDict 
+        return rxDict
+    def addRx(self, newRx: Prescription):
+        return PrescriptionList(self.rules + [newRx], self.idx_all, self.idx_p)
+
+    def isFairnessMet(self, fair_constr) -> bool:
+        if fair_constr == None:
+            return True
+        
+        if 'group' not in fair_constr["variant"]:
+            return True
+        if not self.rules:
+            return False
+        if 'group_sp' in fair_constr["variant"]:
+            threshold = fair_constr['threshold']
+            if abs(self.expected_utility_u - self.expected_utility_p) > threshold:
+                return False
+        
+        if 'group_bgl' in fair_constr["variant"]:
+            threshold = fair_constr['threshold']
+            if self.expected_utility_p < threshold:
+                return False
+        return True
+            
+    def isCoverageMet(self, cvrg_constr) -> bool:
+        if cvrg_constr == None:
+            return True
+        
+        if 'group' in cvrg_constr["variant"]:
+            threshold = cvrg_constr['threshold']
+            threshold_p = cvrg_constr['threshold_p']
+ 
+            return \
+                len(self.covered_idx)/len(self.idx_all) >= threshold and \
+                len(self.covered_idx_p)/len(self.idx_p) >= threshold_p 
+  
+        return True
+
+
+
         
 
            

@@ -1,5 +1,5 @@
 
-from typing import Dict, List, Set
+from typing import Dict, List, MutableSequence, Set
 import pandas as pd
 import os, sys
 from pathlib import Path
@@ -7,13 +7,13 @@ sys.path.append(os.path.join(Path(__file__).parent))
 from prescription import Prescription
 
 # TODO
-def group_coverage(rules: List[Prescription]) -> int:
+def group_coverage(rules: MutableSequence[Prescription]) -> int:
     covered = set()
     for p in rules: 
         covered.update(p.covered_idx)
     return len(covered)
 
-def protected_group_coverage(rules: List[Prescription]) -> int:
+def protected_group_coverage(rules: MutableSequence[Prescription]) -> int:
     covered = set()
     for p in rules: 
         covered.update(p.covered_protected_indices)
@@ -21,12 +21,12 @@ def protected_group_coverage(rules: List[Prescription]) -> int:
 
 
 # coverage function in case there is only grouping
-def group_coverage(df: pd.DataFrame, groups: List[Dict]) -> int:
+def group_coverage(df: pd.DataFrame, groups: MutableSequence[Dict]) -> int:
     mask = (df[groups.keys()] == groups.values()).all(axis=1)
     covered = (df[mask]).index 
     return len(covered)
 
-def protected_group_coverage(df: pd.DataFrame, groups: List[Dict], protected_index: Set[int]) -> int:
+def protected_group_coverage(df: pd.DataFrame, groups: MutableSequence[Dict], protected_index: Set[int]) -> int:
     mask = (df[groups.keys()] == groups.values()).all(axis=1)
     covered = (df[mask]).index 
     covered = covered.intersection(protected_index)
@@ -36,18 +36,9 @@ def rule_coverage(rule: Prescription) -> int:
     return len(rule.covered_idx)
 
 # Grouping only TODO: confirm with Brit
-def rule_coverage(df: pd.DataFrame, rule: Dict) -> int:
+def rule_coverage(df: pd.DataFrame, idx_p, rule: Dict) -> int:
     mask = (df[rule.keys()] == rule.values()).all(axis=1)
-    covered = (df[mask]).index 
-    return len(covered)
+    covered = set(df[mask].index)
+    return [len(covered), len(covered & idx_p)]
 
-def apply_rule_coverage(rule: Dict, ):
-    """
-    Input: A collection of candidate rules
-    Output: a collection of rules that statisfies
-        1. Every rule covers at least some fraction theta of the tuples
-        2. Every rule covers at least some fraction theta_p of the tuples
-
-    """
-    
 

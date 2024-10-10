@@ -14,7 +14,7 @@
   ],
   "_models": [
     {
-      "_name": "greedy(group_coverage+indvidual_sp)",
+      "_name": "greedy+group_coverage+indvidual_sp",
       "_start": "greedy.py",
       "_coverage_constraint": {
         "variant": "group",
