@@ -13,7 +13,6 @@ import statistics
 import concurrent
 
 
-
 SRC_PATH = Path(__file__).parent.parent 
 sys.path.append(os.path.join(SRC_PATH, 'tools'))
 sys.path.append(os.path.join(SRC_PATH, 'algorithms'))
@@ -23,7 +22,7 @@ from treatment_mining import getTreatmentForAllGroups
 from rule_selection import k_selection
 from LP_solver import LP_solver, LP_solver_k
 
-from load_data import load_data
+from load_data import load_data, load_rules
 from prescription import Prescription, PrescriptionList
 
 # from utility.logging_util import init_logger
@@ -168,41 +167,50 @@ def main(config):
         f"Protected group size: {len(idx_p)} out of {len(df)} total")
     # ------------------------ DATASET SETUP ENDS ----------------------------
 
+    # -------------------------- Group mining -----------------------------
+    if True:
+        start_time = time.time()
+        # Step 1. Grouping pattern mining
+        
+        groupPatterns = getConstrGroups(df, idx_p, attrI, min_sup=APRIORI, cvrg_constr=cvrg_constr)
+        groupPatterns.append({}) # Add a pattern that covers all
+
+        exec_time1 = time.time() - start_time 
+        logging.warning(f"Elapsed time for group mining: {exec_time1} seconds")
+
+    # ------------------------ Treatment mining -----------------------------
+    if True:
+        start_time = time.time()
+        # Step 2. Treatment mining using greedy
+        # Get treatments for each grouping pattern
+        logging.info("Step2: Getting candidate treatments for each grouping pattern")
+        rxCandidates:list[Prescription] = getTreatmentForAllGroups(DAG_str, df, idx_p, groupPatterns, {}, tgtO, attrM, fair_constr=fair_constr)
+        exec_time2 = time.time() - start_time 
+        logging.warning(f"Elapsed time for treatment mining: {exec_time2} seconds")
+        # Save all rules found so far
+        with open(os.path.join(config['_output_path'], 'all_mined_rules.json'), 'w+') as f:
+            json.dump([{
+                'condition': rule.condition,
+                'treatment': rule.treatment,
+                'utility': rule.utility,
+                'protected_utility': rule.utility_p,
+                'coverage': list(rule.covered_idx),
+                'protected_coverage': list(rule.covered_idx_p)
+            } for rule in rxCandidates], f, indent=4)
+        # rxCandidates = LP_solver_k(rxCandidates, set(df.index), idx_p, cvrg_constr, fair_constr, 10)
+        
+    # ------------------------ Rule selections -----------------------------
+    # rxCandidates = load_rules(f"{DATA_PATH}/stackoverflow/mined_rules.json")
+    # exec_time1 = 0
+    # exec_time2 = 0
+    # TODO remove debug
 
     start_time = time.time()
-    # Step 1. Grouping pattern mining
-    
-    groupPatterns = getConstrGroups(df, idx_p, attrI, min_sup=APRIORI, cvrg_constr=cvrg_constr)
-    # TODO Testing
-
-    exec_time1 = time.time() - start_time 
-    logging.warning(f"Elapsed time for group mining: {exec_time1} seconds")
-
-
-    start_time = time.time()
-    # Step 2. Treatment mining using greedy
-    # Get treatments for each grouping pattern
-    logging.info("Step2: Getting candidate treatments for each grouping pattern")
-    rxCandidates:list[Prescription] = getTreatmentForAllGroups(DAG_str, df, idx_p, groupPatterns, {}, tgtO, attrM, fair_constr=fair_constr)
-    exec_time2 = time.time() - start_time 
-    logging.warning(f"Elapsed time for treatment mining: {exec_time2} seconds")
-    # Save all rules found so far
-    with open(os.path.join(config['_output_path'], 'rules_greedy_all.json'), 'w+') as f:
-        json.dump([{
-            'condition': rule.condition,
-            'treatment': rule.treatment,
-            'utility': rule.utility,
-            'protected_utility': rule.utility_p,
-            'coverage': list(rule.covered_idx),
-            'protected_coverage': list(rule.covered_idx_p)
-        } for rule in rxCandidates], f, indent=4)
-    # rxCandidates = LP_solver_k(rxCandidates, set(df.index), idx_p, cvrg_constr, fair_constr, 10)
-    start_time = time.time()
-    rxSelected, kResults = k_selection(10, set(df.index), idx_p, rxCandidates, cvrg_constr, fair_constr) 
+    rxSelected, kResults = k_selection(len(rxCandidates), set(df.index), idx_p, rxCandidates, cvrg_constr, fair_constr) 
     exec_time3 = time.time() - start_time
     logging.warning(f"Elapsed time for Selection: {exec_time3} seconds")
     with open(os.path.join(config['_output_path'], 'experiment_results_greedy.csv'), 'w+', newline='') as csvfile:
-        fieldnames = ['k', 'execution_time', 'expected_utility', 'protected_expected_utility', 'coverage_rate',
+        fieldnames = ['k', 'execution_time', 'expected_utility', 'unprotected_expected_utility', 'protected_expected_utility', 'coverage_rate',
                       'protected_coverage_rate']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -210,14 +218,16 @@ def main(config):
             writer.writerow({
                 'k': result["k"],
                 'execution_time': exec_time1 + exec_time2 + result['execution_time'],
-                'expected_utility': result['expected_utility'],    
+                'expected_utility': result['expected_utility'],   
+                'unprotected_expected_utility': result['unprotected_expected_utility'],
+ 
                 'protected_expected_utility': result['protected_expected_utility'],
                 'coverage_rate': result['coverage_rate'],
                 'protected_coverage_rate': result['protected_coverage_rate'] 
             })
 
     # Convert selected_rules to a JSON string
-    with open(os.path.join(config['_output_path'], 'rules_greedy_selected.json'), 'w+') as f:
+    with open(os.path.join(config['_output_path'], 'selected_rules.json'), 'w+') as f:
         json.dump([{
         'condition': rx.getGroup(),
         'treatment': rx.getTreatment(),

@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 import sys
@@ -7,6 +8,7 @@ import logging
 from typing import Any, Tuple
 import pandas as pd
 import pygraphviz as pgv
+from prescription import Prescription
 
 def load_data(datatable_path: str, dag_path:str, prune: bool = False) -> Tuple[pd.DataFrame, Any]:
     """
@@ -32,4 +34,10 @@ def load_data(datatable_path: str, dag_path:str, prune: bool = False) -> Tuple[p
         df = df.drop(set(df.columns).difference(DAG.nodes()), axis=1)
     return df, DAG_str
 
-
+def load_rules(rule_path:str):
+    with open(rule_path) as f:
+        data = json.load(f)
+        rxCandidates = []
+        for rule in data:
+            rxCandidates.append(Prescription(rule['condition'], rule['treatment'], set(rule['coverage']), set(rule['protected_coverage']), rule['utility'], rule['protected_utility']))
+        return rxCandidates 
