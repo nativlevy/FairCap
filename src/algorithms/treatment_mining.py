@@ -126,14 +126,17 @@ def getTreatmentForEachGroup(ns, group) -> Prescription:
     fair_constr = ns.fair_constr
  
     # Use grouping predicates to get subpopulation
-    mask = (df[group.keys()] == group.values()).all(axis=1)
-    df_g = df.loc[mask]
-    covered = set(mask.tolist())
-    # drop grouping attributes
-    df_g = df_g.drop(group.keys(), axis=1)
+    if len(group) != 0: 
+        mask = (df[group.keys()] == group.values()).all(axis=1)
+        df_g = df.loc[mask]
+        covered = set(mask.tolist())
+        # drop grouping attributes
+        df_g = df_g.drop(group.keys(), axis=1)
+    else:
+        df_g = df 
     logging.info(f'Starting getHighTreatments for group: {group}')
     logging.debug(f'Actionable attributes: {attrM}') 
-    
+
     best_benefit = float('-inf')
     best_treatment = None
     best_cate = 0

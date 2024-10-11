@@ -171,14 +171,13 @@ class PrescriptionList:
     def isCoverageMet(self, cvrg_constr) -> bool:
         if cvrg_constr == None:
             return True
-        
         if 'group' in cvrg_constr["variant"]:
+        
             threshold = cvrg_constr['threshold']
-            threshold_p = cvrg_constr['threshold_p']
- 
+            threshold_p = cvrg_constr['threshold_p'] 
             return \
-                len(self.covered_idx)/len(self.idx_all) >= threshold and \
-                len(self.covered_idx_p)/len(self.idx_p) >= threshold_p 
+                self.getCoverageRate() >= threshold and \
+                self.getProtectedCoverage() >= threshold_p 
   
         return True
 
