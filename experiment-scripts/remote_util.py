@@ -59,7 +59,7 @@ def run_remote_cmd_sync(command: str, config: Dict) -> str:
         stdout (str)
     """
 
-    logging.info("Execute remote command: `%s` synchronously " % command)
+    logging.debug("Execute remote command: `%s` synchronously " % command)
 
     # return subprocess.run(prep_remote_cmd(command, config),
     #                       stderr=subprocess.DEVNULL, universal_newlines=True).returncode
@@ -82,14 +82,14 @@ def run_remote_cmd_async(command: str, config: Dict):
     """
     command = '(%s) >& /dev/null & exit' % command
 
-    logging.info("Execute remote command: (%s) asynchronously " % command)
+    logging.debug("Execute remote command: (%s) asynchronously " % command)
 
     return subprocess.Popen(prep_remote_cmd(command, config))
 
 
 def cp_local_to_remote(config, local_path, remote_path = '~', exclude_paths=[]):
     remote_user, remote_host = config['_remote_user'], config['_remote_host']
-    logging.info("Synching {%s} to {%s@%s:%s}" %
+    logging.debug("Synching {%s} to {%s@%s:%s}" %
                  (local_path, remote_user, remote_host, remote_path))
     args = ["rsync", "-ar", "-e", "ssh", local_path,
             '%s@%s:%s' % (remote_user, remote_host, remote_path)]
@@ -139,7 +139,7 @@ def clean_up(config):
 
 
 def run_algorithm(config):
-    arg_flag =  "\'{}\' {} ".format(json.dumps(config), config['_output_path'])
+    arg_flag =  "{} {}".format(config['_data_config_path'], config['_output_path'])
     # Cat all stdout and stderr on remote machine
     output_flag = ' &> {}/stdout.log 2> {}/stderr.log'.format(config['_output_path'], config['_output_path'])
 

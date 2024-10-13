@@ -29,18 +29,19 @@ def getGroups(df: pd.DataFrame, attrI: List[str], min_sup: float) -> List[dict]:
         ]
     """
     df = df.copy(deep=True)
-    logging.info(f"Getting rules with min_support={min_sup}")
+    logging.debug(f"Getting rules with min_support={min_sup}")
     enc = OneHotEncoder(handle_unknown='ignore', feature_name_combiner=entry_with_col_name, sparse_output=False)
     enc.set_output(transform = 'pandas')
     df = df[attrI] # SELECT df.attI from df
     df = enc.fit_transform(df)
     frequent_itemsets = apriori(df, min_support=min_sup, use_colnames=True)
     grouping_patterns = list(map(set_to_dict, frequent_itemsets['itemsets'])) 
-    logging.info(f"Generated {len(grouping_patterns)} grouping patterns")
-    
+    logging.debug(f"Generated {len(grouping_patterns)} grouping patterns") 
+    if (len(grouping_patterns) == 0):
+        raise AssertionError("No Grouping pattern found")
     return grouping_patterns
 
-def getConstrGroups(df: pd.DataFrame, idx_p: Set[int], attrI: List[str], min_sup: float, cvrg_constr: Dict = None) -> List[dict]:
+def getConstrGroups(df: pd.DataFrame, idx_p: Set[int], attrI: List[str], min_sup: float, cvrg_constr: Dict) -> List[dict]:
     """
     Same as `getConstrGroups` except that constraints are applied
     Generate all possible grouping patterns using Apriori algorithm.
@@ -58,31 +59,38 @@ def getConstrGroups(df: pd.DataFrame, idx_p: Set[int], attrI: List[str], min_sup
           {'Gender': 'Male'}
         ]
     """
+    if cvrg_constr != None and 'rule' in cvrg_constr['variant']: 
+        min_sup = cvrg_constr['threshold']
+ 
     group_patterns = getGroups(df, attrI, min_sup)
     # Default: no constraint
     if cvrg_constr == None:
-        logging.info(f"No constraint applied on grouping patterns")
+        logging.debug(f"No constraint applied on grouping patterns")
         return group_patterns
     # Group Constraint: same as default at this stage
-    if cvrg_constr['variant'] == 'group': 
-        logging.info(f"Group constraint applied on grouping patterns (no group patterns are discarded at this stage)")
+    if 'group' in cvrg_constr['variant']: 
+        logging.debug(f"Group constraint applied on grouping patterns (no group patterns are discarded at this stage)")
         return group_patterns
     
     # Rule Constraint: group should cover at least x% of rows in the dataset
     threshold = cvrg_constr['threshold'] 
     threshold_p = cvrg_constr['threshold'] 
-    logging.info(f"Initial grouping patterns: {len(group_patterns)}")
+    logging.debug(f"Initial grouping patterns: {len(group_patterns)}")
     partialFn = partial(rule_coverage, df, idx_p)
     rule_cvrg = list(map(partialFn, group_patterns))
 
     group_patterns_filtered = []
     for i in range(len(rule_cvrg)):
-        if rule_cvrg[i][0] /len(df) > threshold and rule_cvrg[i][1] > threshold_p:
+        if rule_cvrg[i][0] / len(df) > threshold and rule_cvrg[i][1] / len(idx_p) > threshold_p:
             group_patterns_filtered.append(group_patterns[i])
 
     # Sort filtered patterns by length (shorter first) and then by coverage size (larger first)
-    logging.info(f"Filtered grouping patterns: {len(group_patterns_filtered)}")
+    logging.debug(f"Filtered grouping patterns: {len(group_patterns_filtered)}")
 
+    # if cvrg_constr == None or 'rule' not in cvrg_constr['variant']:
+    #     group_patterns_filtered.append({}) # Add a pattern that covers all
+    if (len(group_patterns_filtered) == 0):
+        raise AssertionError("No Grouping pattern found")
     return group_patterns_filtered
 
 def set_to_dict(s: str):

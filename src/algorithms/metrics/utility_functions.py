@@ -2,6 +2,7 @@
     - CATE
     - Expected CATE
 """
+import functools
 import logging
 import time
 import pandas as pd
@@ -34,6 +35,8 @@ treatment effects (CATE), and solving optimization problems related to set cover
 """
 
 THRESHOLD = 0.1
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
+
    
         
 def CATE(df_g, DAG_str, treatments, attrOrdinal, tgtO):
@@ -56,20 +59,21 @@ def CATE(df_g, DAG_str, treatments, attrOrdinal, tgtO):
     # TODO question: 1 if (exists attributes != treatval) 
     if len(df_g) == 0:
         return 0
-    df_g['TempTreatment'] = (df_g[treatments.keys()] == treatments.values()).all(axis=1) * 1
+    
+    df_g['TempTreatment'] = df_g.apply(functools.partial(isTreatable, treatments=treatments, attrOrdinal=attrOrdinal), axis=1)
     DAG_str = DAG_after_treatments(DAG_str, treatments, tgtO)
     
     # remove graph name as dowhy doesn't support named graph string
     ## --------------------- DAG Modification ends -------------------------
     df_filtered = df_g[(df_g['TempTreatment'] == 0)|(df_g['TempTreatment'] == 1)]
-    model = CausalModel(
+    with MutePrint():
+        model = CausalModel(
         data=df_filtered,
         graph=DAG_str,
         treatment='TempTreatment',
         outcome=tgtO)
 
-    estimands = model.identify_effect()
-    with MutePrint():
+        estimands = model.identify_effect()
         causal_estm_reg = model.estimate_effect(estimands,
                                                     method_name="backdoor.linear_regression",
                                                     target_units="ate",
@@ -77,6 +81,7 @@ def CATE(df_g, DAG_str, treatments, attrOrdinal, tgtO):
                                                     test_significance=True)
     ATE = causal_estm_reg.value
     if ATE ==0:
+        logging.debug(f"Treatment: {treatments}, ATE: {ATE}") 
         return 0
     p_value = causal_estm_reg.test_stat_significance()['p_value'] 
     if p_value > THRESHOLD:
@@ -104,7 +109,6 @@ def isTreatable(record, treatments, attrOrdinal):
         int: 1 if the row satisfies the treatment conditions, i.e. the 
         treatment is effective, 0 otherwise.
     """    
-
     # Each treatment {A:a1} = to check if A can be set to a1
     for treat_attr in treatments:
         if treat_attr in attrOrdinal:

@@ -22,7 +22,8 @@ class Prescription:
             covered_idx: Set[int],
             covered_idx_p: Set[int], 
             utility: float, 
-            utility_p: float):
+            utility_p: float,
+            utility_u: float):
         self.condition = condition
         self.treatment = treatment
         self.covered_idx = covered_idx
@@ -31,6 +32,8 @@ class Prescription:
 
         self.utility = utility
         self.utility_p = utility_p
+        self.utility_u = utility_u
+
         self.name = self.make_name()
     def make_name(self):
         name = ""
@@ -54,6 +57,10 @@ class Prescription:
         if self.utility_p == None:
             return -1.0
         return round(self.utility_p, 2)
+    def getUnprotectedUtility(self) -> float:
+        if self.utility_u == None:
+            return -1.0
+        return round(self.utility_u, 2)
     def getCoveredIdx(self):
         return self.covered_idx
     
@@ -81,11 +88,8 @@ class PrescriptionList:
             self.covered_idx_p = self.covered_idx & self.idx_p 
             self.covered_idx_u = self.covered_idx - self.idx_p 
 
-            self.expected_utility_u, self.expected_utility_p = self.calculate_expected_utilities()
-            # Prevent float overflow
-            self.expected_utility = \
-                self.expected_utility_u * (len(idx_all - idx_p) / len(idx_all)) \
-            +   self.expected_utility_p * (len(idx_p) / len(idx_all)) 
+            self.expected_utility, self.expected_utility_u, self.expected_utility_p = self.calculate_expected_utilities()
+         
         else:
             self.covered_idx = set()
             self.covered_idx_p = set() 
@@ -105,21 +109,26 @@ class PrescriptionList:
             float: The unprotected expected utility and protected expected utility.
         """
         if len(self.covered_idx) == 0:
-            return 0.0, 0.0
-        
+            return 0.0, 0.0, 0.0
+        exp_utility = 0.0 
         exp_utility_u = 0.0
+        exp_utility_p = 0.0
+
         for t in self.covered_idx_u:
             rules_covering_t = [r for r in self.getRules() if t in r.covered_idx_u]
-            min_utility = min(r.utility for r in rules_covering_t)
-            exp_utility_u += min_utility / len(self.idx_u)
+            max_utility = max(r.utility for r in rules_covering_t)
+            exp_utility_u += max_utility / len(self.idx_u)
+            exp_utility += max_utility  / len(self.idx_all)
             # covered_idx_u != [] => idx_u != [] 
      
-        exp_utility_p = 0.0
         for t in self.covered_idx_p:
             rules_covering_t = [r for r in self.getRules() if t in r.covered_idx_p]
             min_utility = min(r.utility for r in rules_covering_t)
+            max_utility = max(r.utility for r in rules_covering_t)
             exp_utility_p += min_utility / len(self.idx_p)
-        return exp_utility_u, exp_utility_p
+            exp_utility += max_utility  / len(self.idx_all)
+
+        return exp_utility, exp_utility_u, exp_utility_p
 
     def getExpectedUtility(self):
         return round(self.expected_utility, 2)

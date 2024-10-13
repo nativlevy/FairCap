@@ -35,7 +35,6 @@ def protected_group_coverage(df: pd.DataFrame, groups: MutableSequence[Dict], pr
 def rule_coverage(rule: Prescription) -> int:
     return len(rule.covered_idx)
 
-# Grouping only TODO: confirm with Brit
 def rule_coverage(df: pd.DataFrame, idx_p, rule: Dict) -> int:
     mask = (df[rule.keys()] == rule.values()).all(axis=1)
     covered = set(df[mask].index)

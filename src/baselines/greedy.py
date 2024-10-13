@@ -17,11 +17,10 @@ SRC_PATH = Path(__file__).parent.parent
 sys.path.append(os.path.join(SRC_PATH, 'tools'))
 sys.path.append(os.path.join(SRC_PATH, 'algorithms'))
 sys.path.append(os.path.join(SRC_PATH, 'algorithms', 'metrics'))
-from group_mining import getConstrGroups, getGroups
+from group_mining import getConstrGroups
 from treatment_mining import getTreatmentForAllGroups
 from rule_selection import k_selection
-from LP_solver import LP_solver, LP_solver_k
-
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
 from load_data import load_data, load_rules
 from prescription import Prescription, PrescriptionList
 
@@ -32,97 +31,16 @@ from consts import APRIORI, MIX_K, MAX_K, DATA_PATH, PROJECT_PATH, unprotected_c
 
 
 
-def selectKRules(k: int, candidateRx, df: pd.DataFrame, idx_protec: Set[int], config: Dict, cvrg_constr, fair_constr, exec_time12) -> Tuple[PrescriptionList, float]:
-    """
-    Run an experiment for a specific number of rules (k).
-
-    Args:
-        k (int): Number of rules to select.
-        grouping_patterns (List[dict]): List of grouping pattern
-        df (pd.DataFrame): The input dataframe.
-        idx_protec (Set): The index of protected individuals.
-        attrI (List[str]): List of immutable attributes for grouping patterns.
-        attrM (List[str]): List of mutable attributes for grouping patterns.
-        tgtO (str): Target outcome
-        unprotected_coverage_threshold (float): Threshold for unprotected group coverage.
-        protected_coverage_threshold (float): Threshold for protected group coverage.
-        fairness_threshold (float): Threshold for fairness constraint.
-
-    Returns:
-        Dict: A dictionary containing the results of the experiment.
-    """
-    start_time = time.time()
-    rules: List[Prescription] = []
-    # If NEITHER group coverage and group fairness coverage exists,
-    # we run greedy based on utility because all constraints have been met
-    # in previous steps
-    if cvrg_constr == None or 'rule' in cvrg_constr['variant']:
-        rules = nlargest(k, candidateRx, key=lambda rx: rx.utility) 
-    elif cvrg_constr != None and 'group' in cvrg_constr['variant']: 
-        rules = nlargest(k, candidateRx, key=lambda rx: len(rx.covered_idx)+len(rx.covered_idx))
-
-    elif fair_constr == None or 'individual' in fair_constr['variant']:
-        rules = nlargest(k, candidateRx, key=lambda rx: rx.utility)
-   
-
-    #     # Calculate protected_utility based on the proportion of protected individuals covered
-    #     # TODO confirm
-    #     # protected_proportion = len(covered_idx_protec) / \
-    #     #     len(covered_idx) if len(covered_idx) > 0 else 0
-    #     # protec_utility = utility * protected_proportion
-    #     protected_utility = treat_data['protected_utility']
- 
-
-    #     rules.append(Prescription(condition, treatment, covered_idx,
-    #                  covered_idx_protec, utility, protected_utility))
-
-    logging.info(f"Created {len(rules)} Rule objects")
-
-    # Log utility statistics for all rules
-    all_utilities = [rule.utility for rule in rules]
-    logging.info(f"All rules utility statistics: min={min(all_utilities):.4f}, "
-                 f"max={max(all_utilities):.4f}, mean={statistics.mean(all_utilities):.4f}, "
-                 f"median={statistics.median(all_utilities):.4f}")
-
-
-
-    # save all rules to an output file
-    with open(os.path.join(config['_output_path'], 'rules_greedy.json'), 'w+') as f:
-        json.dump([{
-            'condition': rule.condition,
-            'treatment': rule.treatment,
-            'utility': round(rule.utility),
-            'protected_utility': round(rule.utility_p),
-            'coverage': len(rule.covered_idx),
-            'protected_coverage': len(rule.covered_idx_p)
-        } for rule in rules], f, indent=4)
-    # TODO Implement LP
-
-    finalizedKRules = rules
-    # Calculate metrics
-    rxSet = PrescriptionList(finalizedKRules, set(df.index), idx_protec)
-
-    exec_time3 = time.time() - start_time 
-    logging.info(f"Experiment results for k={k}:")
-    logging.info(f"Expected utility: {rxSet.expected_utility:.4f}")
-    logging.info(
-        f"Protected expected utility: {rxSet.expected_utility_p:.4f}")
-    logging.info(f"Coverage: {len(rxSet.covered_idx):.2%}")
-    logging.info(
-        f"Protected coverage: {len(rxSet.covered_idx_p):.2%}")
-
-    return rxSet, exec_time12 + exec_time3
- 
-
-def main_cmd(config_str):
-    config = json.loads(config_str)
-    os.makedirs(config['_output_path'], exist_ok=True)
-    main(config)
+def main_cmd(data_config_path, output_path):
+    with open(data_config_path) as json_file:
+        data_config = json.load(json_file)   
+    os.makedirs(output_path, exist_ok=True)
+    main(data_config, output_path)
 
 # TODO unwind me
 
 
-def main(config):
+def main(config, output_path):
     """
     Main function to run the greedy fair prescription rules algorithm for different values of k.
     """
@@ -141,6 +59,7 @@ def main(config):
     attrI = config.get('_immutable_attributes')
     attrM = config.get('_mutable_attributes')
     attrP = config.get('_protected_attributes')
+    attrOrdinal = config.get('_ordinal_attributes') 
     # TODO extend to support multiple protected value
     valP, asProtected = config.get('_protected_values')
     tgtO =  config.get('_target_outcome')
@@ -163,7 +82,7 @@ def main(config):
     else:
         df_protec = df[(df[attrP] != valP)]
     idx_p: Set = set(df_protec.index)
-    logging.info(
+    logging.debug(
         f"Protected group size: {len(idx_p)} out of {len(df)} total")
     # ------------------------ DATASET SETUP ENDS ----------------------------
 
@@ -173,30 +92,30 @@ def main(config):
         # Step 1. Grouping pattern mining
         
         groupPatterns = getConstrGroups(df, idx_p, attrI, min_sup=APRIORI, cvrg_constr=cvrg_constr)
-        groupPatterns.append({}) # Add a pattern that covers all
 
         exec_time1 = time.time() - start_time 
-        logging.warning(f"Elapsed time for group mining: {exec_time1} seconds")
+        print(f"Elapsed time for group mining: {exec_time1} seconds. {len(groupPatterns)} groups are found")
 
     # ------------------------ Treatment mining -----------------------------
     if True:
         start_time = time.time()
         # Step 2. Treatment mining using greedy
         # Get treatments for each grouping pattern
-        logging.info("Step2: Getting candidate treatments for each grouping pattern")
-        rxCandidates:list[Prescription] = getTreatmentForAllGroups(DAG_str, df, idx_p, groupPatterns, {}, tgtO, attrM, fair_constr=fair_constr)
+        logging.debug("Step2: Getting candidate treatments for each grouping pattern")
+        rxCandidates:list[Prescription] = getTreatmentForAllGroups(DAG_str, df, idx_p, groupPatterns, attrOrdinal, tgtO, attrM, fair_constr=fair_constr)
         exec_time2 = time.time() - start_time 
-        logging.warning(f"Elapsed time for treatment mining: {exec_time2} seconds")
+        print(f"Elapsed time for treatment mining: {exec_time2} seconds. {len(rxCandidates)} rules are found")
         # Save all rules found so far
-        with open(os.path.join(config['_output_path'], 'all_mined_rules.json'), 'w+') as f:
+        with open(os.path.join(output_path, 'all_mined_rules.json'), 'w+') as f:
             json.dump([{
-                'condition': rule.condition,
-                'treatment': rule.treatment,
-                'utility': rule.utility,
-                'protected_utility': rule.utility_p,
-                'coverage': list(rule.covered_idx),
-                'protected_coverage': list(rule.covered_idx_p)
-            } for rule in rxCandidates], f, indent=4)
+                'condition': rx.condition,
+                'treatment': rx.treatment,
+                'utility': rx.utility, 
+                'protected_utility': rx.getProtectedUtility(),
+                'unprotected_utility': rx.getUnprotectedUtility(),
+                'coverage_rate': round(rx.getCoverage()/len(df) * 100, 2),
+                'protected_coverage_rate': round(rx.getProtectedCoverage()/len(idx_p) *100, 2)
+            } for rx in rxCandidates], f, indent=4)
         # rxCandidates = LP_solver_k(rxCandidates, set(df.index), idx_p, cvrg_constr, fair_constr, 10)
         
     # ------------------------ Rule selections -----------------------------
@@ -206,39 +125,41 @@ def main(config):
     # TODO remove debug
 
     start_time = time.time()
-    rxSelected, kResults = k_selection(len(rxCandidates), set(df.index), idx_p, rxCandidates, cvrg_constr, fair_constr) 
+    rxSelected, kResults = k_selection(min(len(rxCandidates), 50), set(df.index), idx_p, rxCandidates, cvrg_constr, fair_constr) 
     exec_time3 = time.time() - start_time
-    logging.warning(f"Elapsed time for Selection: {exec_time3} seconds")
-    with open(os.path.join(config['_output_path'], 'experiment_results_greedy.csv'), 'w+', newline='') as csvfile:
-        fieldnames = ['k', 'execution_time', 'expected_utility', 'unprotected_expected_utility', 'protected_expected_utility', 'coverage_rate',
-                      'protected_coverage_rate']
+    print(f"Elapsed time for Selection: {exec_time3} seconds")
+    with open(os.path.join(output_path, 'experiment_results_greedy.csv'), 'w+', newline='') as csvfile:
+        fieldnames = ['k', 'expected_utility', 'unprotected_expected_utility', 'protected_expected_utility', 'coverage_rate',
+                      'protected_coverage_rate', 'execution_time',]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for result in kResults:
             writer.writerow({
                 'k': result["k"],
-                'execution_time': exec_time1 + exec_time2 + result['execution_time'],
                 'expected_utility': result['expected_utility'],   
                 'unprotected_expected_utility': result['unprotected_expected_utility'],
  
                 'protected_expected_utility': result['protected_expected_utility'],
                 'coverage_rate': result['coverage_rate'],
-                'protected_coverage_rate': result['protected_coverage_rate'] 
+                'protected_coverage_rate': result['protected_coverage_rate'],
+                                'execution_time': exec_time1 + exec_time2 + result['execution_time']
+
             })
 
     # Convert selected_rules to a JSON string
-    with open(os.path.join(config['_output_path'], 'selected_rules.json'), 'w+') as f:
+    with open(os.path.join(output_path, 'selected_rules.json'), 'w+') as f:
         json.dump([{
         'condition': rx.getGroup(),
         'treatment': rx.getTreatment(),
         'utility': rx.getUtility(),
         'protected_utility': rx.getProtectedUtility(),
+        'unprotected_utility': rx.getUnprotectedUtility(),
         'coverage_rate': round(rx.getCoverage()/len(df) * 100, 2),
         'protected_coverage_rate': round(rx.getProtectedCoverage()/len(idx_p) *100, 2)
     } for rx in rxSelected.rules], f, indent=4)
-    logging.info("Results written to experiment_results_greedy.csv")
+    logging.debug("Results written to experiment_results_greedy.csv")
    
 
 
 if __name__ == "__main__":
-    main_cmd(sys.argv[1])
+    main_cmd(sys.argv[1], sys.argv[2])

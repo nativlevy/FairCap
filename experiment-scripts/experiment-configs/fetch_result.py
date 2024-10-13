@@ -1,23 +1,6 @@
-"""_summary_
-This script launch an experiment, runs both Greedy and CauSumX where X will be the first argument (default: 4; max: 7).
-@author: Benton Li
-@email: cl2597@cornell.edu
-"""
 
-# import utils
-import json
-import logging
-import time
-
-from expmt_util import run_single_local_exmpt, run_single_remote_exmpt, ts_prefix
-from remote_util import fetch_logs_from_remote, synch_repo_at_remote, run_algorithm
-import concurrent.futures
 import os
-import subprocess
-import sys
-from exmpt_config import PROJECT_PATH, DATA_PATH, REPO_NAME, CONFIG_PATH, WORKER_OUTPUT_PATH
-import argparse
-logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 def main(data_config_path, expmt_config_path):
     """
@@ -71,20 +54,4 @@ def main(data_config_path, expmt_config_path):
                 f.append(executor.submit(
                     run_single_remote_exmpt, config))
                 # run_single_remote_exmpt(config)  
-        print("done")
-        return
-    else:
-        with open(data_config_path) as json_file:
-            data_config = json.load(json_file)
-        for model in models:
-            config = {**data_config, **model, **
-                      {'_output_path': os.path.join(
-                          PROJECT_PATH, 'output', tempore, model['_name']), '_k': k}}
-            run_single_local_exmpt(config)
-    print("start")
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
-
-    main(sys.argv[1], sys.argv[2])
+if __name__ == '__main__'

@@ -2,26 +2,21 @@ import ast
 import cProfile
 from ctypes import util
 from functools import partial
+import functools
 from itertools import combinations
 import logging
-import math
 import multiprocessing
-import timeit
 import pygraphviz as pgv
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Manager, shared_memory
-import pickle
-import statistics
 import time
 from typing import Dict, List, Set, Tuple
 import os, sys
 from pathlib import Path
 import pandas as pd
 from pygraphviz import AGraph
-from sympy import Q
 from StopWatch import StopWatch
 from fairness import benefit
-from copy import deepcopy, copy
 from helpers import uniqueVal
 from prescription import Prescription
 from utility_functions import CATE
@@ -30,6 +25,7 @@ import platform
 sys.path.append(os.path.join(Path(__file__).parent, 'metrics'))
 sys.path.append(os.path.join(Path(__file__).parent))
 from coverage import rule_coverage
+from utility_functions import isTreatable
     
 def getTreatmentForAllGroups(DAG_str, df, idx_protec, groupPatterns, attrOrdinal, tgtO, attrM, fair_constr: Dict):
     """
@@ -86,11 +82,8 @@ def getTreatmentForAllGroups(DAG_str, df, idx_protec, groupPatterns, attrOrdinal
 
     # Log summary statistics for utilities
     utilities = [rx.utility for rx in rxCandidates]
-    logging.info(f"Utility statistics: min={min(utilities):.4f}, max={max(utilities):.4f}, "
-                 f"mean={statistics.mean(utilities):.4f}, median={statistics.median(utilities):.4f}")
     # Weed out rx that doesn't offer treatment
     rxCandidates = list(filter(lambda rx: rx.treatment != None, rxCandidates)) 
-    logging.warn(f"effective grouping rate {len(rxCandidates) / len(utilities)}") 
     return rxCandidates 
 
 
@@ -134,14 +127,16 @@ def getTreatmentForEachGroup(ns, group) -> Prescription:
         df_g = df_g.drop(group.keys(), axis=1)
     else:
         df_g = df 
-    logging.info(f'Starting getHighTreatments for group: {group}')
+    logging.debug(f'Starting getHighTreatments for group: {group}')
     logging.debug(f'Actionable attributes: {attrM}') 
+    df_gp = df_g.loc[df_g.index.intersection(idx_protec)]
+    df_gu = df_g.loc[df_g.index.difference(idx_protec)]
 
     best_benefit = float('-inf')
     best_treatment = None
     best_cate = 0
     best_cate_protec = 0
-    
+    best_cate_unprotec = 0
     candidateTreatments = getSingleTreatments(attrM, df_g, attrOrdinal)
     prev_best_benefit = 0
     for level in range(2, 4):  # Up to 5 treatment levels
@@ -151,7 +146,7 @@ def getTreatmentForEachGroup(ns, group) -> Prescription:
         # get map each combination into a merged treatment
         candidateTreatments = list(map(lambda c: {**c[0], **c[1]}, allCombination))
         # Filter 1: discard combined treatments that treat too few or too many
-        candidateTreatments = [t for t in candidateTreatments if isValidTreatment(df_g, level, t)]           
+        candidateTreatments = [t for t in candidateTreatments if isValidTreatment(df_g, level, t, attrOrdinal)]           
         logging.debug(f"Combine treatments={candidateTreatments} at level={level}")
 
         selectedTreatments = []
@@ -163,8 +158,8 @@ def getTreatmentForEachGroup(ns, group) -> Prescription:
                 continue
 
             # Filter 3: impose fairness constraints
-            cate_protec = 0
-            cate_unprotec = 0
+            cate_protec = CATE(df_gp, DAG_str, treatment, attrOrdinal, tgtO)
+            cate_unprotec = CATE(df_gu, DAG_str, treatment, attrOrdinal, tgtO)            
             if fair_constr != None:
                 threshold = fair_constr['threshold'] 
                 # For SP constraints, discard treatments if the absolute
@@ -181,8 +176,6 @@ def getTreatmentForEachGroup(ns, group) -> Prescription:
                         continue
             # Passing all requirements, save the node in the lattice
             selectedTreatments.append(treatment)
-            df_protec = df_g.loc[df_g.index.intersection(idx_protec)]
-            cate_protec = CATE(df_protec, DAG_str, treatment, attrOrdinal, tgtO)
             candidate_benefit = benefit(cate_all, cate_protec, cate_unprotec, fair_constr)
                 
             if candidate_benefit > best_benefit and cate_all > 0 and cate_protec > 0:
@@ -190,27 +183,28 @@ def getTreatmentForEachGroup(ns, group) -> Prescription:
                 best_treatment = treatment
                 best_cate = cate_all
                 best_cate_protec = cate_protec
-                logging.info(
+                best_cate_unprotec = cate_unprotec
+                logging.debug(
                     f'New best treatment found at level {level}: {best_treatment}')
-                logging.info(
+                logging.debug(
                     f'New best score: {best_benefit:.4f}, CATE: {best_cate:.4f}')
 
         if level > 1 and best_benefit <= prev_best_benefit:
-            logging.info(
+            logging.debug(
                 f'Stopping at level {level} as no better treatment found')
             break
         candidateTreatments = selectedTreatments
         prev_best_benefit = best_benefit
 
-    logging.info(f'Finished processing group: {group}')
-    logging.info(
+    logging.debug(f'Finished processing group: {group}')
+    logging.debug(
         f'Final best treatment: {best_treatment}, CATE: {best_cate:.4f}, Protected CATE: {best_cate_protec:.4f}, Combined Score: {best_benefit:.4f}')
-    logging.info('#######################################')
+    logging.debug('#######################################')
     covered_idx = set(df_g.index)
     covered_idx_p = set(idx_protec) & covered_idx 
-    return Prescription(condition=group, treatment=best_treatment, covered_idx=covered_idx, covered_idx_p=covered_idx_p, utility=best_cate, utility_p=best_cate_protec)
+    return Prescription(condition=group, treatment=best_treatment, covered_idx=covered_idx, covered_idx_p=covered_idx_p, utility=best_cate, utility_p=best_cate_protec, utility_u=best_cate_unprotec)
 
-def isValidTreatment(df_g, level, newTreatment):
+def isValidTreatment(df_g, level, newTreatment, attrOrdinal):
     """ 
         A helper function for filtering new combine treatment
         Ensure that:
@@ -221,8 +215,8 @@ def isValidTreatment(df_g, level, newTreatment):
     if len(newTreatment.keys()) == level:
         keys = list(newTreatment.keys())
         vals = list(newTreatment.values())
-        treatable = (df_g[keys] != vals).any(axis=1)
-        valid = list(set(treatable.tolist()))
+        treatable = df_g.apply(functools.partial(isTreatable, treatments=newTreatment, attrOrdinal=attrOrdinal), axis=1)        
+        valid = list(set(list(treatable)))
         # no tuples in treatment group
         if len(valid) < 2:
             return False

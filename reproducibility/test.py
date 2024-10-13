@@ -32,7 +32,7 @@ def removeHeader(df_org, name):
             - int: Number of rows in the processed dataframe.
             - int: Number of columns in the processed dataframe.
     """
-    logging.info(f"Removing header and processing dataframe for {name}")
+    logging.debug(f"Removing header and processing dataframe for {name}")
     df = df_org.copy(deep = True)
     columns = df.columns
     for col in columns:
@@ -45,7 +45,7 @@ def removeHeader(df_org, name):
     df = pd.read_csv(name, header=None)
     rows = len(df)
     columns = len(df.columns)
-    logging.info(f"Size of df: {rows} rows, {columns} columns")
+    logging.debug(f"Size of df: {rows} rows, {columns} columns")
     return df, rows, columns
 
 
@@ -96,7 +96,7 @@ records = []
 for i in range(0, rows):
     records.append([str(df.values[i, j]) for j in range(0, columns)])
 
-logging.info(f"Number of records: {len(records)}")
+logging.debug(f"Number of records: {len(records)}")
 
 te = TransactionEncoder()
 
@@ -195,4 +195,121 @@ DAG.edges()
 V, E = DAG.nodes(), list(map(lambda a: "%s -> %s" % a, DAG.edges()))
 [*V, *E]
 
+# %%
+import json
+import matplotlib.pyplot as plt
+import pandas as pd
+df = pd.read_csv("/Users/bcyl/FairPrescriptionRules/data/stackoverflow/so_countries_col_new_500.csv")
+asProtected = True
+attrP = 'GDP'
+valP = 'Low'
+df_protec = None
+if asProtected:
+    df_protec = df[(df[attrP] == valP)]
+else:
+    df_protec = df[(df[attrP] != valP)]
+idx_p = set(df_protec.index)
+
+df_unprotec = df.loc[df.index.difference(idx_p)]
+
+# %%
+plt.hist( df[df['GDP'] == 'High']['ConvertedSalary'], range=[0,200000])
+
+plt.figure()
+plt.hist(df[df['GDP'] == 'Medium']['ConvertedSalary'], range=[0,200000])
+plt.figure()
+
+plt.hist(df[df['GDP'] == 'Low']['ConvertedSalary'], range=[0,200000])
+
+print(df.groupby(['GDP'])['ConvertedSalary'].mean())
+print(set(df[df['GDP'] == 'Low']['Country']))
+# %%
+print(len(df[df['Country'] == 'United States'])/len(df))
+# %%
+for i in df.columns:
+
+    plt.figure()
+    plt.xlabel(i)
+    plt.scatter(df[i], df['ConvertedSalary'])
+    plt.plot()
+# %%
+for i in df.columns:
+    plt.figure()
+    plt.xlabel(i)
+
+    plt.plot(df[df['GDP'] == 'Low'].groupby([i])['ConvertedSalary'].mean())
+
+
+
+    plt.plot(df[df['GDP'] != 'Low'].groupby([i])['ConvertedSalary'].mean())
+    plt.xticks(rotation='vertical')
+
+# %%
+plt.hist(df[df['Student'] != 'No']['ConvertedSalary'])
+# %%
+for i in [    "Exercise",
+    "HoursComputer",
+    "FormalEducation",
+    "YearsCoding"]:
+    print(f"\"{i}\":{list(set(df[i]))}")
+
+# %%
+attrOrdinal =  {
+    "Exercise": [
+      "I don't typically exercise",
+      "Daily or almost every day",
+      "1 - 2 times per week",
+      "3 - 4 times per week",
+      "UNKNOWN"
+    ],
+    "HoursComputer": [
+      "Less than 1 hour",
+      "1 - 4 hours",
+      "5 - 8 hours",
+      "9 - 12 hours",
+      "Over 12 hours",
+      "UNKNOWN"
+    ],
+    "FormalEducation": [
+      "I never completed any formal education",
+      "Primary/elementary school",
+      "Secondary school (e.g. American high school, German Realschule or Gymnasium, etc.)",
+      "Associate degree",
+      "Some college/university study without earning a degree",
+      "Bachelor’s degree (BA, BS, B.Eng., etc.)",
+      "Master’s degree (MA, MS, M.Eng., MBA, etc.)",
+      "Other doctoral degree (Ph.D, Ed.D., etc.)",
+      "Professional degree (JD, MD, etc.)"
+    ],
+    "YearsCoding": [
+      "0-2 years",
+      "3-5 years",
+      "6-8 years",
+      "9-11 years",
+      "12-14 years",
+      "15-17 years",
+      "18-20 years",
+      "21-23 years",
+      "24-26 years",
+      "27-29 years",
+      "30 or more years"
+    ]
+  }
+treat = {
+    'YearsCoding': '12-14 years'
+}
+df[df[treat.keys()] > treat.values()]['YearsCoding']
+# %%
+cond = {
+            "RaceEthnicity": "White or of European descent",
+            "Age": "25 - 34 years old",
+            "SexualOrientation": "Straight or heterosexual",
+            "EducationParents": "Bachelor\u2019s degree (BA, BS, B.Eng., etc.)"
+        }
+df_g = df[(df[cond.keys()] == cond.values()).all(axis=1)]
+
+sum(df_g['GDP'] == 'Low')
+# %%
+
+df_unprotec
 # %%

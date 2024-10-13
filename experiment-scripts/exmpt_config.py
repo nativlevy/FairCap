@@ -4,13 +4,13 @@ from pathlib import Path
 import sys
 
 # Location of config.py
+REPO_NAME = 'FairPrescriptionRules' 
 PROJECT_PATH = Path(__file__).parent.parent
 CONFIG_PATH = os.path.join(
     Path(__file__).parent, 'experiment-configs')
-
 DATA_PATH = os.path.join(PROJECT_PATH, 'data')
 CONTROLLER_OUTPUT_PATH = os.path.join(PROJECT_PATH, 'output')
-WORKER_OUTPUT_PATH = 'FairPrescriptionRules/output'
+WORKER_OUTPUT_PATH = f'{REPO_NAME}/output'
 
 # cloud lab configs
 REMOTE_USER = "bcyl2"

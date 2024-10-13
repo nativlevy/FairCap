@@ -57,9 +57,10 @@ def summarize_exp_data(remote_exp_dir, local_out_dir, executor, is_exp_remote=Fa
 
 def run_single_local_exmpt(config):
     algo_name = config["_name"]
-    Path(config["_output_path"]).mkdir(parents=True, exist_ok=True)
+    output_path = config["_output_path"]
+    Path(output_path).mkdir(parents=True, exist_ok=True)
     # TODO hoist
-    greedy.main(config)
+    greedy.main(config, output_path)
 
     # elif algo_name == 'causumx':
     #     causumx.main(config)
@@ -97,7 +98,7 @@ def run_single_remote_exmpt(config):
         # If fail to synch, abort this experiment. No logs fetched
         return 1
     else:
-        logging.info("Finished synching the codebase at node %s " % (
+        logging.debug("Finished synching the codebase at node %s " % (
             remote_host))
     # Step 2. Attempt to run code logic
     run_algo_status = run_algorithm(config)
@@ -106,7 +107,7 @@ def run_single_remote_exmpt(config):
         logging.error("Error(%s) occurred at %s. See more details at %s's stderr.log" % (
             run_algo_status, remote_host, remote_host))
     else:
-        logging.info("Algo %s completed running on %s" % (
+        logging.debug("Algo %s completed running on %s" % (
             algo_name, remote_host))
 
     # Future 3. Fetch all the outputs, including logs, experiment results
@@ -117,7 +118,7 @@ def run_single_remote_exmpt(config):
         logging.error("Failed to fetch outputs from  %s" % (
             remote_host))
     else:
-        logging.info("Algo %s output fetched from %s" %
+        logging.debug("Algo %s output fetched from %s" %
                      (algo_name, remote_host))
 
     return run_algo_status

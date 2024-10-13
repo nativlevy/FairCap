@@ -1,6 +1,6 @@
 {
   "_dataset_path": "stackoverflow",
-  "_datatable_path": "so_countries_col_new_500.csv",
+  "_datatable_path": "so_countries_col_new.csv",
   "_dag_path": "so.dot",
   "_immutable_attributes": [
     "Gender",
@@ -10,23 +10,15 @@
     "Age",
     "YearsCoding",
     "Dependents",
-    "RaceEthnicity"
-  ],
-  "_protected_attributes": "RaceEthnicity",
-  "_protected_values": [
-    "White or of European descent",
-    false
-  ],
-  "_mutable_attributes": [
-    "Exercise",
-    "HoursComputer",
-    "DevType",
-    "FormalEducation",
-    "UndergradMajor",
+    "RaceEthnicity",
     "Country",
-    "Continent",
-    "Hobby",
+    "GDP",
     "Student"
+  ],
+  "_protected_attributes": "GDP",
+  "_protected_values": [
+    "Low",
+    true
   ],
   "_ordinal_attributes": {
     "Exercise": [
@@ -69,5 +61,13 @@
       "30 or more years"
     ]
   },
+  "_mutable_attributes": [
+    "Exercise",
+    "HoursComputer",
+    "DevType",
+    "FormalEducation",
+    "UndergradMajor",
+    "Hobby"
+  ],
   "_target_outcome": "ConvertedSalary"
 }
