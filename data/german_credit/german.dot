@@ -1,0 +1,44 @@
+digraph GERMAN_DAG {
+    status;
+    duration_binned;
+    credit_history;
+    purpose;
+    amount_binned;
+    savings;
+    employment_duration;
+    installment_rate;
+    personal_status_sex;
+    other_debtors;
+    present_residence;
+    property;
+    age_binned;
+    other_installment_plans;
+    housing;
+    number_credits;
+    job;
+    people_liable;
+    telephone;
+    foreign_worker;
+    credit_risk;
+
+    personal_status_sex -> credit_risk;
+    personal_status_sex -> housing;
+    personal_status_sex -> savings;
+    personal_status_sex -> status;
+    personal_status_sex -> credit_history;
+    personal_status_sex -> duration_binned;
+    personal_status_sex -> amount_binned;
+    housing -> credit_risk;
+    savings -> credit_risk;
+    status -> credit_risk;
+    duration_binned -> credit_risk;
+    credit_history -> credit_risk;
+    amount_binned -> credit_risk;
+    age_binned -> credit_risk;
+    age_binned -> housing;
+    age_binned -> credit_history;
+    age_binned -> savings;
+    age_binned -> status;
+    age_binned -> duration_binned;
+    age_binned -> amount_binned;
+}

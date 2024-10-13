@@ -1,0 +1,30 @@
+# Binning Process for German Credit Database
+
+This document outlines the binning process applied to specific numeric columns in the `german_credit_data` dataset. Binning was used to group numeric values into ranges, enhancing the readability and interpretability of the data.
+
+## Data Processing Steps
+
+### 1. Data Loading
+The dataset was loaded from a CSV file, and the structure of the data was examined to determine which columns would benefit from binning.
+
+### 2. Identifying Columns for Binning
+The following columns were identified for binning:
+   - `duration`
+   - `amount`
+   - `age`
+
+These columns were selected due to their numeric nature and a sufficient variety of unique values, making them suitable for grouping into ranges.
+
+### 3. Applying Equal-Width Binning
+For each selected column, equal-width binning was applied as follows:
+   - **General Binning Process**: Numeric values were divided into ranges, with each range covering an equal portion of the column's overall span.
+   - **Age Column**: After binning, the `age` column was further transformed by converting each bin into a descriptive range string (e.g., "20-30"), enhancing readability.
+
+### 4. Saving the Transformed Data
+After processing, the binned data was saved to a new CSV file, including additional columns representing the binned ranges:
+   - `duration_binned`
+   - `amount_binned`
+   - `age_binned`
+
+## Summary of Changes
+The final output CSV includes the original data along with new columns that reflect the grouped ranges for `duration`, `amount`, and `age`. This transformation simplifies analysis by categorizing continuous variables into defined ranges.

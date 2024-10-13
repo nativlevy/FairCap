@@ -4,13 +4,10 @@
     3,
     5
   ],
-  "_cloudlab_user": "bcyl2",
-  "_cloudlab_postfix": "remote.fair-prescrip-pg0.utah.cloudlab.us",
+  "_cloudlab_user": "nativlevy",
+  "_cloudlab_postfix": "",
   "_cloudlab_nodes": [
-    "node0",
-    "node1",
-    "node2",
-    "node3"
+    "132.68.39.47"
   ],
   "_models": [
     {
