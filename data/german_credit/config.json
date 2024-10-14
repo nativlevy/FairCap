@@ -7,7 +7,7 @@
     "personal_status_sex",
     "gender",
     "foreign_worker",
-    "credit_history",
+    "credit_history"
   ],
   "_protected_attributes": "personal_status_sex",
   "_protected_values": [
