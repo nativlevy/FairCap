@@ -14,13 +14,24 @@
     "female : single",
     true
   ],
-  "_ordinal_attributes": {
-  },
+  "_ordinal_attributes": {},
   "_mutable_attributes": [
-    "status", "duration_binned", "credit_history",
-    "amount_binned", "savings", "employment_duration", "installment_rate",
-    "other_debtors", "present_residence", "property", "other_installment_plans", "housing", "number_credits", "job",
-    "people_liable", "telephone"
+    "status",
+    "duration_binned",
+    "credit_history",
+    "amount_binned",
+    "savings",
+    "employment_duration",
+    "installment_rate",
+    "other_debtors",
+    "present_residence",
+    "property",
+    "other_installment_plans",
+    "housing",
+    "number_credits",
+    "job",
+    "people_liable",
+    "telephone"
   ],
   "_target_outcome": "credit_risk"
 }
