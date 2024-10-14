@@ -31,16 +31,17 @@ from consts import APRIORI, MIX_K, MAX_K, DATA_PATH, PROJECT_PATH, unprotected_c
 
 
 
-def main_cmd(data_config_path, output_path):
+def main_cmd(model_param, data_config_path, output_path):
     with open(data_config_path) as json_file:
         data_config = json.load(json_file)   
+    model_config = json.loads(model_param)
     os.makedirs(output_path, exist_ok=True)
-    main(data_config, output_path)
+    main(model_config, data_config, output_path)
 
 # TODO unwind me
 
 
-def main(config, output_path):
+def main(model_config, data_config, output_path):
     """
     Main function to run the greedy fair prescription rules algorithm for different values of k.
     """
@@ -53,20 +54,20 @@ def main(config, output_path):
         valP  := Values of protected attributes
         tgt   := Target outcome
     """
-    dataset_path = config.get('_dataset_path')
-    datatable_path = config.get('_datatable_path')
-    dag_path = config.get('_dag_path')
-    attrI = config.get('_immutable_attributes')
-    attrM = config.get('_mutable_attributes')
-    attrP = config.get('_protected_attributes')
-    attrOrdinal = config.get('_ordinal_attributes') 
+    dataset_path = data_config.get('_dataset_path')
+    datatable_path = data_config.get('_datatable_path')
+    dag_path = data_config.get('_dag_path')
+    attrI = data_config.get('_immutable_attributes')
+    attrM = data_config.get('_mutable_attributes')
+    attrP = data_config.get('_protected_attributes')
+    attrOrdinal = data_config.get('_ordinal_attributes') 
     # TODO extend to support multiple protected value
-    valP, asProtected = config.get('_protected_values')
-    tgtO =  config.get('_target_outcome')
-    cvrg_constr = config.get('_coverage_constraint', None)
-    fair_constr = config.get('_fairness_constraint', None)
-
-    MIN_K, MAX_K = config.get('_k', [4,4])
+    valP, asProtected = data_config.get('_protected_values')
+    tgtO =  data_config.get('_target_outcome')
+    cvrg_constr = model_config.get('_coverage_constraint', None)
+    fair_constr = model_config.get('_fairness_constraint', None)
+    print(f"coverage constr: {cvrg_constr}")
+    print(f"fairness constr: {fair_constr}")
     # Remove protected attributes from immutable attributes
     attrI.remove(attrP) 
 
@@ -129,20 +130,25 @@ def main(config, output_path):
     exec_time3 = time.time() - start_time
     print(f"Elapsed time for Selection: {exec_time3} seconds")
     with open(os.path.join(output_path, 'experiment_results_greedy.csv'), 'w+', newline='') as csvfile:
-        fieldnames = ['k', 'expected_utility', 'unprotected_expected_utility', 'protected_expected_utility', 'coverage_rate',
-                      'protected_coverage_rate', 'execution_time',]
+        fieldnames = ['k', 'coverage_rate',
+                      'protected_coverage_rate', 'expected_utility',  'protected_expected_utility', 'unprotected_expected_utility', 
+                      'fairness_met', 'coverage_met', 'execution_time',]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for result in kResults:
             writer.writerow({
                 'k': result["k"],
                 'expected_utility': result['expected_utility'],   
-                'unprotected_expected_utility': result['unprotected_expected_utility'],
- 
-                'protected_expected_utility': result['protected_expected_utility'],
+                'unprotected_expected_utility':    
+                    result['unprotected_expected_utility'],
+                'protected_expected_utility': 
+                    result['protected_expected_utility'],
                 'coverage_rate': result['coverage_rate'],
                 'protected_coverage_rate': result['protected_coverage_rate'],
-                                'execution_time': exec_time1 + exec_time2 + result['execution_time']
+                'fairness_met': result['fairness_met'],
+                'coverage_met': result['coverage_met'],
+                'execution_time': 
+                    exec_time1 + exec_time2 + result['execution_time']
 
             })
 
@@ -162,4 +168,4 @@ def main(config, output_path):
 
 
 if __name__ == "__main__":
-    main_cmd(sys.argv[1], sys.argv[2])
+    main_cmd(sys.argv[1], sys.argv[2], sys.argv[3])

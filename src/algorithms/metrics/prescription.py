@@ -146,9 +146,9 @@ class PrescriptionList:
         return len(self.covered_idx_p) 
     
     def getCoverageRate(self):
-        return len(self.covered_idx) / len(self.idx_all)
+        return round(len(self.covered_idx) / len(self.idx_all), 4)
     def getProtectedCoverageRate(self):
-        return len(self.covered_idx_p) / len(self.idx_p)
+        return round(len(self.covered_idx_p) / len(self.idx_p), 4)
     
     def toDict(self):
         rxDict = {}

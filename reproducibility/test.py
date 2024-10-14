@@ -320,7 +320,7 @@ plt.style.use('dark_background')
 i = 0
 plt.figure(figsize=(20,20))
 plt.subplots_adjust(hspace=.5)
-path = "/Users/bcyl/FairPrescriptionRules/output/10-14/12:41"
+path = "/Users/bcyl/FairPrescriptionRules/output/10-14/12:21"
 variants = os.listdir(path)
 for v in variants:
     i+=1
