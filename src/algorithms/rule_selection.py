@@ -64,16 +64,16 @@ def findBestRxList(ns, newRx: Prescription):
         if 'group_sp' in fair_constr['variant']:
             threshold = fair_constr['threshold']
             if newExpUtilU > newExpUtilP:
-                benefit = newExpUtilU / (newExpUtilU - newExpUtilP)
+                benefit = newExpUtil / (newExpUtilU - newExpUtilP)
                 
         elif'group_bgl' in fair_constr['variant']:
             threshold = fair_constr['threshold']
             if newExpUtilP < threshold:
                 benefit = newExpUtilU / (threshold - newExpUtilP)
-        score += benefit 
-    if cvrg_constr != None and 'group' in cvrg_constr['variant']:
-        # TODO? Put weights on protected coverage as well?
-        score += selectedRx.getCoverage()
+        score += benefit * benefit 
+    # if cvrg_constr != None and 'group' in cvrg_constr['variant']:
+    #     # TODO? Put weights on protected coverage as well?
+    #     score *= min(selectedRx.getCoverageRate(), selectedRx.getProtectedCoverageRate())
     if score > ns.best_score:
         ns.best_score = score
         ns.best_exp_util = newExpUtil 
@@ -91,7 +91,7 @@ def k_selection(k, idx_all, idx_p, rxCandidates: List[Prescription], cvrg_constr
     ns.fair_constr = fair_constr
     ns.selectedRx = PrescriptionList([], idx_all, idx_p) 
     kResults = []
-    prev_best_exp_util = float("-inf") 
+    prev_best_score = float("-inf") 
 
     start_time = time.time() 
 
@@ -109,7 +109,7 @@ def k_selection(k, idx_all, idx_p, rxCandidates: List[Prescription], cvrg_constr
         del unselectedRx[ns.best_newRx.name]
             
         # If constraints are met and new rule does not increase score, then return the previous best solution  
-        if cvrg_met and fair_met and ns.best_exp_util <= prev_best_exp_util:
+        if cvrg_met and fair_met and ns.best_score <= prev_best_score:
             return ns.selectedRx, kResults 
         
         
@@ -119,7 +119,7 @@ def k_selection(k, idx_all, idx_p, rxCandidates: List[Prescription], cvrg_constr
         # utility and fairness (if constrained)
         if cvrg_met:
             cvrg_constr = None 
-        prev_best_exp_util = ns.best_exp_util
+        prev_best_score = ns.best_score
         ns.selectedRx = ns.best_newRxList
         kResults.append ({
             'k': j + 1,
@@ -128,7 +128,9 @@ def k_selection(k, idx_all, idx_p, rxCandidates: List[Prescription], cvrg_constr
             'protected_expected_utility': ns.selectedRx.getProtectedExpectedUtility(),
             'coverage_rate': f"{ns.selectedRx.getCoverageRate() * 100}%",
             'protected_coverage_rate':  f"{ns.selectedRx.getProtectedCoverageRate() * 100}%",
-            'execution_time': time.time() - start_time
+            'execution_time': time.time() - start_time,
+            'fairness_met': fair_met,
+            'coverage_met': cvrg_met
         })
         
     return ns.selectedRx, kResults

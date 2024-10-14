@@ -1,8 +1,22 @@
 
 import os
 
+# import utils
+import json
+import logging
+import time
 
-def main(data_config_path, expmt_config_path):
+from expmt_util import run_single_local_exmpt, run_single_remote_exmpt, ts_prefix
+from remote_util import fetch_logs_from_remote, synch_repo_at_remote, run_algorithm
+import concurrent.futures
+import os
+import subprocess
+import sys
+from exmpt_config import PROJECT_PATH, DATA_PATH, REPO_NAME, CONFIG_PATH, WORKER_OUTPUT_PATH
+import argparse
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def main(expmt_config_path):
     """
     Input:
         argv[1]: data configuration path
@@ -17,15 +31,7 @@ def main(data_config_path, expmt_config_path):
         exmpt_config = json.load(json_file)
     
     is_remote = exmpt_config['_is_remote']
-
-    # Data config
-    if is_remote:
-        data_config_path = os.path.join(REPO_NAME, 'data', data_config_path)
-    elif not os.path.isfile(data_config_path):
-        data_config_path = os.path.join(DATA_PATH, data_config_path)
-
-
-     
+  
     models = exmpt_config['_models']
     k = exmpt_config['_k']
     # Prepare a output directory, prefixed with time stamp
@@ -49,9 +55,10 @@ def main(data_config_path, expmt_config_path):
                 model = models[i]
                 remote_host = "{}.{}".format(remote_nodes[i], remote_postfix)
                 config = { **model, **
-                          {'_data_config_path': data_config_path, '_output_path':  os.path.join(WORKER_OUTPUT_PATH, model['_name']), '_control_output_path': os.path.join(PROJECT_PATH, 'output', tempore, model['_name']), '_k': k, '_remote_host': remote_host, '_remote_user': remote_username
+                          {'_output_path':  os.path.join(WORKER_OUTPUT_PATH, model['_name']), '_control_output_path': os.path.join(PROJECT_PATH, 'output', tempore, model['_name']), '_k': k, '_remote_host': remote_host, '_remote_user': remote_username
                            }}
                 f.append(executor.submit(
-                    run_single_remote_exmpt, config))
+                    fetch_logs_from_remote, config))
                 # run_single_remote_exmpt(config)  
-if __name__ == '__main__'
+if __name__ == '__main__':
+    main(sys.argv[1])

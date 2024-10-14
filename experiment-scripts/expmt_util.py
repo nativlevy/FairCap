@@ -86,7 +86,7 @@ def run_single_remote_exmpt(config):
     the next step: data analysis, creating tables, plotting charts, etc.
     """
     remote_host = config['_remote_host']
-    algo_name = config['_name']
+    algo_name = config['_model']['_name']
     # Step 0: Kill previous experiment
     clean_up(config)
 

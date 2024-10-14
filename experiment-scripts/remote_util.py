@@ -139,12 +139,14 @@ def clean_up(config):
 
 
 def run_algorithm(config):
-    arg_flag =  "{} {}".format(config['_data_config_path'], config['_output_path'])
+    arg_flag =  f"\'{json.dumps(config['_model'])}\' {config['_data_config_path']} {config['_output_path']}"
+
     # Cat all stdout and stderr on remote machine
     output_flag = ' &> {}/stdout.log 2> {}/stderr.log'.format(config['_output_path'], config['_output_path'])
 
     # TODO embed env into cloudlab
-    algorithm_cmd = "python3 FairPrescriptionRules/src/baselines/{} {} {}".format(config["_start"], arg_flag, output_flag)
+    algorithm_cmd = "python3 FairPrescriptionRules/src/baselines/{} {} {}".format(config["_model"]["_start"], arg_flag, output_flag)
+
 
     # Returns a status code: 0 means success; non-0 mean failure
     return run_remote_cmd_sync(command=algorithm_cmd, config=config)
