@@ -1,6 +1,6 @@
 {
   "_dataset_path": "stackoverflow",
-  "_datatable_path": "so_countries_col_new_500.csv",
+  "_datatable_path": "so_countries_col_new.csv",
   "_dag_path": "so.dot",
   "_immutable_attributes": [
     "Gender",
