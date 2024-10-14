@@ -313,3 +313,29 @@ sum(df_g['GDP'] == 'Low')
 
 df_unprotec
 # %%
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+plt.style.use('dark_background')
+i = 0
+plt.figure(figsize=(20,20))
+plt.subplots_adjust(hspace=.5)
+path = "/Users/bcyl/FairPrescriptionRules/output/10-14/12:41"
+variants = os.listdir(path)
+for v in variants:
+    i+=1
+    plt.subplot(3,3,i)
+    plt.title(v)
+    plt.xlabel('k')
+    plt.ylabel('ExpUtil')
+    plt.legend()
+
+    df = pd.read_csv(f"{path}/{v}/experiment_results_greedy.csv")
+
+    plt.plot(df['k'], df['expected_utility'], label='Expected')
+    plt.plot(df['k'], df['unprotected_expected_utility'], label='Unprotected Expected')
+    plt.plot(df['k'], df['protected_expected_utility'], label='Protected Expected')
+    plt.legend(loc='best')
+
+plt.plot()
+# %%
