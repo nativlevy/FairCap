@@ -23,7 +23,8 @@ class Prescription:
             covered_idx_p: Set[int], 
             utility: float, 
             utility_p: float,
-            utility_u: float):
+            utility_u: float,
+            pvals: List[float]):
         self.condition = condition
         self.treatment = treatment
         self.covered_idx = covered_idx
@@ -33,7 +34,7 @@ class Prescription:
         self.utility = utility
         self.utility_p = utility_p
         self.utility_u = utility_u
-
+        self.pvals = pvals
         self.name = self.make_name()
     def make_name(self):
         name = ""
@@ -68,6 +69,12 @@ class Prescription:
         return len(self.covered_idx)
     def getProtectedCoverage(self):
         return len(self.covered_idx_p)
+    def getPvals(self):
+        pv_a, pv_p, pv_u = self.pvals
+        return {'all': pv_a,
+                'protected': pv_p,
+                'non-protected': pv_u
+                }
     def compare(self, obj):
         if not isinstance(obj, Prescription):
             return -1

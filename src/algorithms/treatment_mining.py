@@ -137,8 +137,10 @@ def getTreatmentForEachGroup(ns, group) -> Prescription:
     best_cate = 0
     best_cate_protec = 0
     best_cate_unprotec = 0
-    candidateTreatments = getSingleTreatments(attrM, df_g, attrOrdinal)
     prev_best_benefit = 0
+    pvals = []
+    candidateTreatments = getSingleTreatments(attrM, df_g, attrOrdinal)
+    
     for level in range(2, 4):  # Up to 5 treatment levels
         start = time.time()
         # get all combinations
@@ -152,14 +154,15 @@ def getTreatmentForEachGroup(ns, group) -> Prescription:
         selectedTreatments = []
         for treatment in candidateTreatments:
             # Filter 2: discard treatments w/negative CATE
-            cate_all = CATE(
+            cate_all, pv_all = CATE(
+
             df_g, DAG_str, treatment, attrOrdinal, tgtO) 
             if cate_all <= 0:
                 continue
 
             # Filter 3: impose fairness constraints
-            cate_protec = CATE(df_gp, DAG_str, treatment, attrOrdinal, tgtO)
-            cate_unprotec = CATE(df_gu, DAG_str, treatment, attrOrdinal, tgtO)            
+            cate_protec, pv_p = CATE(df_gp, DAG_str, treatment, attrOrdinal, tgtO)
+            cate_unprotec, pv_u = CATE(df_gu, DAG_str, treatment, attrOrdinal, tgtO)            
             if fair_constr != None:
                 threshold = fair_constr['threshold'] 
                 # For SP constraints, discard treatments if the absolute
@@ -181,9 +184,8 @@ def getTreatmentForEachGroup(ns, group) -> Prescription:
             if candidate_benefit > best_benefit and cate_all > 0 and cate_protec > 0:
                 best_benefit = candidate_benefit
                 best_treatment = treatment
-                best_cate = cate_all
-                best_cate_protec = cate_protec
-                best_cate_unprotec = cate_unprotec
+                best_cate, best_cate_protec, best_cate_unprotec = cate_all,cate_protec, cate_unprotec
+                pvals = [pv_all, pv_p, pv_u]
                 logging.debug(
                     f'New best treatment found at level {level}: {best_treatment}')
                 logging.debug(
@@ -202,7 +204,7 @@ def getTreatmentForEachGroup(ns, group) -> Prescription:
     logging.debug('#######################################')
     covered_idx = set(df_g.index)
     covered_idx_p = set(idx_protec) & covered_idx 
-    return Prescription(condition=group, treatment=best_treatment, covered_idx=covered_idx, covered_idx_p=covered_idx_p, utility=best_cate, utility_p=best_cate_protec, utility_u=best_cate_unprotec)
+    return Prescription(condition=group, treatment=best_treatment, covered_idx=covered_idx, covered_idx_p=covered_idx_p, utility=best_cate, utility_p=best_cate_protec, utility_u=best_cate_unprotec, pvals=pvals)
 
 def isValidTreatment(df_g, level, newTreatment, attrOrdinal):
     """ 
@@ -215,7 +217,10 @@ def isValidTreatment(df_g, level, newTreatment, attrOrdinal):
     if len(newTreatment.keys()) == level:
         keys = list(newTreatment.keys())
         vals = list(newTreatment.values())
-        treatable = df_g.apply(functools.partial(isTreatable, treatments=newTreatment, attrOrdinal=attrOrdinal), axis=1)        
+        if attrOrdinal == None: 
+            treatable = (df_g[keys] == vals).all(axis=1)
+        else:
+            treatable = df_g.apply(functools.partial(isTreatable, treatments=newTreatment, attrOrdinal=attrOrdinal), axis=1)        
         valid = list(set(list(treatable)))
         # no tuples in treatment group
         if len(valid) < 2:
@@ -226,7 +231,8 @@ def isValidTreatment(df_g, level, newTreatment, attrOrdinal):
             return False
         return True
 
-def getSingleTreatments(attrM: List[Dict], df: pd.DataFrame, attrOrdinal=None) -> List[Dict]:
+def getSingleTreatments(attrM: List[Dict], df: pd.DataFrame, attrOrdinal) -> List[Dict]:
+
     """
     Generate level 1 treatments (single attribute-value pairs).
 
@@ -246,7 +252,11 @@ def getSingleTreatments(attrM: List[Dict], df: pd.DataFrame, attrOrdinal=None) -
     for attr in uniqueVals:
         for val in uniqueVals[attr]:
             treatment = {attr: val} 
-            treatable = df[attr] != val
+            if attrOrdinal == None or attr not in attrOrdinal:
+                treatable = df[attr] == val
+            else:
+                order = attrOrdinal[attr]
+                treatable = df[attr].map(lambda v: order[v])  >= order[val] 
             valid = list(set(treatable.tolist()))
             # Skip treatment where either all or none will be treated
             if len(valid) < 2:

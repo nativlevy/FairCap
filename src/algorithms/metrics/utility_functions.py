@@ -58,9 +58,15 @@ def CATE(df_g, DAG_str, treatments, attrOrdinal, tgtO):
     # TODO question: 1 if (all attributes != treatval) or
     # TODO question: 1 if (exists attributes != treatval) 
     if len(df_g) == 0:
-        return 0
-    
-    df_g['TempTreatment'] = df_g.apply(functools.partial(isTreatable, treatments=treatments, attrOrdinal=attrOrdinal), axis=1)
+        return 0.0, 0.0
+    df_g = df_g.copy()
+
+    if attrOrdinal == None:
+        keys = list(treatments.keys())
+        vals = list(treatments.values())
+        df_g['TempTreatment'] = (df_g[keys] == vals).all(axis=1)
+    else: 
+        df_g['TempTreatment'] = df_g.apply(functools.partial(isTreatable, treatments=treatments, attrOrdinal=attrOrdinal), axis=1)
     DAG_str = DAG_after_treatments(DAG_str, treatments, tgtO)
     
     # remove graph name as dowhy doesn't support named graph string
@@ -80,17 +86,18 @@ def CATE(df_g, DAG_str, treatments, attrOrdinal, tgtO):
                                                     effect_modifiers=[],
                                                     test_significance=True)
     ATE = causal_estm_reg.value
-    if ATE ==0:
-        logging.debug(f"Treatment: {treatments}, ATE: {ATE}") 
-        return 0
+   
     p_value = causal_estm_reg.test_stat_significance()['p_value'] 
+    if ATE == 0:
+        logging.debug(f"Treatment: {treatments}, ATE: {ATE}") 
+        return -0.01, p_value 
     if p_value > THRESHOLD:
         logging.debug(f"Treatment: {treatments}, ATE: {ATE}, p_value: {p_value}") 
-        return 0
+        return 0.0, p_value
     
     else:
         logging.debug(f"Treatment: {treatments}, ATE: {ATE}, p_value: {p_value}")
-        return ATE
+        return ATE, p_value
 
 
 
@@ -110,12 +117,13 @@ def isTreatable(record, treatments, attrOrdinal):
         treatment is effective, 0 otherwise.
     """    
     # Each treatment {A:a1} = to check if A can be set to a1
+        
     for treat_attr in treatments:
-        if treat_attr in attrOrdinal:
+        if attrOrdinal == None and treat_attr in attrOrdinal:
             # In case ordinal_attr is defined
             # current value <p treatment value => treatment is not effective
-            treat_rank = attrOrdinal[treat_attr].index(treatments[treat_attr])
-            record_rank = attrOrdinal[treat_attr].index(record[treat_attr])
+            treat_rank = attrOrdinal[treat_attr][treatments[treat_attr]]
+            record_rank = attrOrdinal[treat_attr][record[treat_attr]]
             if record_rank < treat_rank:
                 return 0
         else:

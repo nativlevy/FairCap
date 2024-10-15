@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+import numpy as np
 import pandas as pd
 from typing import List, Set, Dict, Tuple
 
@@ -23,13 +24,21 @@ from rule_selection import k_selection
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
 from load_data import load_data, load_rules
 from prescription import Prescription, PrescriptionList
-
+from partial_order import ordinalMapping
 # from utility.logging_util import init_logger
 
 sys.path.append(os.path.join(Path(__file__).parent, 'common'))
 from consts import APRIORI, MIX_K, MAX_K, DATA_PATH, PROJECT_PATH, unprotected_coverage_threshold, protected_coverage_threshold, fairness_threshold  # NOQA
 
-
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)
 
 def main_cmd(model_param, data_config_path, output_path):
     with open(data_config_path) as json_file:
@@ -60,7 +69,8 @@ def main(model_config, data_config, output_path):
     attrI = data_config.get('_immutable_attributes')
     attrM = data_config.get('_mutable_attributes')
     attrP = data_config.get('_protected_attributes')
-    attrOrdinal = data_config.get('_ordinal_attributes') 
+    # attrOrdinal = ordinalMapping(data_config.get('_ordinal_attributes'))
+    attrOrdinal = None
     # TODO extend to support multiple protected value
     valP, asProtected = data_config.get('_protected_values')
     tgtO =  data_config.get('_target_outcome')
@@ -107,16 +117,17 @@ def main(model_config, data_config, output_path):
         exec_time2 = time.time() - start_time 
         print(f"Elapsed time for treatment mining: {exec_time2} seconds. {len(rxCandidates)} rules are found")
         # Save all rules found so far
-        with open(os.path.join(output_path, 'all_mined_rules.json'), 'w+') as f:
+        with open(os.path.join(output_path, 'mined_rules.json'), 'w+') as f:
             json.dump([{
                 'condition': rx.condition,
-                'treatment': rx.treatment,
+                'treatment': str(rx.treatment),
                 'utility': rx.utility, 
                 'protected_utility': rx.getProtectedUtility(),
                 'unprotected_utility': rx.getUnprotectedUtility(),
                 'coverage_rate': round(rx.getCoverage()/len(df) * 100, 2),
-                'protected_coverage_rate': round(rx.getProtectedCoverage()/len(idx_p) *100, 2)
-            } for rx in rxCandidates], f, indent=4)
+                'protected_coverage_rate': round(rx.getProtectedCoverage()/len(idx_p) *100, 2),
+                'pvals': rx.getPvals()
+            } for rx in rxCandidates], f, indent=4, cls=NpEncoder)
         # rxCandidates = LP_solver_k(rxCandidates, set(df.index), idx_p, cvrg_constr, fair_constr, 10)
         
     # ------------------------ Rule selections -----------------------------
@@ -155,14 +166,15 @@ def main(model_config, data_config, output_path):
     # Convert selected_rules to a JSON string
     with open(os.path.join(output_path, 'selected_rules.json'), 'w+') as f:
         json.dump([{
-        'condition': rx.getGroup(),
-        'treatment': rx.getTreatment(),
+        'condition': str(rx.getGroup()),
+        'treatment': str(rx.getTreatment()),
         'utility': rx.getUtility(),
         'protected_utility': rx.getProtectedUtility(),
         'unprotected_utility': rx.getUnprotectedUtility(),
         'coverage_rate': round(rx.getCoverage()/len(df) * 100, 2),
-        'protected_coverage_rate': round(rx.getProtectedCoverage()/len(idx_p) *100, 2)
-    } for rx in rxSelected.rules], f, indent=4)
+        'protected_coverage_rate': round(rx.getProtectedCoverage()/len(idx_p) *100, 2),
+        'pvals': rx.getPvals()
+    } for rx in rxSelected.rules], f, indent=4, cls=NpEncoder)
     logging.debug("Results written to experiment_results_greedy.csv")
    
 
