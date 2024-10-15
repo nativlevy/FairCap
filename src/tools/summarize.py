@@ -19,9 +19,6 @@ variants = ['greedy_no_constraint',
 ]
 # %%
 def expUtitVsK(path):
-    variants = os.listdir(path)
-    variants = [v for v in variants if 'greedy' in v]
-
     i = 0
     plt.figure(figsize=(20,20))
     plt.subplots_adjust(hspace=.5)
@@ -45,8 +42,6 @@ def expUtitVsK(path):
     plt.plot()
 # %%
 def execTimeBreakDown(path):
-    variants = os.listdir(path)
-    variants = [v for v in variants if 'greedy' in v]
     i = 0
     plt.figure(figsize=(20,20))
     breakdown = []
@@ -66,7 +61,7 @@ def execTimeBreakDown(path):
         p = plt.barh(df.index, df[s], label=s, left=base)
         base += df[s]
     plt.legend(loc='best')
-
+    plt.title('Runtime decomposition')
     plt.show()
 
 # %%
@@ -105,6 +100,7 @@ def print_table(path):
 
 
 
+
     t = table
     print(f"""\midrule \\\\
 No constraints  & {t[0]} \\\\
@@ -123,7 +119,7 @@ print_table(path)
 
 # %%
 
-path = "/Users/bcyl/FairPrescriptionRules/output/10-15/17:01"
+path = "/Users/bcyl/FairPrescriptionRules/output/10-15/so_half"
 expUtitVsK(path)
 execTimeBreakDown(path)
 
