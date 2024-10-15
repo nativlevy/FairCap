@@ -1,12 +1,9 @@
-# %%
-from cProfile import label
+
 import os
-from pyexpat import model
 import re
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-# Ouptut se
 plt.style.use('ggplot')
 
 variants = ['greedy_no_constraint',
@@ -19,7 +16,7 @@ variants = ['greedy_no_constraint',
         'greedy+group_coverage+individual_sp',
         'greedy+rule_coverage+individual_sp',
 ]
-# %%
+
 def expUtitVsK(path):
     i = 0
     plt.figure(figsize=(20,20))
@@ -41,7 +38,7 @@ def expUtitVsK(path):
             pass
 
     plt.plot()
-# %%
+
 def execTimeBreakDown(path):
     i = 0
     plt.figure(figsize=(20,20))
@@ -65,7 +62,7 @@ def execTimeBreakDown(path):
     plt.title('Runtime decomposition')
     plt.show()
 
-# %%
+
 def print_table(path):
 
     i = 0
@@ -115,8 +112,6 @@ Group coverage, Individual fairness  & {t[7]}\\\\
 Rule coverage, Individual fairness  &{t[8]} \\\\
         """)
 
-
-# %%
 def execTimeVsSize(path):
     dirs = os.listdir(path)
     size_variants = {}
@@ -138,17 +133,6 @@ def execTimeVsSize(path):
         for s, m in size_variants.items():
             df = pd.read_csv(f"{path}/{m}/{v}/experiment_results_greedy.csv")
             exec_time[s-1] = df['execution_time'].iloc[-1]
-        print(exec_time)
         plt.plot(sizes, exec_time, label=v)
     plt.legend(loc='best')
 
-    
-path = "/Users/bcyl/FairPrescriptionRules/output/GDP"
-execTimeVsSize(path)
-# %%
-path = "/Users/bcyl/FairPrescriptionRules/output/10-15/18:23"
-expUtitVsK(path)
-execTimeBreakDown(path)
-
-
-# %%
