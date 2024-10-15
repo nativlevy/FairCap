@@ -15,10 +15,10 @@
     "GDP",
     "Student"
   ],
-  "_protected_attributes": "RaceEthnicity",
+  "_protected_attributes": "GDP",
   "_protected_values": [
-    "White or of European descent",
-    false
+    "Low",
+    true
   ],
   "_ordinal_attributes": {
     "Exercise": [

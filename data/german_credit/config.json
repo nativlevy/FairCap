@@ -5,9 +5,15 @@
   "_immutable_attributes": [
     "age_binned",
     "personal_status_sex",
-    "gender",
     "foreign_worker",
-    "credit_history"
+    "credit_history",
+    "employment_duration",
+    "property",
+    "installment_rate",
+    "purpose",
+    "people_liable",
+    "duration_binned",
+    "amount_binned"
   ],
   "_protected_attributes": "personal_status_sex",
   "_protected_values": [
@@ -17,20 +23,13 @@
   "_ordinal_attributes": {},
   "_mutable_attributes": [
     "status",
-    "duration_binned",
-    "credit_history",
-    "amount_binned",
     "savings",
-    "employment_duration",
-    "installment_rate",
     "other_debtors",
     "present_residence",
-    "property",
     "other_installment_plans",
     "housing",
     "number_credits",
     "job",
-    "people_liable",
     "telephone"
   ],
   "_target_outcome": "credit_risk"
