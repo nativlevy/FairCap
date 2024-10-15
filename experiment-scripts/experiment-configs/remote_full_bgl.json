@@ -41,11 +41,11 @@
       }
     },
     {
-      "_name": "greedy+group_sp",
+      "_name": "greedy+group_bgl",
       "_start": "greedy.py",
       "_fairness_constraint": {
-        "variant": "group_sp",
-        "threshold": 10000
+        "variant": "group_bgl",
+        "threshold": 0.1
       }
     },
     {
@@ -53,11 +53,11 @@
       "_start": "greedy.py",
       "_fairness_constraint": {
         "variant": "individual_sp",
-        "threshold": 10000
+        "threshold": 0.1
       }
     },
     {
-      "_name": "greedy+group_coverage+group_sp",
+      "_name": "greedy+group_coverage+group_bgl",
       "_start": "greedy.py",
       "_coverage_constraint": {
         "variant": "group",
@@ -65,12 +65,12 @@
         "threshold_p": 0.3
       },
       "_fairness_constraint": {
-        "variant": "group_sp",
-        "threshold": 10000
+        "variant": "group_bgl",
+        "threshold": 0.1
       }
     },
     {
-      "_name": "greedy+rule_coverage+group_sp",
+      "_name": "greedy+rule_coverage+group_bgl",
       "_start": "greedy.py",
       "_coverage_constraint": {
         "variant": "rule",
@@ -78,8 +78,8 @@
         "threshold_p": 0.3
       },
       "_fairness_constraint": {
-        "variant": "group_sp",
-        "threshold": 10000
+        "variant": "group_bgl",
+        "threshold": 0.1
       }
     },
     {
@@ -92,7 +92,7 @@
       },
       "_fairness_constraint": {
         "variant": "individual_sp",
-        "threshold": 10000
+        "threshold": 0.1
       }
     },
     {
@@ -105,7 +105,7 @@
       },
       "_fairness_constraint": {
         "variant": "individual_sp",
-        "threshold": 10000
+        "threshold": 0.1
       }
     }
   ]
