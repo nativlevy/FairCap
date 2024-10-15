@@ -1,5 +1,7 @@
 # %%
+from cProfile import label
 import os
+from pyexpat import model
 import re
 import pandas as pd
 import numpy as np
@@ -31,7 +33,6 @@ def expUtitVsK(path):
         plt.legend()
         try:
             df = pd.read_csv(f"{path}/{v}/experiment_results_greedy.csv")
-
             plt.plot(df['k'], df['expected_utility'], label='Expected')
             plt.plot(df['k'], df['unprotected_expected_utility'], label='Unprotected Expected')
             plt.plot(df['k'], df['protected_expected_utility'], label='Protected Expected')
@@ -113,13 +114,39 @@ Rule coverage, Group fairness  & {t[6]}\\\\
 Group coverage, Individual fairness  & {t[7]}\\\\
 Rule coverage, Individual fairness  &{t[8]} \\\\
         """)
-path = "/Users/bcyl/FairPrescriptionRules/output/GDP/so_full"
 
-print_table(path)
 
 # %%
+def execTimeVsSize(path):
+    dirs = os.listdir(path)
+    size_variants = {}
+    for d in dirs:
+        if 'qua' in d:
+            size_variants[1] = d
+        if 'half' in d:
+            size_variants[2] = d
+        if 'tri' in d:
+            size_variants[3] = d
+        if 'full' in d:
+            size_variants[4] = d
+    plt.figure(figsize=(20,20))
+    sizes = [25, 50, 75, 100]
+    i = 0
+    for v in variants:
+        plt.title("Runtime vs dataset percentage")
+        exec_time = [0] * 4
+        for s, m in size_variants.items():
+            df = pd.read_csv(f"{path}/{m}/{v}/experiment_results_greedy.csv")
+            exec_time[s-1] = df['execution_time'].iloc[-1]
+        print(exec_time)
+        plt.plot(sizes, exec_time, label=v)
+    plt.legend(loc='best')
 
-path = "/Users/bcyl/FairPrescriptionRules/output/10-15/so_half"
+    
+path = "/Users/bcyl/FairPrescriptionRules/output/GDP"
+execTimeVsSize(path)
+# %%
+path = "/Users/bcyl/FairPrescriptionRules/output/10-15/18:23"
 expUtitVsK(path)
 execTimeBreakDown(path)
 

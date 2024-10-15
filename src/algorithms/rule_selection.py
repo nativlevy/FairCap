@@ -63,17 +63,17 @@ def findBestRxList(ns, newRx: Prescription):
         # Unfairness penalize the score
         if 'group_sp' in fair_constr['variant']:
             threshold = fair_constr['threshold']
-            if newExpUtilU > newExpUtilP:
-                benefit = newExpUtil / (newExpUtilU - newExpUtilP)
+            if newExpUtilU - newExpUtilP > threshold:
+                benefit = newExpUtil / newExpUtilU - newExpUtilP
                 
         elif'group_bgl' in fair_constr['variant']:
             threshold = fair_constr['threshold']
             if newExpUtilP < threshold:
                 benefit = newExpUtilU / (threshold - newExpUtilP)
-        score += benefit * benefit 
-    # if cvrg_constr != None and 'group' in cvrg_constr['variant']:
-    #     # TODO? Put weights on protected coverage as well?
-    #     score *= min(selectedRx.getCoverageRate(), selectedRx.getProtectedCoverageRate())
+        score += benefit
+    if cvrg_constr != None and 'group' in cvrg_constr['variant']:
+        # TODO? Put weights on protected coverage as well?
+        score *= min(selectedRx.getCoverageRate(), selectedRx.getProtectedCoverageRate())
     if score > ns.best_score:
         ns.best_score = score
         ns.best_exp_util = newExpUtil 
@@ -112,13 +112,16 @@ def k_selection(k, idx_all, idx_p, rxCandidates: List[Prescription], cvrg_constr
         if cvrg_met and fair_met and ns.best_score <= prev_best_score:
             return ns.selectedRx, kResults 
         
-        
-        fair_met = ns.best_newRxList.isFairnessMet(fair_constr)
+        new_fair_met = ns.best_newRxList.isFairnessMet(fair_constr)
         cvrg_met = cvrg_met or ns.best_newRxList.isCoverageMet(cvrg_constr)
+        
+        # If fairness was met but is violated in new selection, stop selection  
+        if cvrg_met and fair_met and not new_fair_met:
+            return ns.selectedRx, kResults 
+        fair_met = new_fair_met 
         # Once coverage constraint is met, we can focus only on expected
         # utility and fairness (if constrained)
-        if cvrg_met:
-            cvrg_constr = None 
+    
         prev_best_score = ns.best_score
         ns.selectedRx = ns.best_newRxList
         kResults.append ({
