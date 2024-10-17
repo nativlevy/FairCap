@@ -15,10 +15,10 @@
     "GDP",
     "Student"
   ],
-  "_protected_attributes": "RaceEthnicity",
+  "_protected_attributes": "GDP",
   "_protected_values": [
-    "White or of European descent",
-    false
+    "Low",
+    true
   ],
   "_ordinal_attributes": {
     "Exercise": [
@@ -62,12 +62,9 @@
     ]
   },
   "_mutable_attributes": [
-    "Exercise",
     "HoursComputer",
     "DevType",
-    "FormalEducation",
-    "UndergradMajor",
-    "Hobby"
+    "FormalEducation"
   ],
   "_target_outcome": "ConvertedSalary"
 }

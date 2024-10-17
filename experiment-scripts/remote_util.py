@@ -16,7 +16,7 @@ from logging import config
 import subprocess
 import os
 import sys
-from exmpt_config import CONTROLLER_OUTPUT_PATH, REMOTE_USER, PROJECT_PATH, DATA_PATH
+from expmt_config import CONTROLLER_OUTPUT_PATH, REMOTE_USER, PROJECT_PATH, DATA_PATH
 
 
 

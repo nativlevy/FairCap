@@ -1,0 +1,37 @@
+{
+  "_is_remote": true,
+  "_k": [
+    4,
+    7
+  ],
+  "_cloudlab_user": "bcyl2",
+  "_cloudlab_postfix": "remote.fair-prescrip-pg0.utah.cloudlab.us",
+  "_cloudlab_nodes": [
+    "node3",
+    "node4",
+    "node5"
+  ],
+  "_expmt_title": "GC_less_mut_attr",
+  "_models": [
+    {
+      "_name": "greedy_no_constraint_lowM",
+      "_start": "greedy.py"
+    },
+    {
+      "_name": "greedy_lowM+group_bgl",
+      "_start": "greedy.py",
+      "_fairness_constraint": {
+        "variant": "group_bgl",
+        "threshold": 10000
+      }
+    },
+    {
+      "_name": "greedy_lowM+individual_bgl",
+      "_start": "greedy.py",
+      "_fairness_constraint": {
+        "variant": "individual_bgl",
+        "threshold": 10000
+      }
+    }
+  ]
+}

@@ -6,13 +6,13 @@ import json
 import logging
 import time
 
-from expmt_util import run_single_local_exmpt, run_single_remote_exmpt, ts_prefix
+from expmt_util import run_single_local_expmt, run_single_remote_expmt, ts_prefix
 from remote_util import fetch_logs_from_remote, synch_repo_at_remote, run_algorithm
 import concurrent.futures
 import os
 import subprocess
 import sys
-from exmpt_config import PROJECT_PATH, DATA_PATH, REPO_NAME, CONFIG_PATH, WORKER_OUTPUT_PATH
+from expmt_config import PROJECT_PATH, DATA_PATH, REPO_NAME, CONFIG_PATH, WORKER_OUTPUT_PATH
 import argparse
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -28,21 +28,21 @@ def main(expmt_config_path):
     if not os.path.isfile(expmt_config_path):
         expmt_config_path = os.path.join(CONFIG_PATH, expmt_config_path)
     with open(os.path.join(CONFIG_PATH, expmt_config_path)) as json_file:
-        exmpt_config = json.load(json_file)
+        expmt_config = json.load(json_file)
     
-    is_remote = exmpt_config['_is_remote']
+    is_remote = expmt_config['_is_remote']
   
-    models = exmpt_config['_models']
-    k = exmpt_config['_k']
+    models = expmt_config['_models']
+    k = expmt_config['_k']
     # Prepare a output directory, prefixed with time stamp
     tempore = ts_prefix()
     print("BEGIN")
     # TODO add me back
     # os.makedirs(os.path.join(CONTROLLER_OUTPUT_PATH, tempore))
     if is_remote:
-        remote_nodes = exmpt_config['_cloudlab_nodes'] 
-        remote_postfix = exmpt_config['_cloudlab_postfix'] 
-        remote_username = exmpt_config['_cloudlab_user'] 
+        remote_nodes = expmt_config['_cloudlab_nodes'] 
+        remote_postfix = expmt_config['_cloudlab_postfix'] 
+        remote_username = expmt_config['_cloudlab_user'] 
 
         if len(remote_nodes) < len(models):
             raise AssertionError("%d nodes required; %d provided" % (len(models), len(remote_nodes)))
@@ -59,6 +59,6 @@ def main(expmt_config_path):
                            }}
                 f.append(executor.submit(
                     fetch_logs_from_remote, config))
-                # run_single_remote_exmpt(config)  
+                # run_single_remote_expmt(config)  
 if __name__ == '__main__':
     main(sys.argv[1])

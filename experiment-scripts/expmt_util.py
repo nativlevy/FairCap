@@ -10,7 +10,7 @@ from remote_util import clean_up, fetch_logs_from_remote, run_algorithm, synch_r
 import cProfile
 
 
-from exmpt_config import PROJECT_PATH, Config
+from expmt_config import PROJECT_PATH, Config
 sys.path.append(os.path.join(PROJECT_PATH, 'src/baselines'))
 sys.path.append(os.path.join(PROJECT_PATH, 'src/baselines/common'))
 import greedy  # NOQA
@@ -31,7 +31,7 @@ def summarize_exp_data(remote_exp_dir, local_out_dir, executor, is_exp_remote=Fa
     return local_out_dir
 
 
-# def run_single_exmpt(config):
+# def run_single_expmt(config):
 #     """
 #     If run remotely (mainly for production purpose), we run this very
 #     experiment on a designated remote server.
@@ -52,10 +52,10 @@ def summarize_exp_data(remote_exp_dir, local_out_dir, executor, is_exp_remote=Fa
 #     if is_remote:
 #         return (config)
 #     else:
-#         return run_single_local_exmpt(config)
+#         return run_single_local_expmt(config)
 
 
-def run_single_local_exmpt(config):
+def run_single_local_expmt(config):
     algo_name = config["_name"]
     output_path = config["_output_path"]
     Path(output_path).mkdir(parents=True, exist_ok=True)
@@ -68,7 +68,7 @@ def run_single_local_exmpt(config):
     return 0
 
 
-def run_single_remote_exmpt(config):
+def run_single_remote_expmt(config):
     """
     Remote experiments are mainly for production purpose, we run this very
     experiment on a designated remote server.

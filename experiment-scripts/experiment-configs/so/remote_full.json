@@ -17,6 +17,7 @@
     "node7",
     "node8"
   ],
+  "_expmt_title": "so_coverage_analysis",
   "_models": [
     {
       "_name": "greedy_no_constraint",

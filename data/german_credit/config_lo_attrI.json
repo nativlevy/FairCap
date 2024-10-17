@@ -1,0 +1,32 @@
+{
+  "_dataset_path": "german_credit",
+  "_datatable_path": "german_credit_data_binned_output.csv",
+  "_dag_path": "german.dot",
+  "_immutable_attributes": [
+    "age_binned",
+    "personal_status_sex",
+    "installment_rate",
+    "purpose",
+    "people_liable",
+    "duration_binned",
+    "amount_binned"
+  ],
+  "_protected_attributes": "personal_status_sex",
+  "_protected_values": [
+    "female : single",
+    true
+  ],
+  "_ordinal_attributes": {},
+  "_mutable_attributes": [
+    "status",
+    "savings",
+    "other_debtors",
+    "present_residence",
+    "other_installment_plans",
+    "housing",
+    "number_credits",
+    "job",
+    "telephone"
+  ],
+  "_target_outcome": "credit_risk"
+}

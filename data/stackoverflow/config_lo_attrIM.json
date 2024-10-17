@@ -3,17 +3,11 @@
   "_datatable_path": "so_countries_col_new.csv",
   "_dag_path": "so.dot",
   "_immutable_attributes": [
-    "Gender",
-    "SexualOrientation",
-    "EducationParents",
-    "RaceEthnicity",
-    "Age",
-    "YearsCoding",
     "Dependents",
     "RaceEthnicity",
     "Country",
-    "Continent",
-    "GDP"
+    "GDP",
+    "Student"
   ],
   "_protected_attributes": "GDP",
   "_protected_values": [
@@ -21,13 +15,9 @@
     true
   ],
   "_mutable_attributes": [
-    "Exercise",
     "HoursComputer",
     "DevType",
-    "FormalEducation",
-    "UndergradMajor",
-    "Hobby",
-    "Student"
+    "FormalEducation"
   ],
   "_target_outcome": "ConvertedSalary"
 }
