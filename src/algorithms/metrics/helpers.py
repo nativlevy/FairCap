@@ -1,11 +1,11 @@
-
 from typing import List
 
 import pandas as pd
 import numpy as np
 import functools
 
-def uniqueVal(df: pd.DataFrame, attrs : List):
+
+def uniqueVal(df: pd.DataFrame, attrs: List):
     """
     Get unique values for each attribute in the dataframe.
 
@@ -22,13 +22,3 @@ def uniqueVal(df: pd.DataFrame, attrs : List):
         }
     """
     return dict((col, df[col].unique()) for col in attrs)
-
-
-# def conjct(predicates):
-#     return functools.reduce(np.logical_and, predicates)
-
-# def predicate(df, table):
-#     return df. 
-# c_1 = data.col1 == True
-# c_2 = data.col2 < 64
-# c_3 = data.col3 != 4

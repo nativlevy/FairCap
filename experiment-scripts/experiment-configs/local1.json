@@ -4,18 +4,15 @@
     4,
     4
   ],
+  "_expmt_title": "Local Sanity Test",
   "_models": [
     {
-      "_name": "greedy[group_coverage]",
+      "_name": "greedy",
       "_start": "greedy.py",
       "_coverage_constraint": {
         "variant": "rule",
         "threshold": 0.8,
         "threshold_p": 0.8
-      },
-      "_fairness_constraint": {
-        "variant": "group_sp",
-        "threshold": 100500
       }
     }
   ]

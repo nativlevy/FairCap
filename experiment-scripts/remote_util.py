@@ -9,6 +9,7 @@
     N.b. All functions in this file are expected to run on local machine
     N.b. We suppress stderr and stdout at our local machine. Errors and outputs will be logged in files at remote machine.
 """
+
 from ast import Dict
 import json
 import logging
@@ -17,8 +18,6 @@ import subprocess
 import os
 import sys
 from expmt_config import CONTROLLER_OUTPUT_PATH, REMOTE_USER, PROJECT_PATH, DATA_PATH
-
-
 
 
 def prep_remote_cmd(command: str, config: Dict) -> str:
@@ -37,11 +36,19 @@ def prep_remote_cmd(command: str, config: Dict) -> str:
         str: a full ssh script that that runs command on remote sever
 
     """
-    remote_cmd_tokens = ['ssh', '-o', 'StrictHostKeyChecking=no',
-                         '-o', 'ControlMaster=auto',
-                         '-o', 'ControlPersist=2m',
-                         '-o', 'ControlPath=~/.ssh/cm-%r@%h:%p',
-                         '%s@%s' % (config["_remote_user"], config["_remote_host"]), command]
+    remote_cmd_tokens = [
+        "ssh",
+        "-o",
+        "StrictHostKeyChecking=no",
+        "-o",
+        "ControlMaster=auto",
+        "-o",
+        "ControlPersist=2m",
+        "-o",
+        "ControlPath=~/.ssh/cm-%r@%h:%p",
+        "%s@%s" % (config["_remote_user"], config["_remote_host"]),
+        command,
+    ]
     return remote_cmd_tokens
 
 
@@ -63,7 +70,9 @@ def run_remote_cmd_sync(command: str, config: Dict) -> str:
 
     # return subprocess.run(prep_remote_cmd(command, config),
     #                       stderr=subprocess.DEVNULL, universal_newlines=True).returncode
-    return subprocess.run(prep_remote_cmd(command, config),universal_newlines=True).returncode
+    return subprocess.run(
+        prep_remote_cmd(command, config), universal_newlines=True
+    ).returncode
 
 
 def run_remote_cmd_async(command: str, config: Dict):
@@ -80,22 +89,30 @@ def run_remote_cmd_async(command: str, config: Dict):
     Returns:
         subprocess.Popen[bytes]: _description_
     """
-    command = '(%s) >& /dev/null & exit' % command
+    command = "(%s) >& /dev/null & exit" % command
 
     logging.debug("Execute remote command: (%s) asynchronously " % command)
 
     return subprocess.Popen(prep_remote_cmd(command, config))
 
 
-def cp_local_to_remote(config, local_path, remote_path = '~', exclude_paths=[]):
-    remote_user, remote_host = config['_remote_user'], config['_remote_host']
-    logging.debug("Synching {%s} to {%s@%s:%s}" %
-                 (local_path, remote_user, remote_host, remote_path))
-    args = ["rsync", "-ar", "-e", "ssh", local_path,
-            '%s@%s:%s' % (remote_user, remote_host, remote_path)]
+def cp_local_to_remote(config, local_path, remote_path="~", exclude_paths=[]):
+    remote_user, remote_host = config["_remote_user"], config["_remote_host"]
+    logging.debug(
+        "Synching {%s} to {%s@%s:%s}"
+        % (local_path, remote_user, remote_host, remote_path)
+    )
+    args = [
+        "rsync",
+        "-ar",
+        "-e",
+        "ssh",
+        local_path,
+        "%s@%s:%s" % (remote_user, remote_host, remote_path),
+    ]
     if exclude_paths is not None:
         for i in range(len(exclude_paths)):
-            args.append('--exclude')
+            args.append("--exclude")
             args.append(exclude_paths[i])
 
     return subprocess.call(args, stderr=subprocess.DEVNULL)
@@ -103,50 +120,74 @@ def cp_local_to_remote(config, local_path, remote_path = '~', exclude_paths=[]):
 
 def fetch_logs_from_remote(config):
     """_summary_
-        Copy remote:output to PROJECT_PATH/output/algo_name
+    Copy remote:output to PROJECT_PATH/output/algo_name
     """
     # Make a directory for local, replace if already exists
-    local_output_path = config['_control_output_path']
+    local_output_path = config["_control_output_path"]
     os.makedirs(local_output_path, exist_ok=True)
-    tar_file = 'logs.tar'
-    tar_file_path = os.path.join(config['_output_path'], tar_file)
+    tar_file = "logs.tar"
+    tar_file_path = os.path.join(config["_output_path"], tar_file)
     # tarball remote file
-    run_remote_cmd_async('tar -C %s -cf %s .' % (config['_output_path'],
-                                                 tar_file_path), config)
+    run_remote_cmd_async(
+        "tar -C %s -cf %s ." % (config["_output_path"], tar_file_path), config
+    )
     # Copy to local
-    subprocess.call(["scp", "-r", "-p", '%s@%s:%s' %
-                    (config['_remote_user'], config['_remote_host'], tar_file_path), local_output_path])
+    subprocess.call(
+        [
+            "scp",
+            "-r",
+            "-p",
+            "%s@%s:%s"
+            % (config["_remote_user"], config["_remote_host"], tar_file_path),
+            local_output_path,
+        ]
+    )
 
     # Extract at local
-    subprocess.call(['tar', '-xf', os.path.join(local_output_path, tar_file),
-                     '-C', local_output_path])
+    subprocess.call(
+        [
+            "tar",
+            "-xf",
+            os.path.join(local_output_path, tar_file),
+            "-C",
+            local_output_path,
+        ]
+    )
     # Remove tar
-    subprocess.call(['rm', '-rf', os.path.join(local_output_path, tar_file)])
+    subprocess.call(["rm", "-rf", os.path.join(local_output_path, tar_file)])
     return 0
 
 
 def synch_repo_at_remote(config):
     # Returns a status code: 0 means success; non-0 mean failure
-    return cp_local_to_remote(config, local_path=PROJECT_PATH, exclude_paths=['*/__pycache__', 'output', 'venv', 'lib', 'include', 'bin'])
+    return cp_local_to_remote(
+        config,
+        local_path=PROJECT_PATH,
+        exclude_paths=["*/__pycache__", "output", "venv", "lib", "include", "bin"],
+    )
 
 
 def clean_up(config):
     commands = [
-        "pkill -9 python;", "rm -fr %s;" % config['_output_path'], "mkdir -p %s" %  config['_output_path']
+        "pkill -9 python;",
+        "rm -fr %s;" % config["_output_path"],
+        "mkdir -p %s" % config["_output_path"],
     ]
-    return run_remote_cmd_sync(config=config, command=' '.join(commands))
-
+    return run_remote_cmd_sync(config=config, command=" ".join(commands))
 
 
 def run_algorithm(config):
-    arg_flag =  f"\'{json.dumps(config['_model'])}\' {config['_data_config_path']} {config['_output_path']}"
+    arg_flag = f"'{json.dumps(config['_model'])}' {config['_data_config_path']} {config['_output_path']}"
 
     # Cat all stdout and stderr on remote machine
-    output_flag = ' &> {}/stdout.log 2> {}/stderr.log'.format(config['_output_path'], config['_output_path'])
+    output_flag = " &> {}/stdout.log 2> {}/stderr.log".format(
+        config["_output_path"], config["_output_path"]
+    )
 
     # TODO embed env into cloudlab
-    algorithm_cmd = "python3 FairPrescriptionRules/src/baselines/{} {} {}".format(config["_model"]["_start"], arg_flag, output_flag)
-
+    algorithm_cmd = "python3 FairPrescriptionRules/src/baselines/{} {} {}".format(
+        config["_model"]["_start"], arg_flag, output_flag
+    )
 
     # Returns a status code: 0 means success; non-0 mean failure
     return run_remote_cmd_sync(command=algorithm_cmd, config=config)

@@ -6,7 +6,8 @@
         "./src/helper",
         "./src/algorithms/metrics",
         "./src/algorithms",
-        "./src/tools"
+        "./src/tools",
+        "./src/baselines"
     ],
     "python.analysis.autoFormatStrings": true,
     "python.analysis.autoImportCompletions": true,
