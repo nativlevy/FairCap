@@ -12,7 +12,7 @@ CONTROLLER_OUTPUT_PATH = os.path.join(PROJECT_PATH, "output")
 WORKER_OUTPUT_PATH = f"{REPO_NAME}/output"
 
 # cloud lab configs
-REMOTE_USER = "bcyl2"
+REMOTE_USER = "user"
 CLOUDLAB_EXPERIMENT_NAME = "remote"
 CLOUDLAB_PROJECT_NAME = "fair-prescrip"
 # TODO add more node as we have more algo

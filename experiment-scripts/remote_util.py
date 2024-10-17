@@ -1,6 +1,4 @@
 """
-    Author: Benton Li (cl2597@cornell.edu)
-
     This file contains helper functions for actions related to remote machine,
     including:
     - Copy local files to remote machine
@@ -99,7 +97,7 @@ def run_remote_cmd_async(command: str, config: Dict):
 def clone_to_remote(config):
     return run_remote_cmd_sync(
         config=config,
-        command="if cd repo; then git pull; else git clone https://github.com/bentondecusin/FairPrescriptionRules repo; fi",
+        command="if cd repo; then git pull; else git clone <repo_url> repo; fi",
     )
 
 

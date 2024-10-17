@@ -17,7 +17,7 @@ In this project, we implement 3-step algorithms that generate prescriptions(rule
 ## Setup <a name="setup"></a>
 1. Clone this repository:
    ```
-   git clone https://github.com/bentondecusin/FairPrescriptionRules
+   git clone <repo_url>
    cd FairPrescriptionRules
    ```
 You can run the algorithm either locally or **remotely(recommended)**

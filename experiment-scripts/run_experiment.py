@@ -1,7 +1,5 @@
 """_summary_
 This script launch an experiment, runs both Greedy and CauSumX where X will be the first argument (default: 4; max: 7).
-@author: Benton Li
-@email: cl2597@cornell.edu
 """
 
 # import utils
