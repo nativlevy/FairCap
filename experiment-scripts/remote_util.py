@@ -96,6 +96,13 @@ def run_remote_cmd_async(command: str, config: Dict):
     return subprocess.Popen(prep_remote_cmd(command, config))
 
 
+def clone_to_remote(config):
+    return run_remote_cmd_sync(
+        config=config,
+        command="if cd repo; then git pull; else git clone https://github.com/bentondecusin/FairPrescriptionRules repo; fi",
+    )
+
+
 def cp_local_to_remote(config, local_path, remote_path="~", exclude_paths=[]):
     remote_user, remote_host = config["_remote_user"], config["_remote_host"]
     logging.debug(
@@ -160,11 +167,13 @@ def fetch_logs_from_remote(config):
 
 def synch_repo_at_remote(config):
     # Returns a status code: 0 means success; non-0 mean failure
-    return cp_local_to_remote(
-        config,
-        local_path=PROJECT_PATH,
-        exclude_paths=["*/__pycache__", "output", "venv", "lib", "include", "bin"],
-    )
+    return clone_to_remote(config)
+
+    # return cp_local_to_remote(
+    #     config,
+    #     local_path=PROJECT_PATH,
+    #     exclude_paths=["*/__pycache__", "output", "venv", "lib", "include", "bin"],
+    # )
 
 
 def clean_up(config):

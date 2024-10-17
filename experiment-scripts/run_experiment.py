@@ -53,8 +53,6 @@ def main(data_config_path, expmt_config_path):
     # Prepare a output directory, prefixed with time stamp
     expmt_title = expmt_config["_expmt_title"]
     print("BEGIN")
-    # TODO add me back
-    # os.makedirs(os.path.join(CONTROLLER_OUTPUT_PATH, tempore))
     if is_remote:
         remote_nodes = expmt_config["_cloudlab_nodes"]
         remote_postfix = expmt_config["_cloudlab_postfix"]
