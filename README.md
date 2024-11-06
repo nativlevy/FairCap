@@ -1,5 +1,5 @@
 # Greedy Fair Prescription Rules Algorithm
-In this project, we implement a 3-step algorithms that generate prescriptions(rules) to increase/decrease the value of an attribute. Meanwhile, we can protecting a specified group by setting a minimum coverage of each rule, or that of a rule set. We can also proctect this group by capping the gap between the difference of benefit protected and non-protected group get. The algorithm can be broken down into 3 steps: group mining, treatment mining and rule selection. The details can be found in the [paper]()
+In this project, we implement a 3-step algorithms that generate prescriptions(rules) to increase/decrease the value of an attribute. Meanwhile, we can protecting a specified group by setting a minimum coverage of each rule, or that of a rule set. We can also proctect this group by capping the gap between the difference of benefit protected and non-protected group get. The algorithm can be broken down into 3 steps: group mining, treatment mining and rule selection. The details can be found in the paper (PDF can be found in this git repo).
 
 
 ## Setup <a name="setup"></a>
@@ -111,7 +111,7 @@ To run the experiment, we need both **data configuration** and **experiment conf
 3. `_coverage_constraint` (optional): contains name of the variant (group or rule), threshold, and protected threshold
 3. `_fairness_constraint` (optional): contains name of the variant (group_sp, individual_sp, grouo_bgl, individual_bgl) and threshold
 
-See examples of configuration [here](https://github.com/USERNAME/FairPrescriptionRules/tree/master/experiment-scripts/experiment-configs/sanity)
+See examples of configuration under experiment-scripts/experiment-configs/sanity.
 ## Running the Algorithms
 
 Locate to the script directory
